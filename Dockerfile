@@ -1,5 +1,5 @@
 ARG BUILDPLATFORM
-FROM --platform $BUILDPLATFORM alpine:latest AS redis-source
+FROM --platform=$BUILDPLATFORM alpine:latest AS redis-source
 
 ARG REDIS_VERSION="7.2.4"
 ARG REDIS_DOWNLOAD_URL="http://download.redis.io/releases/redis-${REDIS_VERSION}.tar.gz"
@@ -11,7 +11,7 @@ RUN wget -O redis.tar.gz "$REDIS_DOWNLOAD_URL" && \
     make BUILD_TLS=yes MALLOC=libc redis-cli
     
 ARG BUILDPLATFORM
-FROM --platform $BUILDPLATFORM alpine:latest
+FROM --platform=$BUILDPLATFORM alpine:latest
 
 COPY --from=redis-source /usr/src/redis/src/redis-cli /usr/bin/redis-cli
 RUN chmod +x /usr/bin/redis-cli

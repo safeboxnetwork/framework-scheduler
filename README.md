@@ -1,2 +1,2 @@
-# framework-scheduler
+# platform-scheduler
 

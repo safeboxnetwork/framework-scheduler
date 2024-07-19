@@ -1,0 +1,45 @@
+kind: pipeline
+name: default
+trigger:
+  branch:
+    - main
+  event:
+    - push
+workspace:
+  path: /drone/src
+
+environment:
+  REPO_NAME: framework-scheduler
+  IMAGE_NAME: framework-scheduler
+  SERVICE_NAME: service-demo
+  APP_NAME: frameworkscheduler-app
+  DOCKER_REGISTRY_URL: registry.format.hu
+
+steps:
+  - name: create framework-scheduler image
+    image: plugins/docker
+    commands:
+      - export DOCKER_CLI_EXPERIMENTAL=enabled
+      - docker build --platform linux/amd64 --tag $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}/linux/amd64:latest --build-arg BUILDPLATFORM=amd64 -f Dockerfile .
+      - docker build --platform linux/arm64/v8 --tag $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}/linux/arm64:latest --build-arg BUILDPLATFORM=arm64 -f Dockerfile .
+      - docker push $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}/linux/amd64:latest
+      - docker push $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}/linux/arm64:latest
+      - |
+        docker manifest create $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}:latest \
+        $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}/linux/amd64:latest \
+        $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}/linux/arm64:latest        
+      - docker manifest annotate --arch arm64 --variant v8 $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}:latest $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}/linux/arm64:latest
+      - docker manifest annotate --arch amd64 $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}:latest $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}/linux/amd64:latest
+      - docker manifest push $${DOCKER_REGISTRY_URL}/$${IMAGE_NAME}:latest
+    
+    when:
+      branch:
+        - master
+
+volumes:
+  - name: cache
+    temp: {}
+
+  - name: docker
+    host:
+      path: /var/run/docker.sock
