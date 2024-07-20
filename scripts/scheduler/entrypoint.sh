@@ -6,7 +6,7 @@ DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 USER_INIT_PATH=$USER_INIT_PATH
 WEB_SERVER=${WEB_SERVER:-webserver}
 WEB_IMAGE=${WEB_IMAGE:-web-installer}
-WEBSERVER_PORT=${WEBSERVER_PORT:-80}
+WEBSERVER_PORT=${WEBSERVER_PORT:-8080}
 REDIS_SERVER=${REDIS_SERVER:-redis}
 REDIS_PORT=${REDIS_PORT:-6379}
 REDIS_IMAGE=${REDIS_IMAGE:-redis}
@@ -51,13 +51,13 @@ check_redis_availability() {
 
 start_redis () {
 
-      /usr/bin/docker run -d --name $REDIS_SERVER $DOCKER_REGISTRY_URL/$REDIS_IMAGE:latest
+      /usr/bin/docker run -d --name $REDIS_SERVER $REDIS_IMAGE:latest
     
 }
 
 start_webserver () {
 
-      /usr/bin/docker run -d --name $WEB_SERVER $DOCKER_REGISTRY_URL/$WEB_IMAGE:latest
+      /usr/bin/docker run -d -p $WEBSERVER_PORT:80/tcp --name $WEB_SERVER $DOCKER_REGISTRY_URL/$WEB_IMAGE:latest
 }
 ###
 
