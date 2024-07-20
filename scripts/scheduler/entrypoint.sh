@@ -83,6 +83,8 @@ echo `date`" Webserver initialized"
 # TESTING
 sleep 86400
 
+exit
+
 
 # poll redis infinitely for scheduler jobs
 check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHORT
