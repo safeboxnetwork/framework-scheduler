@@ -2,10 +2,14 @@
 
 cd /scripts
 
-DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL
+DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 USER_INIT_PATH=$USER_INIT_PATH
-REDIS_SERVER=$REDIS_SERVER
-REDIS_PORT=$REDIS_PORT
+WEB_SERVER=${WEB_SERVER:-webserver}
+WEB_IMAGE=${WEB_IMAGE:-web-installer}
+WEBSERVER_PORT=${WEBSERVER_PORT:-80}
+REDIS_SERVER=${REDIS_SERVER:-redis}
+REDIS_PORT=${REDIS_PORT:-6379}
+REDIS_IMAGE=${REDIS_IMAGE:-redis}
 
 SOURCE=$SOURCE
 SMARTHOST_PROXY_PATH=$SMARTHOST_PROXY_PATH
@@ -14,20 +18,10 @@ GIT_URL=$GIT_URL
 TOKEN=$TOKEN
 REPO=$REPO
 
-MAIN_DOMAIN=$MAIN_DOMAIN
-VERSIONS_CONFIG_FILE=$VERSIONS_CONFIG_FILE
-PROXY_DELAY=$PROXY_DELAY
-
-
-VERSIONS_CONFIG_FILE=$VERSIONS_CONFIG_FILE
-
-if [ -z "$CURL_SLEEP_SHORT" ]; then
-      CURL_SLEEP_SHORT=10
-fi
-
-if [ -z "$CURL_RETRIES" ]; then
-      CURL_RETRIES=360
-fi
+# scheduler settings
+CURL_SLEEP_SHORT=${CURL_SLEEP_SHORT:-5}
+CURL_RETRIES=${CURL_RETRIES:-360}
+SCHEDULER_SERVICEFILE_GENERATE_TEST=${SCHEDULER_SERVICEFILE_GENERATE_TEST:-false}
 
 check_redis_availability() {
       REDIS_SERVER="$1"
@@ -54,6 +48,17 @@ check_redis_availability() {
             fi
       done
 }
+
+start_redis () {
+
+      /usr/bin/docker run -d --name $REDIS_SERVER $DOCKER_REGISTRY_URL/$REDIS_IMAGE:latest
+    
+}
+
+start_webserver () {
+
+      /usr/bin/docker run -d --name $WEB_SERVER $DOCKER_REGISTRY_URL/$WEB_IMAGE:latest
+}
 ###
 
 # CHECKING SYSTEM ENVIRONMENTS
@@ -65,23 +70,29 @@ check_redis_availability() {
 # REDIS_SERVER EXISTENCE
 ## REDIS_PORT EXISTENCE
 ## VERSION CHECK
-
+start_redis
+echo `date`" Redis initialized"
 # WEBSERVER EXISTENCE
 ## WEBSERVER_PORT EXISTENCE
 ## VERSION CHECK
+start_webserver
+echo `date`" Webserver initialized"
 
 # SUMMARY
+
+# TESTING
+sleep 86400
 
 
 # poll redis infinitely for scheduler jobs
 check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHORT
-echo "Scheduler initialized, starting listening for deploy events"
+echo `date`" Scheduler initialized, starting listening for events"
 while true; do
 
       IDS=""
 
       # GET DEPLOYMENT IDs FROM generate key
-      IDS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS generate)
+      IDS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
       if [[ "$IDS" != "0" && "$IDS" != "" ]]; then
 
             # PROCESSING IDS
@@ -113,8 +124,8 @@ while true; do
                   redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $I "$JSON_TARGET";
                   
                   # MOVE ID from generate into generated
-                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM generate $I
-                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD generated $I
+                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $I
+                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $I
 
             done
       fi
