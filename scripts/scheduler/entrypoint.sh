@@ -7,6 +7,7 @@ USER_INIT_PATH=$USER_INIT_PATH
 WEB_SERVER=${WEB_SERVER:-webserver}
 WEB_IMAGE=${WEB_IMAGE:-web-installer}
 WEBSERVER_PORT=${WEBSERVER_PORT:-8080}
+WEBSERVER_VERSION=${WEBSERVER_VERSION:-1.0.0}
 REDIS_SERVER=${REDIS_SERVER:-redis}
 REDIS_PORT=${REDIS_PORT:-6379}
 REDIS_IMAGE=${REDIS_IMAGE:-redis}
@@ -57,7 +58,7 @@ start_redis () {
 
 start_webserver () {
 
-      /usr/bin/docker run -d -p $WEBSERVER_PORT:80/tcp --name $WEB_SERVER $DOCKER_REGISTRY_URL/$WEB_IMAGE:latest
+      /usr/bin/docker run -d -p $WEBSERVER_PORT:80/tcp --name $WEB_SERVER $DOCKER_REGISTRY_URL/$WEB_IMAGE:$WEBSERVER_VERSION
 }
 ###
 
