@@ -5,7 +5,8 @@ cd /scripts
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 USER_INIT_PATH=$USER_INIT_PATH
 
-FRAMWEORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
+FRAMEWORK_SCHEDULER_IMAGE=${FRAMEWORK_SCHEDULER_IMAGE:-framework-scheduler}
+FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
 FRAMEWORK_SCHEDULER_NETWORK=${FRAMEWORK_SCHEDULER_NETWORK:-framework-network}
 FRAMEWORK_NETWORK_SUBNET=${FRAMEWORK_NETWORK_SUBNET:-"172.18.255.0/24"}
 
@@ -39,16 +40,15 @@ scheduler_manager(){
       FRAMEWORK_SUBNET=$3;
       FRAMEWORK_UPDATE=$4;
 
+      # TODO service exec json
       if [ "$FRAMEWORK_NETWORK" == "0" ]; then
             echo "Restarting the scheduler with the correct network"
-
             docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_NETWORK_SUBNET
+      fi;
 
       if [ "$FRAMEWORK_SUBNET" == "0" ]; then
-            echo "Restarting the scheduler with the correct subnet"
-            docker stop $ACTUAL_FRAMEWORK_SCHEDULER_NAME
-            docker rm $ACTUAL_FRAMEWORK_SCHEDULER_NAME
-            docker run -d --name $FRAMEWORK_SCHEDULER_NAME --network $FRAMEWORK_SCHEDULER_NETWORK --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -v /scripts:/scripts $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_NAME
+            echo "Creating network $FRAMEWORK_SCHEDULER_NETWORK"
+            docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_NETWORK_SUBNET
       fi
 
       if [ "$FRAMEWORK_NAME" == "0" ]; then
@@ -58,18 +58,12 @@ scheduler_manager(){
             docker run -d --name $FRAMEWORK_SCHEDULER_NAME --network $FRAMEWORK_SCHEDULER_NETWORK --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -v /scripts:/scripts $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_NAME
       fi
 
-      
-
-      
-
       if [ "$FRAMEWORK_UPDATE" == "0" ]; then
             echo "Restarting the scheduler with the correct version"
             docker stop $ACTUAL_FRAMEWORK_SCHEDULER_NAME
             docker rm $ACTUAL_FRAMEWORK_SCHEDULER_NAME
             docker run -d --name $FRAMEWORK_SCHEDULER_NAME --network $FRAMEWORK_SCHEDULER_NETWORK --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -v /scripts:/scripts $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_NAME
       fi
-
-
 
 }
 
@@ -88,21 +82,12 @@ check_framework_scheduler_status(){
 
             if [ "$(docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" == "$FRAMEWORK_NETWORK_SUBNET" ]; then
                   echo "Network $FRAMEWORK_SCHEDULER_NETWORK is available with the correct subnet, not needed to restart the scheduler"
-
-                  check_framework_network_availabity
-
-                  
             else
+                  check_framework_subnet_availabity
                   FRAMEWORK_SUBNET=0;
             fi
       else
             FRAMEWORK_NETWORK=0;
-      fi
-
-      if [  ]; then
-      
-      else
-            FRAMEWORK_UPDATE=0;
       fi
 
       scheduler_manager $FRAMEWORK_NAME $FRAMEWORK_NETWORK $FRAMEWORK_SUBNET $FRAMEWORK_UPDATE
@@ -112,8 +97,7 @@ check_framework_scheduler_status(){
 }
 
 
-check_framework_network_availabity() {
-      if [ -z "$(docker network ls --filter name=^$FRAMEWORK_SCHEDULER_NETWORK$ --format {{.Name}})" ]; then
+check_framework_subnet_availabity() {
             
             # Define the subnet you want to check
             desired_subnet=$FRAMEWORK_NETWORK_SUBNET
@@ -124,13 +108,7 @@ check_framework_network_availabity() {
                   echo "Subnet $desired_subnet is not available for creation. Need to find another network"
             else
                   echo "Subnet $desired_subnet is available for creation."
-
             fi
-            echo "Creating network $FRAMEWORK_SCHEDULER_NETWORK"
-            docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_NETWORK_SUBNET
-      else
-            echo "Network $DOCKER_NETWORK_NAME already exists, need to define another name"
-      fi
 }
 
 check_redis_availability() {
