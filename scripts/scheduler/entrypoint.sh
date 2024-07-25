@@ -198,6 +198,8 @@ start_webserver () {
 ## PORTS VARIABLES
 ### RESTART SCHEDULER IF NEEDED
 
+check_dirs_and_files
+
 check_framework_scheduler_status $HOSTNAME
 
 check_framework_network_availabity
