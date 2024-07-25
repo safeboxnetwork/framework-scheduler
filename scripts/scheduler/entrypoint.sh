@@ -19,7 +19,7 @@ REDIS_PORT=${REDIS_PORT:-6379}
 REDIS_IMAGE=${REDIS_IMAGE:-redis}
 REDIS_VERSION=${REDIS_VERSION:-latest}
 
-SOURCE=$SOURCE
+SOURCE=${SOURCE:-user-config}
 SMARTHOST_PROXY_PATH=$SMARTHOST_PROXY_PATH
 
 
@@ -32,6 +32,42 @@ CURL_SLEEP_SHORT=${CURL_SLEEP_SHORT:-5}
 CURL_RETRIES=${CURL_RETRIES:-360}
 
 SCHEDULER_SERVICEFILE_GENERATE_TEST=${SCHEDULER_SERVICEFILE_GENERATE_TEST:-false}
+
+
+if [[ -n "$DOCKER_REGISTRY_URL" && "$DOCKER_REGISTRY_URL" != "null" ]]; then
+    SETUP="/setup"
+else
+    SETUP="setup"
+    DOCKER_REGISTRY_URL=""
+fi
+
+DNS_DIR="/etc/system/data/dns"
+DNS="--env DNS_DIR=$DNS_DIR"
+DNS_PATH="--volume $DNS_DIR:/etc/dns:rw"
+
+CA_PATH=/etc/system/data/ssl/certs
+CA="--env CA_PATH=$CA_PATH"
+CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
+
+service_exec="docker run --rm \
+$DNS $DNS_PATH \
+$CA $CA_FILE \
+-w /services/ \
+-v $SOURCE/system.json:/etc/user/config/system.json:ro \
+-v $SOURCE/user.json:/etc/user/config/user.json:ro \
+-v $SOURCE/services:/services:ro \
+-v $SOURCE/services/tmp:/services/tmp:rw \
+-v /var/run/docker.sock:/var/run/docker.sock \
+--env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
+$DOCKER_REGISTRY_URL$SETUP"
+
+
+
+
+
+
+
+
 
 scheduler_manager(){
 
@@ -53,13 +89,6 @@ scheduler_manager(){
 
       if [ "$FRAMEWORK_NAME" == "0" ]; then
             echo "Restarting the scheduler with the correct name"
-            docker stop $ACTUAL_FRAMEWORK_SCHEDULER_NAME
-            docker rm $ACTUAL_FRAMEWORK_SCHEDULER_NAME
-            docker run -d --name $FRAMEWORK_SCHEDULER_NAME --network $FRAMEWORK_SCHEDULER_NETWORK --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -v /scripts:/scripts $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_NAME
-      fi
-
-      if [ "$FRAMEWORK_UPDATE" == "0" ]; then
-            echo "Restarting the scheduler with the correct version"
             docker stop $ACTUAL_FRAMEWORK_SCHEDULER_NAME
             docker rm $ACTUAL_FRAMEWORK_SCHEDULER_NAME
             docker run -d --name $FRAMEWORK_SCHEDULER_NAME --network $FRAMEWORK_SCHEDULER_NETWORK --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -v /scripts:/scripts $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_NAME
