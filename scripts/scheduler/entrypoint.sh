@@ -96,6 +96,18 @@ scheduler_manager(){
 
 }
 
+check_dirs_and_files(){
+
+	RET=0;
+	if [[ -d "/etc/system/data/" && -d "/etc/user/config/" && -d "/services/" && -d "/tmp/" ]]; then
+		if [[ -f "/etc/user/config/system.json" && -f "/etc/user/config/user.json" ]]; then
+			RET=1;
+		fi;
+	fi;
+
+	echo $RET;
+}
+
 check_framework_scheduler_status(){
 
       ACTUAL_FRAMEWORK_SCHEDULER_NAME=$1;
