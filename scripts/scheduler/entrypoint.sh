@@ -52,11 +52,9 @@ CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
 service_exec="docker run --rm \
 $DNS $DNS_PATH \
 $CA $CA_FILE \
--w /services/ \
--v $SOURCE/system.json:/etc/user/config/system.json:ro \
--v $SOURCE/user.json:/etc/user/config/user.json:ro \
--v $SOURCE/services:/services:ro \
--v $SOURCE/services/tmp:/services/tmp:rw \
+-w /etc/user/config/services/ \
+-v SYSTEM_DATA:/etc/system/data \
+-v USER_CONFIG:/etc/user/config:rw \
 -v /var/run/docker.sock:/var/run/docker.sock \
 --env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
 $DOCKER_REGISTRY_URL$SETUP"
@@ -98,8 +96,27 @@ scheduler_manager(){
 
 check_dirs_and_files(){
 
-	RET=0;
-	if [[ -d "/etc/system/data/" && -d "/etc/user/config/" && -d "/services/" && -d "/tmp/" ]]; then
+	RET=1;
+	if [ ! -d "/etc/system/data/" ]; then
+		docker volume create SYSTEM_DATA;
+		RET=0;
+	fi
+	if [ ! -d "/etc/user/data/" ]; then
+		docker volume create USER_DATA;
+		RET=0;
+	fi;
+	if [ ! -d "/etc/user/config/" ]; then
+		docker volume create USER_CONFIG;
+		RET=0;
+	fi;
+
+	if [ ! -d "/etc/user/config/services/" ]; then
+		mkdir /etc/user/config/services/
+	fi;
+
+	if [ ! -d "/etc/user/config/services/tmp/" ]; then
+		mkdir /etc/user/config/services/tmp/
+
 		if [[ -f "/etc/user/config/system.json" && -f "/etc/user/config/user.json" ]]; then
 			RET=1;
 		fi;
