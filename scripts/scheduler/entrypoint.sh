@@ -108,6 +108,22 @@ check_dirs_and_files(){
 	echo $RET;
 }
 
+check_subnets(){
+
+	SUBNETS=$(for ALL in $(docker network ls | grep bridge | awk '{print $1}') ; do docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' ; done)
+
+	RES=$(echo "$SUBNETS" | grep "172.19.");
+	if [ "$RES" != "" ]; then
+		for R in $RES ; do
+			NUMBER=$(echo $R | cut -d '.' -f3);
+			if [[ $NUMBER > 0 && $NUMBER < 100 ]]; then
+				echo $NUMBER;
+				echo "TODO"
+			fi;
+		done;
+	fi;
+}
+
 check_framework_scheduler_status(){
 
       ACTUAL_FRAMEWORK_SCHEDULER_NAME=$1;
