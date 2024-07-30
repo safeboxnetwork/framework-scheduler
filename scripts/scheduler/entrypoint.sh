@@ -267,7 +267,7 @@ if [ "$VOL" != "1" ]; then
 		-v USER_DATA:/etc/user/data \
 		-v USER_CONFIG:/etc/user/config \
 	  	--name $FRAMEWORK_SCHEDULER_NAME \
-	  	--network $FRAMEWORK_SCHEDULER_NETWORK_SUBNET \
+	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 	  $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION;
       /usr/bin/docker stop $HOSTNAME;
 fi;
