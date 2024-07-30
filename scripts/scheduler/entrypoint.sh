@@ -162,7 +162,7 @@ create_user_json() {
 }
 
 create_framework_json() {
-		{
+
     ADDITIONAL=""
     ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart unless-stopped", "PRE_START": [], "DEPEND": [], "CMD": ""'
 
