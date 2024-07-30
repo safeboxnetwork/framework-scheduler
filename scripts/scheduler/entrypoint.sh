@@ -42,10 +42,12 @@ else
     DOCKER_REGISTRY_URL=""
 fi
 
+mkdir -p /etc/system/data/dns
 DNS_DIR="/etc/system/data/dns"
 DNS="--env DNS_DIR=$DNS_DIR"
 DNS_PATH="--volume $DNS_DIR:/etc/dns:rw"
 
+mkdir -p /etc/system/data/ssl/certs
 CA_PATH=/etc/system/data/ssl/certs
 CA="--env CA_PATH=$CA_PATH"
 CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
@@ -173,7 +175,7 @@ create_framework_json() {
   },
   "containers": [
     {
-      "IMAGE": "'$DOCKER_REGISTRY_URL'/redis:'$REDIS_VERSION'",
+      "IMAGE": "redis:'$REDIS_VERSION'",
       "NAME": "redis-server",
       "UPDATE": "true",
       "MEMORY": "64M",
@@ -278,8 +280,8 @@ if [ "$DF" != "1" ]; then
 	create_system_json;
 	create_user_json;
 	create_framework_json;
-	$service_exec service-framework.containers.redis-server start prechecked &
-	$service_exec service-framework.containers.webserver start prechecked &
+	$service_exec service-framework.containers.redis-server start info &
+	$service_exec service-framework.containers.webserver start info &
 fi;
 
 sleep 3600;
