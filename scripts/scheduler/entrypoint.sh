@@ -281,6 +281,7 @@ if [ "$DF" != "1" ]; then
 	create_framework_json;
 fi;
 
+exit;
 
 # REDIS_SERVER EXISTENCE
 ## REDIS_PORT EXISTENCE
