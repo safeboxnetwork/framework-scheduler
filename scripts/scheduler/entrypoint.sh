@@ -53,6 +53,7 @@ CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
 service_exec="/usr/bin/docker run --rm \
 $DNS $DNS_PATH \
 $CA $CA_FILE \
+-e SERVICE_FILES=/etc/user/config/services \
 -w /etc/user/config/services/ \
 -v SYSTEM_DATA:/etc/system/data \
 -v USER_CONFIG:/etc/user/config:rw \
