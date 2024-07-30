@@ -58,7 +58,7 @@ $CA $CA_FILE \
 -v USER_CONFIG:/etc/user/config:rw \
 -v /var/run/docker.sock:/var/run/docker.sock \
 --env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
-$DOCKER_REGISTRY_URL$SETUP"
+$DOCKER_REGISTRY_URL$SETUP:1.0.1"
 
 
 
