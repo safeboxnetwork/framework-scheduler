@@ -163,9 +163,56 @@ create_user_json() {
 
 create_framework_json() {
 		{
-			echo '
-';
-		} > /etc/user/config/services/service-framework.json
+    ADDITIONAL=""
+    ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart unless-stopped", "PRE_START": [], "DEPEND": [], "CMD": ""'
+
+    echo '{
+  "main": {
+    "SERVICE_NAME": "framework"
+  },
+  "containers": [
+    {
+      "IMAGE": "'$DOCKER_REGISTRY_URL'/redis:'$REDIS_VERSION'",
+      "NAME": "redis-server",
+      "UPDATE": "true",
+      "MEMORY": "64M",
+      "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
+      '$ADDITIONAL',
+      "PORTS":[
+        { "SOURCE": "null",
+          "DEST": "6379",
+          "TYPE": "tcp"
+        }
+            ],
+      "POST_START": []
+    },
+    {
+      "IMAGE": "'$DOCKER_REGISTRY_URL'/'$FRAMEWORK_SCHEDULER_IMAGE':'$FRAMEWORK_SCHEDULER_VERSION'",
+      "NAME": "'$FRAMEWORK_SCHEDULER_NAME'",
+      "UPDATE": "true",
+      "MEMORY": "256M",
+      "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
+      '$ADDITIONAL',
+      "POST_START": []
+    },
+	{
+      "IMAGE": "'$DOCKER_REGISTRY_URL'/'$WEB_IMAGE':'$WEBSERVER_VERSION'",
+      "NAME": "'$WEB_SERVER'",
+      "UPDATE": "true",
+      "MEMORY": "128M",
+      "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
+      '$ADDITIONAL',
+      "PORTS":[
+        { "SOURCE": "8080",
+          "DEST": "80",
+          "TYPE": "tcp"
+        }
+            ],
+      "POST_START": []
+    }
+  ]
+}
+  ' | jq -r . >/etc/user/config/services/service-framework.json
 }
 
 check_redis_availability() {
