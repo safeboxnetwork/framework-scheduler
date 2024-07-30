@@ -277,6 +277,8 @@ if [ "$DF" != "1" ]; then
 	create_system_json;
 	create_user_json;
 	create_framework_json;
+	$service_exec service-framework.containers.redis-server start &
+	$service_exec service-framework.containers.webserver start &
 fi;
 
 sleep 3600;
