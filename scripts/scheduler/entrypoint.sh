@@ -193,9 +193,11 @@ start_webserver () {
 
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
-      /usr/bin/docker run -d -v /var/run/docker.sock:/var/run/docker.sock --name $FRAMEWORK_SCHEDULER_NAME $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION
-      /usr/bin/docker stop $(ACTUAL_FRAMEWORK_SCHEDULER_NAME;
+      /usr/bin/docker run -d --rm -v /var/run/docker.sock:/var/run/docker.sock --name $FRAMEWORK_SCHEDULER_NAME $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION
+      /usr/bin/docker stop $HOSTNAME;
 fi;
+
+exit;
 
 check_framework_scheduler_status $HOSTNAME
 
