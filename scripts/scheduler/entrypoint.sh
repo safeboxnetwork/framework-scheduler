@@ -8,7 +8,6 @@ USER_INIT_PATH=$USER_INIT_PATH
 FRAMEWORK_SCHEDULER_IMAGE=${FRAMEWORK_SCHEDULER_IMAGE:-framework-scheduler}
 FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
 FRAMEWORK_SCHEDULER_NETWORK=${FRAMEWORK_SCHEDULER_NETWORK:-framework-network}
-FRAMEWORK_NETWORK_SUBNET=${FRAMEWORK_NETWORK_SUBNET:-"172.18.255.0/24"}
 FRAMEWORK_SCHEDULER_VERSION=${FRAMEWORK_SCHEDULER_VERSION:-latest}
 
 WEB_SERVER=${WEB_SERVER:-webserver}
@@ -67,6 +66,10 @@ check_volumes(){
 	RET=1;
 	if [ ! -d "/etc/system/data/" ]; then
 		/usr/bin/docker volume create SYSTEM_DATA;
+		RET=0;
+	fi
+      	if [ ! -d "/etc/system/log/" ]; then
+		/usr/bin/docker volume create SYSTEM_LOG;
 		RET=0;
 	fi
 	if [ ! -d "/etc/user/data/" ]; then
