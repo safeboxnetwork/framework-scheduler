@@ -279,7 +279,8 @@ if [ "$DF" != "1" ]; then
 	create_framework_json;
 fi;
 
-exit;
+sleep 3600;
+exit
 
 
 
