@@ -8,6 +8,7 @@ USER_INIT_PATH=$USER_INIT_PATH
 FRAMEWORK_SCHEDULER_IMAGE=${FRAMEWORK_SCHEDULER_IMAGE:-framework-scheduler}
 FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
 FRAMEWORK_SCHEDULER_NETWORK=${FRAMEWORK_SCHEDULER_NETWORK:-framework-network}
+FRAMEWORK_SCHEDULER_NETWORK_SUBNET=${FRAMEWORK_SCHEDULER_NETWORK_SUBNET:-"172.19.255.0/24"}
 FRAMEWORK_SCHEDULER_VERSION=${FRAMEWORK_SCHEDULER_VERSION:-latest}
 
 WEB_SERVER=${WEB_SERVER:-webserver}
@@ -80,10 +81,13 @@ check_volumes(){
 		/usr/bin/docker volume create USER_CONFIG;
 		RET=0;
 	fi;
+
+	echo $RET;
 }
 
 check_dirs_and_files(){
 
+	RET=0;
 	if [ ! -d "/etc/user/config/services/" ]; then
 		mkdir /etc/user/config/services/
 	fi;
@@ -101,55 +105,67 @@ check_dirs_and_files(){
 
 check_subnets(){
 
+	RET=1;
 	SUBNETS=$(for ALL in $(/usr/bin/docker network ls | grep bridge | awk '{print $1}') ; do /usr/bin/docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' ; done)
 
 	RES=$(echo "$SUBNETS" | grep "172.19.");
 	if [ "$RES" != "" ]; then
 		for R in $RES ; do
 			NUMBER=$(echo $R | cut -d '.' -f3);
-			if [[ $NUMBER > 0 && $NUMBER < 255 ]]; then
-				echo $NUMBER;
-				echo "TODO"
+			if [[ $NUMBER -ge 0 && $NUMBER < 255 ]]; then
+				RET=0
 			fi;
 		done;
 	fi;
+	echo $RET;
 }
 
 check_framework_scheduler_status(){
 
-      ACTUAL_FRAMEWORK_SCHEDULER_NAME=$1;
+	ACTUAL_FRAMEWORK_SCHEDULER_NAME=$1;
 
-      if "$ACTUAL_FRAMEWORK_SCHEDULER_NAME" == "$FRAMEWORK_SCHEDULER_NAME"; then
-            echo "Scheduler name not correct, not needed to restart is with the correct name";
-      else
-            FRAMEWORK_NAME=0;
-      fi
+	RET=1;
+	if "$ACTUAL_FRAMEWORK_SCHEDULER_NAME" != "$FRAMEWORK_SCHEDULER_NAME"; then
+		RET=0;
+	else
+		desired_subnet=$FRAMEWORK_SCHEDULER_NETWORK_SUBNET
+		existing_subnets=$(/usr/bin/docker network inspect $(/usr/bin/docker network ls -q) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
 
+		# Check if the desired subnet is in the list of existing subnets
+		if echo "$existing_subnets" | grep -q "$desired_subnet"; then
+			if [ "$(/usr/bin/docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" != "$FRAMEWORK_NETWORK_SUBNET" ]; then
+				RET=0;
+			fi
+		else
+			RET=0;
+		fi
+	fi
 
-    if [ "$(/usr/bin/docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" == "$FRAMEWORK_NETWORK_SUBNET" ]; then
-	  echo "Network $FRAMEWORK_SCHEDULER_NETWORK is available with the correct subnet, not needed to restart the scheduler"
-    else
-	  check_framework_subnet_availabity
-	  FRAMEWORK_SUBNET=0;
-    fi
-
-
-      #echo '{"FRAMEWORK_NAME": "$FRAMEWORK_NAME", "FRAMEWORK_NETWORK": "$FRAMEWORK_NETWORK"}'
 }
 
+create_system_json() {
+		{
+			echo '
+{
+	"NETWORK": {
+		"IP_POOL_START": "172.19.0.0",
+		"IP_POOL_END": "172.19.254.0",
+		"IP_SUBNET": "24"
+	}
+}
+';
+		} > /etc/user/config/system.json
+}
 
-check_framework_subnet_availabity() {
-            
-            # Define the subnet you want to check
-            desired_subnet=$FRAMEWORK_NETWORK_SUBNET
-            existing_subnets=$(/usr/bin/docker network inspect $(/usr/bin/docker network ls -q) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
+create_user_json() {
+	touch /etc/user/config/user.json
+}
 
-            # Check if the desired subnet is in the list of existing subnets
-            if echo "$existing_subnets" | grep -q "$desired_subnet"; then
-                  echo "Subnet $desired_subnet is not available for creation. Need to find another network"
-            else
-                  echo "Subnet $desired_subnet is available for creation."
-            fi
+create_framework_json() {
+		{
+			echo '
+';
+		} > /etc/user/config/services/service-framework.json
 }
 
 check_redis_availability() {
@@ -195,15 +211,28 @@ start_webserver () {
 ## PORTS VARIABLES
 ### RESTART SCHEDULER IF NEEDED
 
+SN=$(check_subnets)
+if [ "$SN" != "1"]; then
+	echo "Desired network subnet not available";
+	exit;
+fi;
+STATUS=$(check_framework_scheduler_status $HOSTNAME)
+if [ "$STATUS" != "1" ]; then
+	/usr/bin/docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_SCHEDULER_NETWORK_SUBNET;
+fi;
+
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
-      /usr/bin/docker run -d --rm -v /var/run/docker.sock:/var/run/docker.sock --name $FRAMEWORK_SCHEDULER_NAME $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION
+      /usr/bin/docker run -d -v /var/run/docker.sock:/var/run/docker.sock --name $FRAMEWORK_SCHEDULER_NAME --network $FRAMEWORK_SCHEDULER_NETWORK_SUBNET $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION
       /usr/bin/docker stop $HOSTNAME;
 fi;
 
-exit;
-
-check_framework_scheduler_status $HOSTNAME
+DF=$(check_dirs_and_files);
+if [ "$DF" != "1" ]; then
+	create_system_json;
+	create_user_json;
+	create_framework_json;
+fi;
 
 
 # REDIS_SERVER EXISTENCE
