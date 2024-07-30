@@ -49,7 +49,7 @@ CA_PATH=/etc/system/data/ssl/certs
 CA="--env CA_PATH=$CA_PATH"
 CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
 
-service_exec="docker run --rm \
+service_exec="/usr/bin/docker run --rm \
 $DNS $DNS_PATH \
 $CA $CA_FILE \
 -w /etc/user/config/services/ \
@@ -65,15 +65,15 @@ check_volumes(){
 
 	RET=1;
 	if [ ! -d "/etc/system/data/" ]; then
-		docker volume create SYSTEM_DATA;
+		/usr/bin/docker volume create SYSTEM_DATA;
 		RET=0;
 	fi
 	if [ ! -d "/etc/user/data/" ]; then
-		docker volume create USER_DATA;
+		/usr/bin/docker volume create USER_DATA;
 		RET=0;
 	fi;
 	if [ ! -d "/etc/user/config/" ]; then
-		docker volume create USER_CONFIG;
+		/usr/bin/docker volume create USER_CONFIG;
 		RET=0;
 	fi;
 }
@@ -97,7 +97,7 @@ check_dirs_and_files(){
 
 check_subnets(){
 
-	SUBNETS=$(for ALL in $(docker network ls | grep bridge | awk '{print $1}') ; do docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' ; done)
+	SUBNETS=$(for ALL in $(/usr/bin/docker network ls | grep bridge | awk '{print $1}') ; do /usr/bin/docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' ; done)
 
 	RES=$(echo "$SUBNETS" | grep "172.19.");
 	if [ "$RES" != "" ]; then
@@ -122,7 +122,7 @@ check_framework_scheduler_status(){
       fi
 
 
-    if [ "$(docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" == "$FRAMEWORK_NETWORK_SUBNET" ]; then
+    if [ "$(/usr/bin/docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" == "$FRAMEWORK_NETWORK_SUBNET" ]; then
 	  echo "Network $FRAMEWORK_SCHEDULER_NETWORK is available with the correct subnet, not needed to restart the scheduler"
     else
 	  check_framework_subnet_availabity
@@ -138,7 +138,7 @@ check_framework_subnet_availabity() {
             
             # Define the subnet you want to check
             desired_subnet=$FRAMEWORK_NETWORK_SUBNET
-            existing_subnets=$(docker network inspect $(docker network ls -q) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
+            existing_subnets=$(/usr/bin/docker network inspect $(/usr/bin/docker network ls -q) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
 
             # Check if the desired subnet is in the list of existing subnets
             if echo "$existing_subnets" | grep -q "$desired_subnet"; then
