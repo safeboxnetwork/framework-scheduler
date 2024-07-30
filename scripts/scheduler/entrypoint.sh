@@ -241,16 +241,6 @@ check_redis_availability() {
       done
 }
 
-start_redis () {
-
-      /usr/bin/docker run -d --name $REDIS_SERVER $REDIS_IMAGE:$REDIS_VERSION
-    
-}
-
-start_webserver () {
-
-      /usr/bin/docker run -d -p $WEBSERVER_PORT:80/tcp --name $WEB_SERVER $DOCKER_REGISTRY_URL/$WEB_IMAGE:$WEBSERVER_VERSION
-}
 ### SYSTEM INITIALIZATION ###
 
 ## DOCKER NETWORK VARIABLES
@@ -270,7 +260,15 @@ fi;
 
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
-      /usr/bin/docker run -d -v /var/run/docker.sock:/var/run/docker.sock --name $FRAMEWORK_SCHEDULER_NAME --network $FRAMEWORK_SCHEDULER_NETWORK_SUBNET $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION
+      /usr/bin/docker run -d \
+	  	-v /var/run/docker.sock:/var/run/docker.sock \
+		-v SYSTEM_DATA:/etc/system/data \
+		-v SYSTEM_LOG:/etc/system/log \
+		-v USER_DATA:/etc/user/data \
+		-v USER_CONFIG:/etc/user/config \
+	  	--name $FRAMEWORK_SCHEDULER_NAME \
+	  	--network $FRAMEWORK_SCHEDULER_NETWORK_SUBNET \
+	  $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION;
       /usr/bin/docker stop $HOSTNAME;
 fi;
 
@@ -283,16 +281,8 @@ fi;
 
 exit;
 
-# REDIS_SERVER EXISTENCE
-## REDIS_PORT EXISTENCE
-## VERSION CHECK
-start_redis
-echo `date`" Redis initialized"
-# WEBSERVER EXISTENCE
-## WEBSERVER_PORT EXISTENCE
-## VERSION CHECK
-start_webserver
-echo `date`" Webserver initialized"
+
+
 
 #### SUMMARY
 #########################################
