@@ -61,40 +61,7 @@ $DOCKER_REGISTRY_URL$SETUP"
 
 
 
-
-
-
-
-
-
-scheduler_manager(){
-
-      FRAMEWORK_NAME=$1;
-      FRAMEWORK_NETWORK=$2;
-      FRAMEWORK_SUBNET=$3;
-      FRAMEWORK_UPDATE=$4;
-
-      # TODO service exec json
-      if [ "$FRAMEWORK_NETWORK" == "0" ]; then
-            echo "Restarting the scheduler with the correct network"
-            docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_NETWORK_SUBNET
-      fi;
-
-      if [ "$FRAMEWORK_SUBNET" == "0" ]; then
-            echo "Creating network $FRAMEWORK_SCHEDULER_NETWORK"
-            docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_NETWORK_SUBNET
-      fi
-
-      if [ "$FRAMEWORK_NAME" == "0" ]; then
-            echo "Restarting the scheduler with the correct name"
-            docker stop $ACTUAL_FRAMEWORK_SCHEDULER_NAME
-            docker rm $ACTUAL_FRAMEWORK_SCHEDULER_NAME
-            docker run -d --name $FRAMEWORK_SCHEDULER_NAME --network $FRAMEWORK_SCHEDULER_NETWORK --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -v /scripts:/scripts $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_NAME
-      fi
-
-}
-
-check_dirs_and_files(){
+check_volumes(){
 
 	RET=1;
 	if [ ! -d "/etc/system/data/" ]; then
@@ -109,6 +76,9 @@ check_dirs_and_files(){
 		docker volume create USER_CONFIG;
 		RET=0;
 	fi;
+}
+
+check_dirs_and_files(){
 
 	if [ ! -d "/etc/user/config/services/" ]; then
 		mkdir /etc/user/config/services/
@@ -133,7 +103,7 @@ check_subnets(){
 	if [ "$RES" != "" ]; then
 		for R in $RES ; do
 			NUMBER=$(echo $R | cut -d '.' -f3);
-			if [[ $NUMBER > 0 && $NUMBER < 100 ]]; then
+			if [[ $NUMBER > 0 && $NUMBER < 255 ]]; then
 				echo $NUMBER;
 				echo "TODO"
 			fi;
@@ -151,23 +121,16 @@ check_framework_scheduler_status(){
             FRAMEWORK_NAME=0;
       fi
 
-      if [ "$(docker network ls --filter name=^$FRAMEWORK_SCHEDULER_NETWORK$ --format {{.Name}})" ]; then
-            echo "Network $FRAMEWORK_SCHEDULER_NETWORK is available, not needed to restart the scheduler"
 
-            if [ "$(docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" == "$FRAMEWORK_NETWORK_SUBNET" ]; then
-                  echo "Network $FRAMEWORK_SCHEDULER_NETWORK is available with the correct subnet, not needed to restart the scheduler"
-            else
-                  check_framework_subnet_availabity
-                  FRAMEWORK_SUBNET=0;
-            fi
-      else
-            FRAMEWORK_NETWORK=0;
-      fi
+    if [ "$(docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" == "$FRAMEWORK_NETWORK_SUBNET" ]; then
+	  echo "Network $FRAMEWORK_SCHEDULER_NETWORK is available with the correct subnet, not needed to restart the scheduler"
+    else
+	  check_framework_subnet_availabity
+	  FRAMEWORK_SUBNET=0;
+    fi
 
-      scheduler_manager $FRAMEWORK_NAME $FRAMEWORK_NETWORK $FRAMEWORK_SUBNET $FRAMEWORK_UPDATE
 
       #echo '{"FRAMEWORK_NAME": "$FRAMEWORK_NAME", "FRAMEWORK_NETWORK": "$FRAMEWORK_NETWORK"}'
-
 }
 
 
@@ -223,19 +186,19 @@ start_webserver () {
 }
 ### SYSTEM INITIALIZATION ###
 
-# CHECKING SYSTEM ENVIRONMENTS
-## DOCKER VARIABLES
 ## DOCKER NETWORK VARIABLES
-## VERSION CHECK
 ## FILESYSTEM VARIABLES
 ## PORTS VARIABLES
 ### RESTART SCHEDULER IF NEEDED
 
-check_dirs_and_files
+VOL=$(check_volumes)
+if [ "$VOL" != "1" ]; then
+      /usr/bin/docker run -d -v /var/run/docker.sock:/var/run/docker.sock --name $FRAMEWORK_SCHEDULER_NAME $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION
+      /usr/bin/docker stop $(ACTUAL_FRAMEWORK_SCHEDULER_NAME;
+fi;
 
 check_framework_scheduler_status $HOSTNAME
 
-check_framework_network_availabity
 
 # REDIS_SERVER EXISTENCE
 ## REDIS_PORT EXISTENCE
