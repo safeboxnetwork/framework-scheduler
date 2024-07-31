@@ -57,13 +57,10 @@ service_exec="/usr/bin/docker run --rm \
 -v USER_CONFIG:/etc/user/config:rw \
 $DNS $DNS_PATH \
 $CA $CA_FILE \
--e SERVICE_FILES=/etc/user/config/services \
 -w /etc/user/config/services/ \
 -v /var/run/docker.sock:/var/run/docker.sock \
 --env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
 $DOCKER_REGISTRY_URL$SETUP:1.0.1"
-
-
 
 check_volumes(){
 
