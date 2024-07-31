@@ -53,11 +53,11 @@ CA="--env CA_PATH=$CA_PATH"
 CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
 
 service_exec="/usr/bin/docker run --rm \
--v SYSTEM_DATA:/etc/system/data \
--v USER_CONFIG:/etc/user/config:rw \
 $DNS $DNS_PATH \
 $CA $CA_FILE \
 -w /etc/user/config/services/ \
+-v SYSTEM_DATA:/etc/system/data \
+-v USER_CONFIG:/etc/user/config:rw \
 -v /var/run/docker.sock:/var/run/docker.sock \
 --env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
 $DOCKER_REGISTRY_URL$SETUP:1.0.1"
