@@ -228,7 +228,8 @@ create_framework_json() {
 
 execute_task() {
       TASK="$1"
-      JSON="$2 | base64 -d"
+      JSON="$(echo $2 | base64 -d)"
+      DATE=$( date +"%Y%m%d%H%M")
 
       # Executing task
       echo "TASK: $(echo $TASK | cut -d ':' -f1)"
@@ -247,13 +248,12 @@ execute_task() {
 			  SERVICES=$SERVICES'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
                   done
 	    if [ "$SYSTEM_STATUS" != "" ]; then
-		    STATUS="1";
+		    INSTALL_STATUS="1";
             else
-		    STATUS="2";
+		    INSTALL_STATUS="2";
             fi
-            echo '{ "STATUS": "'$STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }';
 
-            JSON_TARGET=$(echo '{ "STATUS": "'$STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
       fi 
 
