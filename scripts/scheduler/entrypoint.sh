@@ -237,26 +237,25 @@ execute_task() {
       if [ "$TASK_NAME" == "init" ]; then
             # checking sytem status
             SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
-            if [ "$SYSTEM_STATUS" != "" ]; then
                   INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json | | cut -d '.' -f1);
-                  for SERVICE_IDX in $(echo $INSTALLED_SERVICES | wc -l); do
-                        PAYLOAD=$(echo '{ "INSTALLED_SERVICES": { "'$INSTALLED_SERVICES'": {} } }' | base64 -w0);
+		  SERVICES="";
+                  for SERVICE in $(echo $INSTALLED_SERVICES); do
+			  CONTENT=$(cat "/etc/user/config/services/"$SERVICE);
+			  if [ "$SERVICES" != "" ]; then
+				  SERVICES=",";
+		  	  fi;
+			  SERVICES=$SERVICES'"'$SERVICE'": { "'$CONTENT'"}';
                   done
-            
-                  JSON_TARGET=$(echo $JSON_TARGET | jq -rc .'STATUS="1"' | base64 -w0);
+                  PAYLOAD=$(echo '{ "INSTALLED_SERVICES": { '$SERVICES' } }' | jq -r . | base64 -w0);
+           
+	    if [ "$SYSTEM_STATUS" != "" ]; then
+                  JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="1"' | jq -rc .'PAYLOAD="'$PAYLOAD'"' | base64 -w0);
             else
-                  JSON_TARGET=$(echo $JSON | jq -rc .'INSTALLED_SERVICES=" '$INSTALLED_SERVICES'"' | base64 -w0);
-                  JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="2"' | base64 -w0);      
+                  JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="2"' | jq -rc .'PAYLOAD="'$PAYLOAD'"' | base64 -w0);      
             fi
 
-      if 
+      fi 
 
-      if [ "$?" == "0" ]; then
-            JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="1"' | base64 -w0);
-      else
-            JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="2"' | base64 -w0);
-      fi
-            
       redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
 }
 
