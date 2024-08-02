@@ -66,7 +66,7 @@ $CA \
 -w /etc/user/config/services/ \
 $VOLUME_MOUNTS \
 -v /var/run/docker.sock:/var/run/docker.sock \
---env VOLUME_MOUNTS=\"$VOLUME_MOUNTS\" \
+--env VOLUME_MOUNTS="$(echo $VOLUME_MOUNTS | base64 -w0)" \
 --env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
 --env SETUP_VERSION=$SETUP_VERSION \
 --env HOST_FILE=$HOST_FILE \
