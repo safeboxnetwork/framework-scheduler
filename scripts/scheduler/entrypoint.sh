@@ -72,7 +72,6 @@ $VOLUME_MOUNTS \
 --env HOST_FILE=$HOST_FILE \
 $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
 
-echo $service_exec;
 
 check_volumes(){
 
@@ -289,22 +288,11 @@ if [ "$DF" != "1" ]; then
 	create_system_json;
 	create_user_json;
 	create_framework_json;
-	$service_exec service-framework.containers.redis-server start &
-	$service_exec service-framework.containers.webserver start &
 fi;
 
-sleep 3600;
-exit
-
-
-
-
-#### SUMMARY
-#########################################
-# TESTING
-sleep 86400
-
-exit
+# START SERVICES
+$service_exec service-framework.containers.redis-server start &
+$service_exec service-framework.containers.webserver start &
 
 
 # poll redis infinitely for scheduler jobs
@@ -322,7 +310,7 @@ while true; do
             for I in $(echo $IDS); do
 
                   ### READ DATA FROM REDIS
-                 JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $I | base64 -d)
+                  JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $I | base64 -d)
                   DOMAIN=$(echo "$JSON" | jq -r '.DOMAIN')
                   TYPE=$(echo "$JSON" | jq -r '.TYPE')
                   ACTION=$(echo "$JSON" | jq -r '.ACTION')
@@ -331,13 +319,6 @@ while true; do
                   JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="0"' | base64 -w0);
                   redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $I "$JSON_TARGET";
                   
-                  if [ "$TYPE" == "DOMAIN" ]; then
-                        /scripts/zone2git.sh "$I" "$DOMAIN" "$ACTION" "$PAYLOAD" "$GIT_URL" "$TOKEN" "$REPO";
-                  
-                  elif [ "$TYPE" == "VPN" ]; then
-                        /scripts/create_vpn.sh "$I" "$DOMAIN" "$ACTION" "$PAYLOAD" "$REDIS_SERVER" "$REDIS_PORT" "$NAMESPACE" "$KUBERNETES" "$KUBERNETES_ENVIRONMENT" "$USER_INIT_PATH" "$VERSIONS_CONFIG_FILE" "$DOCKER_REGISTRY_URL" "$SMARTHOST_PROXY_PATH" "$MAIN_DOMAIN" "$SOURCE" "$PROXY_DELAY";
-                  fi
-                        
                   if [ "$?" == "0" ]; then
                         JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="1"' | base64 -w0);
                   else
