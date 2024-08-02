@@ -155,6 +155,7 @@ while true; do
          #         redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
 
          #   done
+	 echo "No tasks found."
       fi
       
       if [[ "$RET" == "" ]]; then
