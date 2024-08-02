@@ -136,7 +136,7 @@ check_framework_scheduler_status(){
 	ACTUAL_FRAMEWORK_SCHEDULER_NAME=$1;
 
 	RET=1;
-	if "$ACTUAL_FRAMEWORK_SCHEDULER_NAME" != "$FRAMEWORK_SCHEDULER_NAME"; then
+	if [ "$ACTUAL_FRAMEWORK_SCHEDULER_NAME" != "$FRAMEWORK_SCHEDULER_NAME" ]; then
 		RET=0;
 	else
 		desired_subnet=$FRAMEWORK_SCHEDULER_NETWORK_SUBNET
@@ -237,7 +237,7 @@ execute_task() {
       if [ "$TASK_NAME" == "init" ]; then
             # checking sytem status
             SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
-                  INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json | | cut -d '.' -f1);
+                  INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json | cut -d '.' -f1);
 		  SERVICES="";
                   for SERVICE in $(echo $INSTALLED_SERVICES); do
 			  CONTENT=$(cat "/etc/user/config/services/"$SERVICE);
