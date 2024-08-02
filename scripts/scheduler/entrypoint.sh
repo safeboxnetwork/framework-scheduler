@@ -237,22 +237,23 @@ execute_task() {
       if [ "$TASK_NAME" == "init" ]; then
             # checking sytem status
             SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
-                  INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json | cut -d '.' -f1);
+                  INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
 		  SERVICES="";
                   for SERVICE in $(echo $INSTALLED_SERVICES); do
-			  CONTENT=$(cat $SERVICE);
+			  CONTENT=$(cat $SERVICE | base64 -w0);
 			  if [ "$SERVICES" != "" ]; then
-				  SERVICES=",";
+				  SERVICES=","$SERVICES;
 		  	  fi;
-			  SERVICES=$SERVICES'"'$(basename $SERVICE)'": { "'$CONTENT'"}';
+			  SERVICES=$SERVICES'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
                   done
-                  PAYLOAD=$(echo '{ "INSTALLED_SERVICES": { '$SERVICES' } }' | jq -r . | base64 -w0);
-           
 	    if [ "$SYSTEM_STATUS" != "" ]; then
-                  JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="1"' | jq -rc .'PAYLOAD="'$PAYLOAD'"' | base64 -w0);
+		    STATUS="1";
             else
-                  JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="2"' | jq -rc .'PAYLOAD="'$PAYLOAD'"' | base64 -w0);      
+		    STATUS="2";
             fi
+            echo '{ "STATUS": "'$STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }';
+
+            JSON_TARGET=$(echo '{ "STATUS": "'$STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
       fi 
 
@@ -333,6 +334,10 @@ sleep 5;
 # poll redis infinitely for scheduler jobs
 check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHORT
 echo `date`" Scheduler initialized, starting listening for events"
+
+# STARTING SCHEDULER PROCESSES
+/scripts/scheduler.sh &
+
 while true; do
 
       TASKS=""
