@@ -226,6 +226,37 @@ create_framework_json() {
   ' | jq -r . >/etc/user/config/services/service-framework.json
 }
 
+execute_task() {
+      TASK="$1"
+      JSON="$2 | base64 -d"
+
+      # Executing task
+      echo "TASK: $(echo $TASK | cut -d ':' -f1)"
+      TASK_NAME=$(echo $TASK | cut -d ':' -f1);
+
+      if [ "$TASK_NAME" == "init" ]; then
+            # checking sytem status
+            SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
+            if [ "$SYSTEM_STATUS" != "" ]; then
+                  JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="1"' | base64 -w0);
+                  INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json | | cut -d '.' -f1);
+                  JSON_TARGET=$(echo $JSON | jq -rc .'INSTALLED_SERVICES="'$INSTALLED_SERVICES'"' | base64 -w0);
+            else
+                  JSON_TARGET=$(echo $JSON | jq -rc .'INSTALLED_SERVICES="'$INSTALLED_SERVICES'"' | base64 -w0);
+                  JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="2"' | base64 -w0);      
+            fi
+
+      if 
+
+      if [ "$?" == "0" ]; then
+            JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="1"' | base64 -w0);
+      else
+            JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="2"' | base64 -w0);
+      fi
+            
+      redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
+}
+
 check_redis_availability() {
       REDIS_SERVER="$1"
       REDIS_PORT="$2"
@@ -302,36 +333,26 @@ check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHO
 echo `date`" Scheduler initialized, starting listening for events"
 while true; do
 
-      IDS=""
+      TASKS=""
 
       # GET DEPLOYMENT IDs FROM generate key
-      IDS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
-      if [[ "$IDS" != "0" && "$IDS" != "" ]]; then
+      TASKS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
+      if [[ "$TASKS" != "0" && "$TASKS" != "" ]]; then
 
-            # PROCESSING IDS
-            for I in $(echo $IDS); do
+            # PROCESSING TASK
+            for TASK in $(echo $TASKS); do
 
-                  ### READ DATA FROM REDIS
-                  JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $I | base64 -d)
-                  DOMAIN=$(echo "$JSON" | jq -r '.DOMAIN')
-                  TYPE=$(echo "$JSON" | jq -r '.TYPE')
-                  ACTION=$(echo "$JSON" | jq -r '.ACTION')
-                  PAYLOAD=$(echo "$JSON" | jq -r '.PAYLOAD')
+                  ### READ TASKS FROM REDIS
+                  JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK | base64 -d)
 
                   JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="0"' | base64 -w0);
-                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $I "$JSON_TARGET";
+                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
+
+                  execute_task $TASK $JSON &
                   
-                  if [ "$?" == "0" ]; then
-                        JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="1"' | base64 -w0);
-                  else
-                        JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="2"' | base64 -w0);
-                  fi
-                        
-                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $I "$JSON_TARGET";
-                  
-                  # MOVE ID from generate into generated
-                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $I
-                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $I
+                  # MOVE TASK from generate into generated
+                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
+                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
 
             done
       fi
