@@ -240,11 +240,11 @@ execute_task() {
                   INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json | cut -d '.' -f1);
 		  SERVICES="";
                   for SERVICE in $(echo $INSTALLED_SERVICES); do
-			  CONTENT=$(cat "/etc/user/config/services/"$SERVICE);
+			  CONTENT=$(cat $SERVICE);
 			  if [ "$SERVICES" != "" ]; then
 				  SERVICES=",";
 		  	  fi;
-			  SERVICES=$SERVICES'"'$SERVICE'": { "'$CONTENT'"}';
+			  SERVICES=$SERVICES'"'$(basename $SERVICE)'": { "'$CONTENT'"}';
                   done
                   PAYLOAD=$(echo '{ "INSTALLED_SERVICES": { '$SERVICES' } }' | jq -r . | base64 -w0);
            
