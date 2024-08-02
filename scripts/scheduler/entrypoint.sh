@@ -42,25 +42,37 @@ else
     DOCKER_REGISTRY_URL=""
 fi
 
-mkdir -p /etc/system/data/dns
+SETUP_VERSION="1.0.1"
+
+# $DNS_PATH \
+#$CA_FILE \
 DNS_DIR="/etc/system/data/dns"
 DNS="--env DNS_DIR=$DNS_DIR"
-DNS_PATH="--volume $DNS_DIR:/etc/dns:rw"
+DNS_PATH="--volume $DNS_DIR:/etc/system/data/dns:rw"
+HOST_FILE=$DNS_DIR"/hosts.local"
+mkdir -p $DNS_DIR
+touch $HOST_FILE;
 
-mkdir -p /etc/system/data/ssl/certs
 CA_PATH=/etc/system/data/ssl/certs
 CA="--env CA_PATH=$CA_PATH"
 CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
+mkdir -p $CA_PATH
+
+VOLUME_MOUNTS="-v SYSTEM_DATA:/etc/system/data -v USER_CONFIG:/etc/user/config:rw";
 
 service_exec="/usr/bin/docker run --rm \
-$DNS $DNS_PATH \
-$CA $CA_FILE \
+$DNS \
+$CA \
 -w /etc/user/config/services/ \
--v SYSTEM_DATA:/etc/system/data \
--v USER_CONFIG:/etc/user/config:rw \
+$VOLUME_MOUNTS \
 -v /var/run/docker.sock:/var/run/docker.sock \
+--env VOLUME_MOUNTS=\"$VOLUME_MOUNTS\" \
 --env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
-$DOCKER_REGISTRY_URL$SETUP:1.0.1"
+--env SETUP_VERSION=$SETUP_VERSION \
+--env HOST_FILE=$HOST_FILE \
+$DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
+
+echo $service_exec;
 
 check_volumes(){
 
@@ -277,8 +289,8 @@ if [ "$DF" != "1" ]; then
 	create_system_json;
 	create_user_json;
 	create_framework_json;
-	$service_exec service-framework.containers.redis-server start info &
-	$service_exec service-framework.containers.webserver start info &
+	$service_exec service-framework.containers.redis-server start &
+	$service_exec service-framework.containers.webserver start &
 fi;
 
 sleep 3600;
