@@ -336,7 +336,7 @@ check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHO
 echo `date`" Scheduler initialized, starting listening for events"
 
 # STARTING SCHEDULER PROCESSES
-/scripts/scheduler.sh &
+#/scripts/scheduler.sh &
 
 while true; do
 

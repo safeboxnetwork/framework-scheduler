@@ -76,32 +76,35 @@ $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
 check_status() {
 
   # checking sytem status
-  RET=0;
-  DATE=$( date +"%Y%m%d%H%M")
-  TASK="system-status:$DATE"
-  SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
-        INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
-        SERVICES="";
-        for SERVICE in $(echo $INSTALLED_SERVICES); do
-      	  CONTENT=$(cat $SERVICE | base64 -w0);
-      	  if [ "$SERVICES" != "" ]; then
-      		  SERVICES=","$SERVICES;
-        	  fi;
-      	  SERVICES=$SERVICES'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
-        done
-  if [ "$SYSTEM_STATUS" != "" ]; then
-          STATUS="1";
-  else
-          STATUS="2";
-  fi
-  echo '{ "STATUS": "'$STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }';
+  if [ "$STATUS" != "1" ]; then
 
-  JSON_TARGET=$(echo '{ "STATUS": "'$STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
-
- 
-
- redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
- redis-cli -h $REDIS_SERVER -p $REDIS_PORT sadd shceduler_in "$TASK";
+	  RET=0;
+	  DATE=$( date +"%Y%m%d%H%M")
+	  TASK="system-status"
+	  SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
+	        INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
+	        SERVICES="";
+	        for SERVICE in $(echo $INSTALLED_SERVICES); do
+	      	  CONTENT=$(cat $SERVICE | base64 -w0);
+	      	  if [ "$SERVICES" != "" ]; then
+	      		  SERVICES=","$SERVICES;
+	        	  fi;
+	      	  SERVICES=$SERVICES'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
+	        done
+	  if [ "$SYSTEM_STATUS" != "" ]; then
+	          STATUS="1";
+	  else
+	          STATUS="2";
+	  fi
+	  echo '{ "STATUS": "'$STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }';
+	
+	  JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+	
+	 
+	
+	 redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
+	 redis-cli -h $REDIS_SERVER -p $REDIS_PORT sadd scheduler_in "$TASK";
+ fi
  RET="";
 }
 
@@ -134,6 +137,7 @@ check_redis_availability() {
 while true; do 
 
       TASKS=""
+      SLEEP=1;
 
       # GET DEPLOYMENT IDs FROM generate key
       TASKS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS scheduler_out)
@@ -159,6 +163,8 @@ while true; do
       fi
       
       if [[ "$RET" == "" ]]; then
+	        SLEEP=$((SLEEP+5))
+		sleep $SLEEP;
       		check_status
       fi
       
