@@ -123,7 +123,7 @@ check_subnets(){
 	if [ "$RES" != "" ]; then
 		for R in $RES ; do
 			NUMBER=$(echo $R | cut -d '.' -f3);
-			if [[ $NUMBER -ge 0 && $NUMBER < 255 ]]; then
+			if [[ $NUMBER -ge 0 && $NUMBER -le 254 ]]; then
 				RET=0
 			fi;
 		done;
