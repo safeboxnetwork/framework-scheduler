@@ -290,6 +290,9 @@ if [ "$DF" != "1" ]; then
 	create_framework_json;
 fi;
 
+
+echo "$service_exec service-framework.containers.webserver start &";
+
 # START SERVICES
 $service_exec service-framework.containers.redis-server start &
 $service_exec service-framework.containers.webserver start &
