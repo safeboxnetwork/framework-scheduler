@@ -238,11 +238,14 @@ execute_task() {
             # checking sytem status
             SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
             if [ "$SYSTEM_STATUS" != "" ]; then
-                  JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="1"' | base64 -w0);
                   INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json | | cut -d '.' -f1);
-                  JSON_TARGET=$(echo $JSON | jq -rc .'INSTALLED_SERVICES="'$INSTALLED_SERVICES'"' | base64 -w0);
+                  for SERVICE_IDX in $(echo $INSTALLED_SERVICES | wc -l); do
+                        PAYLOAD=$(echo '{ "INSTALLED_SERVICES": { "'$INSTALLED_SERVICES'": {} } }' | base64 -w0);
+                  done
+            
+                  JSON_TARGET=$(echo $JSON_TARGET | jq -rc .'STATUS="1"' | base64 -w0);
             else
-                  JSON_TARGET=$(echo $JSON | jq -rc .'INSTALLED_SERVICES="'$INSTALLED_SERVICES'"' | base64 -w0);
+                  JSON_TARGET=$(echo $JSON | jq -rc .'INSTALLED_SERVICES=" '$INSTALLED_SERVICES'"' | base64 -w0);
                   JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="2"' | base64 -w0);      
             fi
 
