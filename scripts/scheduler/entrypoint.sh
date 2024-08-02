@@ -15,7 +15,7 @@ WEB_SERVER=${WEB_SERVER:-webserver}
 WEB_IMAGE=${WEB_IMAGE:-web-installer}
 WEBSERVER_PORT=${WEBSERVER_PORT:-8080}
 WEBSERVER_VERSION=${WEBSERVER_VERSION:-latest}
-REDIS_SERVER=${REDIS_SERVER:-redis}
+REDIS_SERVER=${REDIS_SERVER:-redis-server}
 REDIS_PORT=${REDIS_PORT:-6379}
 REDIS_IMAGE=${REDIS_IMAGE:-redis}
 REDIS_VERSION=${REDIS_VERSION:-latest}
@@ -184,7 +184,7 @@ create_framework_json() {
   "containers": [
     {
       "IMAGE": "redis:'$REDIS_VERSION'",
-      "NAME": "redis-server",
+      "NAME": "'$REDIS_SERVER'",
       "UPDATE": "true",
       "MEMORY": "64M",
       "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
@@ -214,7 +214,7 @@ create_framework_json() {
       "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
       '$ADDITIONAL',
       "PORTS":[
-        { "SOURCE": "8080",
+        { "SOURCE": "'$WEBSERVER_PORT'",
           "DEST": "80",
           "TYPE": "tcp"
         }
@@ -291,11 +291,10 @@ if [ "$DF" != "1" ]; then
 fi;
 
 
-echo "$service_exec service-framework.containers.webserver start &";
-
 # START SERVICES
 $service_exec service-framework.containers.redis-server start &
 $service_exec service-framework.containers.webserver start &
+sleep 5;
 
 
 # poll redis infinitely for scheduler jobs
