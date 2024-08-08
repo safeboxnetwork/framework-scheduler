@@ -311,6 +311,7 @@ if [ "$VOL" != "1" ]; then
 		-v SYSTEM_LOG:/etc/system/log \
 		-v USER_DATA:/etc/user/data \
 		-v USER_CONFIG:/etc/user/config \
+	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--name $FRAMEWORK_SCHEDULER_NAME \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 	  $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION;
