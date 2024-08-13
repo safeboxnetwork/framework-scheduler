@@ -442,8 +442,8 @@ if [ "$ADDITIONALS" == "yes" ]; then
 	$DOCKER_REGISTRY_URL/installer-tool
 fi
 
-shopt -s expand_aliases
-source $HOME/.bash_aliases
+#shopt -s expand_aliases
+#source $HOME/.bash_aliases
 
 if [ "$ADDITIONAL_SERVICES" != "" ]; then 
 	for ADDITIONAL_SERVICE in $(echo $ADDITIONAL_SERVICES); do
