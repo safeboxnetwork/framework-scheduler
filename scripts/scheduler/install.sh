@@ -55,7 +55,7 @@ ask_envs() {
 discover_services() {
 	if [ "$DISCOVERY" == "yes" ]; then
 		if [ "$DISCOVERY_CONFIG_FILE" == "discovery.conf" ] ; then
-			DISCOVERY_CONFIG_FILE=$PWD"/discovery.conf";
+			DISCOVERY_CONFIG_FILE=$AUTO_START_SERVICES"/discovery.conf";
 			if [ ! -f $DISCOVERY_CONFIG_FILE ]; then
 				USE_SUDO=$(whoami);
 				if [ "$USE_SUDO" == "root" ]; then
@@ -124,7 +124,7 @@ check_dirs_and_files() { # TODO?
 	fi;
 
 	{
-		echo "alias service-debian='$SUDO_CMD docker run --rm \
+		echo "alias $SERVICE-EXEC='$SUDO_CMD docker run --rm \
  -w /services/ \
  -e DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
  -e USER_INIT_PATH=/etc/user/config \
@@ -290,7 +290,7 @@ if [ "$INIT" == "true" ]; then
 	INIT_SERVICE_PATH=/etc/user/config/services
 	AUTO_START_SERVICES="/etc/system/data/";
 
-	# type -a service-debian
+	# type -a $SERVICE-EXEC
 
 	$SERVICE_EXEC core-dns start
 	echo "$INIT_SERVICE_PATH/core-dns.json" >> $AUTO_START_SERVICES/.init_services
@@ -447,8 +447,8 @@ fi
 
 if [ "$ADDITIONAL_SERVICES" != "" ]; then 
 	for ADDITIONAL_SERVICE in $(echo $ADDITIONAL_SERVICES); do
-		service-debian $ADDITIONAL_SERVICE start
-		echo "$INIT_SERVICE_PATH/$ADDITIONAL_SERVICE.json" >> $PWD/.init_services
+		$SERVICE-EXEC $ADDITIONAL_SERVICE start
+		echo "$INIT_SERVICE_PATH/$ADDITIONAL_SERVICE.json" >> $AUTO_START_SERVICES/.init_services
 	done
 fi
 
@@ -496,7 +496,7 @@ if [ "$DEBIAN" == "true" ] || [ "$GENTOO" == "true" ] ; then
 		$SUDO_CMD mv /tmp/$DISCOVERY_CONFIG_FILENAME /usr/local/etc/$DISCOVERY_CONFIG_FILENAME
 
 		{
-			cat $PWD/.init_services;
+			cat $AUTO_START_SERVICES/.init_services;
 			cat $DEST_FILE;
 		} > /tmp/$DEST_FILE
 
@@ -528,5 +528,5 @@ WantedBy=multi-user.target
 	fi;
 fi;
 
-rm $PWD/.init_services
+rm $AUTO_START_SERVICES/.init_services
 
