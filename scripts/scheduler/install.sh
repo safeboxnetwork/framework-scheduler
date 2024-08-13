@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/sh
+
+SERVICE_EXEC=$2
 
 ask_envs() {
 	echo "VPN proxy? (Y/n)";
@@ -278,55 +280,56 @@ else
 
 fi;
 
-	# test - alias doesn't work inside a function
-	# must be outside of if
-	shopt -s expand_aliases
-	source $HOME/.bash_aliases
+	# # test - alias doesn't work inside a function
+	# # must be outside of if
+	# shopt -s expand_aliases
+	# source $HOME/.bash_aliases
 
 if [ "$INIT" == "true" ]; then
 
 	INIT_SERVICE_PATH=/etc/user/config/services
+	AUTO_START_SERVICES="/etc/system/data/";
 
-	type -a service-debian
+	# type -a service-debian
 
-	service-debian core-dns start
-	echo "$INIT_SERVICE_PATH/core-dns.json" >> $PWD/.init_services
+	$SERVICE_EXEC core-dns start
+	echo "$INIT_SERVICE_PATH/core-dns.json" >> $AUTO_START_SERVICES/.init_services
 
 	if [ "$CRON" == "yes" ]; then
-		service-debian cron start
-		echo "$INIT_SERVICE_PATH/cron.json" >> $PWD/.init_services
+		$SERVICE_EXEC cron start
+		echo "$INIT_SERVICE_PATH/cron.json" >> $AUTO_START_SERVICES/.init_services
 	fi
 
 	if [ "$VPN_PROXY" == "yes" ]; then
-		service-debian vpn-proxy start
-		echo "$INIT_SERVICE_PATH/vpn-proxy.json" >> $PWD/.init_services
-		echo "$INIT_SERVICE_PATH/firewall-vpn-smarthost-loadbalancer" >> $PWD/.init_services 
-		echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-postrouting" >> $PWD/.init_services
-		echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-prerouting" >> $PWD/.init_services
+		$SERVICE_EXEC vpn-proxy start
+		echo "$INIT_SERVICE_PATH/vpn-proxy.json" >> $AUTO_START_SERVICES/.init_services
+		echo "$INIT_SERVICE_PATH/firewall-vpn-smarthost-loadbalancer" >> $AUTO_START_SERVICES/.init_services 
+		echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-postrouting" >> $AUTO_START_SERVICES/.init_services
+		echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-prerouting" >> $AUTO_START_SERVICES/.init_services
 
 	fi
 
 	if [ "$SMARTHOST_PROXY" == "yes" ]; then
-		service-debian smarthost-proxy start
-		service-debian smarthost-proxy-scheduler start
-		service-debian local-proxy start
+		$SERVICE_EXEC smarthost-proxy start
+		$SERVICE_EXEC smarthost-proxy-scheduler start
+		$SERVICE_EXEC local-proxy start
 
-		echo "$INIT_SERVICE_PATH/smarthost-proxy.json" >> $PWD/.init_services
-		echo "$INIT_SERVICE_PATH/firewall-smarthost-loadbalancer-dns.json" >> $PWD/.init_services
-		echo "$INIT_SERVICE_PATH/firewall-letsencrypt.json" >> $PWD/.init_services
-		echo "$INIT_SERVICE_PATH/firewall-smarthostloadbalancer-from-publicbackend.json" >> $PWD/.init_services
-		echo "$INIT_SERVICE_PATH/firewall-smarthost-backend-dns.json" >> $PWD/.init_services
-		echo "$INIT_SERVICE_PATH/firewall-smarthost-to-backend.json" >> $PWD/.init_services
-		echo "$INIT_SERVICE_PATH/smarthost-proxy-scheduler.json" >> $PWD/.init_services
-		echo "$INIT_SERVICE_PATH/local-proxy.json" >> $PWD/.init_services
+		echo "$INIT_SERVICE_PATH/smarthost-proxy.json" >> $AUTO_START_SERVICES/.init_services
+		echo "$INIT_SERVICE_PATH/firewall-smarthost-loadbalancer-dns.json" >> $AUTO_START_SERVICES/.init_services
+		echo "$INIT_SERVICE_PATH/firewall-letsencrypt.json" >> $AUTO_START_SERVICES/.init_services
+		echo "$INIT_SERVICE_PATH/firewall-smarthostloadbalancer-from-publicbackend.json" >> $AUTO_START_SERVICES/.init_services
+		echo "$INIT_SERVICE_PATH/firewall-smarthost-backend-dns.json" >> $AUTO_START_SERVICES/.init_services
+		echo "$INIT_SERVICE_PATH/firewall-smarthost-to-backend.json" >> $AUTO_START_SERVICES/.init_services
+		echo "$INIT_SERVICE_PATH/smarthost-proxy-scheduler.json" >> $AUTO_START_SERVICES/.init_services
+		echo "$INIT_SERVICE_PATH/local-proxy.json" >> $AUTO_START_SERVICES/.init_services
 		
 		echo "Would you like to run local backend? (Y/n)";
 		read -r ANSWER;
 		if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ] ; then
-			service-debian local-backend start
-			echo "$INIT_SERVICE_PATH/local-backend.json" >> $PWD/.init_services
-			echo "$INIT_SERVICE_PATH/firewall-local-backend.json" >> $PWD/.init_services
-			echo "$INIT_SERVICE_PATH/domain-local-backend.json" >> $PWD/.init_services
+			$SERVICE_EXEC local-backend start
+			echo "$INIT_SERVICE_PATH/local-backend.json" >> $AUTO_START_SERVICES/.init_services
+			echo "$INIT_SERVICE_PATH/firewall-local-backend.json" >> $AUTO_START_SERVICES/.init_services
+			echo "$INIT_SERVICE_PATH/domain-local-backend.json" >> $AUTO_START_SERVICES/.init_services
 		fi
 	fi
 
