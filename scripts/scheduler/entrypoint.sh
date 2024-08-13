@@ -257,7 +257,7 @@ execute_task() {
 
       elif [ "$TASK_NAME" == "install" ]; then
 	    # TODO - start install.sh
-            /scripts/install.sh "$B64_JSON"
+            sh /scripts/install.sh "$B64_JSON"
 
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": 1 }' | jq -r . | base64 -w0); # TEST
             #JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
