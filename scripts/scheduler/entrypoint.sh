@@ -228,7 +228,7 @@ create_framework_json() {
 
 execute_task() {
       TASK="$1"
-      JSON="$(echo $2 | base64 -d)"
+      B64_JSON="$2"
       DATE=$( date +"%Y%m%d%H%M")
 
       # Executing task
@@ -248,16 +248,19 @@ execute_task() {
 			  SERVICES=$SERVICES'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
                   done
 	    if [ "$SYSTEM_STATUS" != "" ]; then
-		    INSTALL_STATUS="1";
+		    INSTALL_STATUS="1"; # has previous install
             else
-		    INSTALL_STATUS="2";
+		    INSTALL_STATUS="2"; # new install
             fi
 
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
       elif [ "$TASK_NAME" == "install" ]; then
-      
+	    # TODO - start install.sh
+            /scripts/install.sh "$B64_JSON"
 
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": 1 }' | jq -r . | base64 -w0); # TEST
+            #JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
       fi 
 
       redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
@@ -354,12 +357,12 @@ while true; do
             for TASK in $(echo $TASKS); do
 
                   ### READ TASKS FROM REDIS
-                  JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK | base64 -d)
+                  B64_JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK)
 
-                  JSON_TARGET=$(echo $JSON | jq -rc .'STATUS="0"' | base64 -w0);
+                  JSON_TARGET=$(echo $B64_JSON | base64 -d | jq -rc .'STATUS="0"' | base64 -w0);
                   redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
 
-                  execute_task $TASK $JSON &
+                  execute_task "$TASK" "$B64_JSON"
                   
                   # MOVE TASK from generate into generated
                   redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
