@@ -190,7 +190,7 @@ JSON="$(echo $1 | base64 -d)"
 # Loop through each key in the JSON and create a variable
 for key in $(echo "$JSON" | jq -r 'keys[]'); do
   value=$(echo "$JSON" | jq -r --arg k "$key" '.[$k]')
-  declare "$key=$value"
+  eval "$key=$value"
 done
 
 
