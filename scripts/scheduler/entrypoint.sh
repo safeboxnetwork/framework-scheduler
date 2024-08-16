@@ -4,6 +4,7 @@ cd /scripts
 
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 USER_INIT_PATH=$USER_INIT_PATH
+GLOBAL_VERSION=${GLOBAL_VERSION:-1.0.1}
 
 FRAMEWORK_SCHEDULER_IMAGE=${FRAMEWORK_SCHEDULER_IMAGE:-framework-scheduler}
 FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
@@ -23,7 +24,7 @@ REDIS_VERSION=${REDIS_VERSION:-latest}
 SOURCE=${SOURCE:-user-config}
 SMARTHOST_PROXY_PATH=$SMARTHOST_PROXY_PATH
 
-
+INSTALL_KEY=${INSTALL_KEY:-"LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUJsd0FBQUFkemMyZ3RjbgpOaEFBQUFBd0VBQVFBQUFZRUE5a3NPaTVyaVFvczB3SVU0Y1ZQYmFmYlpuVDE4OE4rWHp4OEEra2h5STBEd3ZvRytMQjFzCitIcm1UZGZ0eWhNM0wzeWlSYms3b0U3c2VrSkhSMEIrV0dsSVNBcjFiZml6NWtWWmdvd2xoUU1KalVuV1B1bWZYZmVneHcKSDlrcFdrWW9UalFiR01INTV6d3M3V2NxREVjRnFTU0pWYytVYVQ3L2cvSGJFYVZNTW9MdDdabnl3UjRJLzhqSW8vM2llcwpGZStyLzRmbDh3cHRBS3gxUzB4SmdpMDlrbWJVMHJuN3Njd0l6N2l0TlVyYVNIc2YxZjJqTFIxdjE4a3lISDBBd1dNRmdWCmxlVG0yWVZwd3pnTkZPOVlHL3RhVXlBZ2FsZlp2Syt3VW9DazNWRkx4Y3JlQkRPei9Ka0pQWHF3bHl5NnF6am9zWVJGaVAKNHI3MlZXbEJJSTdYbXNwV0pLc3JIdXdvNWU5dW9QK2pkelhjd0Q3UFlLNm45Q1VSUS9YNFg1ZmV2ZE9QcDlDdFcwTTc5YQpQaVpPMGZpUHoxQzkyb002ZHBGM1ZpTklicjVENzYreXNQcVZCaU5kYjkrWENQVGhMckVObVlrcStoTkdFVlFRN3ZKUnpmCjhVaGFSYjlsM3BBVjZBcUNYU0Z6bm1GR2ZmalVBb2tFRFI3eEwybW5BQUFGaU5DVlZaalFsVldZQUFBQUIzTnphQzF5YzIKRUFBQUdCQVBaTERvdWE0a0tMTk1DRk9IRlQyMm4yMlowOWZQRGZsODhmQVBwSWNpTkE4TDZCdml3ZGJQaDY1azNYN2NvVApOeTk4b2tXNU82Qk83SHBDUjBkQWZsaHBTRWdLOVczNHMrWkZXWUtNSllVRENZMUoxajdwbjEzM29NY0IvWktWcEdLRTQwCkd4akIrZWM4TE8xbktneEhCYWtraVZYUGxHaysvNFB4MnhHbFRES0M3ZTJaOHNFZUNQL0l5S1A5NG5yQlh2cS8rSDVmTUsKYlFDc2RVdE1TWUl0UFpKbTFOSzUrN0hNQ00rNHJUVksya2g3SDlYOW95MGRiOWZKTWh4OUFNRmpCWUZaWGs1dG1GYWNNNApEUlR2V0J2N1dsTWdJR3BYMmJ5dnNGS0FwTjFSUzhYSzNnUXpzL3laQ1QxNnNKY3N1cXM0NkxHRVJZaitLKzlsVnBRU0NPCjE1cktWaVNyS3g3c0tPWHZicUQvbzNjMTNNQSt6MkN1cC9RbEVVUDErRitYM3IzVGo2ZlFyVnRETy9XajRtVHRINGo4OVEKdmRxRE9uYVJkMVlqU0c2K1ErK3ZzckQ2bFFZalhXL2Zsd2owNFM2eERabUpLdm9UUmhGVUVPN3lVYzMvRklXa1cvWmQ2UQpGZWdLZ2wwaGM1NWhSbjM0MUFLSkJBMGU4UzlwcHdBQUFBTUJBQUVBQUFHQkFMaVY1Zy9SQTdQMW1wS1RCWXRCMnRhZXo5CmRkeHU3TDFIM0JjYjBpWUpCMVVqaWxDajhMeXFpcmkwRmFESGYvVU1QQk4ramplNEdZeFBpWUJjMnIwMFUxbXB1THd3Y3AKZHNLa3hRSG5RUk5nQkYra3IvSTBxMkVFZnJYSGt5Q3lFQ0phRCt3alFhNU0xZHR4b3gwRHlsV2VPN1kwWXhyYnYzSUE3bQpTMVg5T1k4OXUwM3dyQlA2QzZxUDgzZWNob21UdFRoZWVjRlVYQ1VaRklyeHZBei9MRkx6a3k0bHdRVVVlZWNCZ21BNEpHCldEUXNPdDdwR2N0dEhXNXU5cVNOTlhSWFZqT2RMQUsxS1cwU1FJbU9lRm4rQjVmbzdRMlo2OHBGTjAzK1FKMGQ3OS9ka3gKcG1IbFZxandMUXNNNkxlNG43cS9BRmh2SCtCUGtnOGdUcXI4eGlmWVBKdm9sY0xRSmhhdXBmaFlrVlVhK1lIdDR6NHBaUAozOHhTUWZOQmlyb1BnT0tnSEprMk5YUGIvREpPWlp0UmxpRnM1TUU3Z1hzY1ZMYUF0c0pUUUcyVlAyNmlOTHc5aFZFblo1CnlqbEZaUk15M2VjL3hka21UQnprWlZDWjBlc0hUN3hxUTJmanc1ejBNR01wWkpkQnVhdG9xODFvWld6dkk3THBKTFFRQUEKQU1CQi93aThlQ3ZId1g3NDJNYnQrQXN3U3IwZkhBMnQ0ZGNmcG9hSHAyeDRzWTJLVG5QNCsrdzEzNkNIZlYrZEJZM2x3SgpySHdqT1k3UzV3aHBseEdCVEg3dVlvUi85Vnh0TE9hS0NFMCtuZFFpY3ZMK0N0VEo4cFBEWFdWZ0dKcTd3TXhTZGMzWVBQCnRkMk1DOEVaVnN6blZ0a09KdlErU2gwK244YjhoYUxsU21NYzJqUU1MVlVUU3F3R1AwK0NLbG9lTzNTWEpsa1R1Y2pCMC8KbkR3dUZwYkl6U3JrOEJaOVl0UWZHY2xLTmpPRzJCOFdiV2FtRmdWUmhsdGYwV2pYSUFBQURCQVB4MmlYZGo0eVBid3RWSApvUlg4UjRZVlZtVXluWGZKb3YySW9mUFJCNVZPNlJmNTNiMUJaYVFEVCs4ZG1ybHNtSWZjaG5oQVVCdGgrYUQyWDRWVDg1CmIwVDY2UTNSTk05bU16QlROaldvMUhlZnJGQlVLZTZMVldmUDhVOUxoanQ1WVZGNWhTWjdvaGtnNDUxTXRBbXlwYXppZ1MKNWZxVXhDeFFsbjVYd3lrOUd6ZERqVThnOEtNYWJ4WkhhTU9VVHdJN1FXZlV1QWcya1EzUUJNRTZWL2tQOHlKU0V0SHNwOQp1TitiM0JGUlM1U3RIcTVFQnhORTM0Q2IrYmp0S2JZUUFBQU1FQStiNWtQd1ZTamY1bEhkMkpQV29TdWpMZUN5UHJsV2NVClVHWjJIUG9GRGl6SEJrajNmcUhLZXdvbE9ENGZOK0ZHb0VWcTdmbDZ0M3lkWnVOMkxsR0tPejB4dFhoNnlZclVZQlV5d0QKeW9ZMGd4WWY3eUhMYVFhZ1pQNDRqWGhrMzRYTmFwTFRQbGk5R0dCYnZTU0RGQTVIWmRCRnA4cDhLajhDclplKzBRZ3BZMgo3b0o0NzVXVlNkZEZIdkVzcFdoVWg2c3ZqcXM3RHpjdklSdk52M3B4ZWsxenpWY0JsY1RBTW5LeXRKNEg0L0hLc2VYSHIyCnZnOXVTZjFrMTdkMm9IQUFBQURISnZiM1JBYm1WM2VXOXlhd0VDQXdRRkJnPT0KLS0tLS1FTkQgT1BFTlNTSCBQUklWQVRFIEtFWS0tLS0tCg=="}
 GIT_URL=$GIT_URL
 TOKEN=$TOKEN
 REPO=$REPO
@@ -42,7 +43,7 @@ else
     DOCKER_REGISTRY_URL=""
 fi
 
-SETUP_VERSION="1.0.1"
+SETUP_VERSION=${SETUP_VERSION:-$GLOBAL_VERSION}
 
 # $DNS_PATH \
 #$CA_FILE \
@@ -58,7 +59,7 @@ CA="--env CA_PATH=$CA_PATH"
 CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
 mkdir -p $CA_PATH
 
-VOLUME_MOUNTS="-v SYSTEM_DATA:/etc/system/data -v USER_CONFIG:/etc/user/config:rw";
+VOLUME_MOUNTS="-v SYSTEM_DATA:/etc/system/data -v USER_CONFIG:/etc/user/config:rw -v SYSTEM_CONFIG:/etc/system/config:rw";
 
 service_exec="/usr/bin/docker run --rm \
 $DNS \
@@ -69,6 +70,7 @@ $VOLUME_MOUNTS \
 --env VOLUME_MOUNTS="$(echo $VOLUME_MOUNTS | base64 -w0)" \
 --env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
 --env SETUP_VERSION=$SETUP_VERSION \
+--env GLOBAL_VERSION=$GLOBALL_VERSION \
 --env HOST_FILE=$HOST_FILE \
 $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
 
@@ -78,6 +80,10 @@ check_volumes(){
 	RET=1;
 	if [ ! -d "/etc/system/data/" ]; then
 		/usr/bin/docker volume create SYSTEM_DATA;
+		RET=0;
+	fi
+	if [ ! -d "/etc/system/config/" ]; then
+		/usr/bin/docker volume create SYSTEM_CONFIG;
 		RET=0;
 	fi
       	if [ ! -d "/etc/system/log/" ]; then
@@ -111,6 +117,14 @@ check_dirs_and_files(){
 		fi;
 	fi;
 
+	if [ ! -d "/etc/system" ]; then
+		mkdir "/etc/system"
+	fi;
+
+	if [ ! -d "/etc/user/secret" ]; then
+		mkdir -p "/etc/user/secret"
+	fi;
+
 	echo $RET;
 }
 
@@ -118,7 +132,6 @@ check_subnets(){
 
 	RET=1;
 	SUBNETS=$(for ALL in $(/usr/bin/docker network ls | grep bridge | awk '{print $1}') ; do /usr/bin/docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' ; done)
-
 	RES=$(echo "$SUBNETS" | grep "172.19.");
 	if [ "$RES" != "" ]; then
 		for R in $RES ; do
@@ -257,13 +270,52 @@ execute_task() {
 
       elif [ "$TASK_NAME" == "install" ]; then
 	    # TODO - start install.sh
-            sh /scripts/install.sh "$B64_JSON" "$service-exec"
+            sh /scripts/install.sh "$B64_JSON" "$service_exec" "true" "$INSTALL_KEY" "$GLOBAL_VERSION"
 
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": 1 }' | jq -r . | base64 -w0); # TEST
             #JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
       fi 
 
       redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
+}
+
+check_running() {
+
+	DOCKERD_STATUS="0";
+
+	### From Redis
+	# bridge check
+	BRIDGE_NUM=$($SUDO_CMD docker network ls | grep bridge | awk '{print $2":"$3}' | sort | uniq | wc -l);
+
+	CONTAINER_NUM=$($SUDO_CMD docker ps -a | wc -l);
+
+	if [ "$BRIDGE_NUM" != "1" ] && [ "$CONTAINER_NUM" != "1" ]; then
+
+		echo "There are existing containers and/or networks.";
+		echo "Please select from the following options (1/2/3):";
+
+		echo "1 - Delete all existing containers and networks before installation";
+		echo "2 - Stop the installation process";
+		echo "3 - Just continue on my own risk";
+		
+		read -r ANSWER;
+
+		if [ "$ANSWER" == "1" ]; then
+			echo "1 - Removing exising containers and networks";
+			# delete and continue
+			$SUDO_CMD docker stop $($SUDO_CMD docker ps |grep Up | awk '{print $1}')
+			$SUDO_CMD docker system prune -a
+
+		elif [ "$ANSWER" == "3" ]; then
+			echo "3 - You have chosen to continue installation process."
+
+		else # default: 2 - stop installastion
+			echo "2 - Installation process was stopped";
+			exit;
+		fi;
+
+	fi;
+	# visszairni redis - ha redisbol minden 1, akkor manager mode
 }
 
 check_redis_availability() {
@@ -300,7 +352,7 @@ check_redis_availability() {
 ### RESTART SCHEDULER IF NEEDED
 
 SN=$(check_subnets)
-if [ "$SN" != "1"]; then
+if [ "$SN" != "1" ]; then
 	echo "Desired network subnet not available";
 	exit;
 fi;
@@ -308,12 +360,12 @@ STATUS=$(check_framework_scheduler_status $HOSTNAME)
 if [ "$STATUS" != "1" ]; then
 	/usr/bin/docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_SCHEDULER_NETWORK_SUBNET;
 fi;
-
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
       /usr/bin/docker run -d \
 	  	-v /var/run/docker.sock:/var/run/docker.sock \
 		-v SYSTEM_DATA:/etc/system/data \
+		-v SYSTEM_CONFIG:/etc/system/config \
 		-v SYSTEM_LOG:/etc/system/log \
 		-v USER_DATA:/etc/user/data \
 		-v USER_CONFIG:/etc/user/config \
@@ -330,7 +382,6 @@ if [ "$DF" != "1" ]; then
 	create_user_json;
 	create_framework_json;
 fi;
-
 
 # START SERVICES
 $service_exec service-framework.containers.redis-server start &

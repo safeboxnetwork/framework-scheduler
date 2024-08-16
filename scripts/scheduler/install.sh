@@ -1,6 +1,9 @@
 #!/bin/sh
 
 SERVICE_EXEC=$2
+FIRST_INSTALL=$3
+INSTALL_KEY=$4
+GLOBAL_VERSION=$5
 
 ask_envs() {
 	echo "VPN proxy? (Y/n)";
@@ -84,104 +87,6 @@ discover_services() {
 	fi
 }
 
-check_dirs_and_files() { # TODO?
-
-	if [ ! -f "$HOME/.ssh/installer" ]; then
-		echo "No ssh key files found. Please paste base64 content of the installer private key: ";
-		while read -r INSTALLER; do
-			if [ "$INSTALLER" != "" ]; then
-				break;
-			fi;
-		done
-		echo $INSTALLER > $HOME/.ssh/installer;
-	fi;
-	chmod 0600 $HOME/.ssh/installer;
-
-	if [ ! -d "/etc/user/config" ]; then
-		$SUDO_CMD mkdir -p "/etc/user/config"
-	fi;
-	if [ ! -d "/etc/system" ]; then
-		$SUDO_CMD mkdir "/etc/system"
-	fi;
-	if [ ! -d "/etc/user/secret" ]; then
-		$SUDO_CMD mkdir -p "/etc/user/secret"
-	fi;
-
-	if [ ! -f "/etc/user/config/system.json" ]; then
-		{
-			echo '
-{
-	"NETWORK": {
-		"IP_POOL_START": "172.19.0.0",
-		"IP_POOL_END": "172.19.254.0",
-		"IP_SUBNET": "24"
-	}
-}
-';
-		} > /tmp/system.json
-
-		$SUDO_CMD mv /tmp/system.json /etc/user/config/system.json
-	fi;
-
-	{
-		echo "alias $SERVICE-EXEC='$SUDO_CMD docker run --rm \
- -w /services/ \
- -e DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
- -e USER_INIT_PATH=/etc/user/config \
- -e CA_PATH=/etc/ssl/certs \
- -e DNS_DIR=/etc/system/data/dns \
- -e HOST_FILE=/etc/dns/hosts.local \
- -v /etc/system/data/dns:/etc/dns:rw \
- -v /etc/ssl/certs:/etc/ssl/certs:ro \
- -v /etc/user/config/user.json:/etc/user/config/user.json:ro \
- -v /etc/user/config/system.json:/etc/user/config/system.json:ro \
- -v /etc/user/config/services/:/services/:ro \
- -v /etc/user/config/services/tmp:/services/tmp:rw \
- -v /var/run/docker.sock:/var/run/docker.sock \
- -v /usr/bin/docker:/usr/bin/docker:ro \
- $DOCKER_REGISTRY_URL/setup'";
-	} > $HOME/.bash_aliases
-
-}
-
-check_running() {
-
-	DOCKERD_STATUS="0";
-
-	### From Redis
-	# bridge check
-	BRIDGE_NUM=$($SUDO_CMD docker network ls | grep bridge | awk '{print $2":"$3}' | sort | uniq | wc -l);
-
-	CONTAINER_NUM=$($SUDO_CMD docker ps -a | wc -l);
-
-	if [ "$BRIDGE_NUM" != "1" ] && [ "$CONTAINER_NUM" != "1" ]; then
-
-		echo "There are existing containers and/or networks.";
-		echo "Please select from the following options (1/2/3):";
-
-		echo "1 - Delete all existing containers and networks before installation";
-		echo "2 - Stop the installation process";
-		echo "3 - Just continue on my own risk";
-		
-		read -r ANSWER;
-
-		if [ "$ANSWER" == "1" ]; then
-			echo "1 - Removing exising containers and networks";
-			# delete and continue
-			$SUDO_CMD docker stop $($SUDO_CMD docker ps |grep Up | awk '{print $1}')
-			$SUDO_CMD docker system prune -a
-
-		elif [ "$ANSWER" == "3" ]; then
-			echo "3 - You have chosen to continue installation process."
-
-		else # default: 2 - stop installastion
-			echo "2 - Installation process was stopped";
-			exit;
-		fi;
-
-	fi;
-	# visszairni redis - ha redisbol minden 1, akkor manager mode
-}
 
 #@@@@@@
 # START
@@ -198,16 +103,14 @@ done
 
 SUDO_CMD="";
 
-# first install
-if [ ! -f "/etc/user/config/system.json" ]; then
+# first install - TODEL ??
+if [[ $FIRST_INSTALL == "true" ]]; then
 
 	INIT="true";
 
-	check_running;
-
-	check_dirs_and_files;
-
-	discover_services;
+	#discover_services;
+	echo "$INSTALL_KEY" |base64 -d > /etc/user/data/installer
+	chmod 0600 /etc/user/data/installer;
 
 	# base variables
 
@@ -267,11 +170,15 @@ if [ ! -f "/etc/user/config/system.json" ]; then
 	$VAR_DISCOVERY_DIRECTORY \
 	$VAR_DISCOVERY_CONFIG_FILE \
 	$VAR_DISCOVERY_CONFIG_DIRECTORY \
-	--volume $HOME/.ssh/installer:/root/.ssh/id_rsa \
-	--volume /etc/user/:/etc/user/ \
-	--volume /etc/system/:/etc/system/ \
+	--volume USER_DATA:/etc/user/data \
+	--volume USER_CONFIG:/etc/user/config \
+	--volume SYSTEM_DATA:/etc/system/data \
+	--volume SYSTEM_CONFIG:/etc/system/config \
+	--volume SYSTEM_LOG:/etc/system/log \
+	--mount src=USER_DATA,dst=/root/.ssh/id_rsa,volume-subpath=installer \
 	--env LETSENCRYPT_MAIL=$LETSENCRYPT_MAIL \
 	--env LETSENCRYPT_SERVERNAME=$LETSENCRYPT_SERVERNAME \
+	--env GLOBAL_VERSION=$GLOBAL_VERSION \
 	$DOCKER_REGISTRY_URL/installer-tool
 else
 
