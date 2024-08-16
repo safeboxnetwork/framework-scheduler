@@ -256,9 +256,11 @@ execute_task() {
                   for SERVICE in $(echo $INSTALLED_SERVICES); do
 			  CONTENT=$(cat $SERVICE | base64 -w0);
 			  if [ "$SERVICES" != "" ]; then
-				  SERVICES=","$SERVICES;
+				  SEP=",";
+			  else
+				  SEP="";
 		  	  fi;
-			  SERVICES=$SERVICES'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
+			  SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
                   done
 	    if [ "$SYSTEM_STATUS" != "" ]; then
 		    INSTALL_STATUS="1"; # has previous install
