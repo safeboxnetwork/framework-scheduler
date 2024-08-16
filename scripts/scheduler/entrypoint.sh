@@ -248,9 +248,15 @@ execute_task() {
       echo "TASK: $(echo $TASK | cut -d ':' -f1)"
       TASK_NAME=$(echo $TASK | cut -d ':' -f1);
 
+    # checking sytem status
+    SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
+    if [ "$SYSTEM_STATUS" != "" ]; then
+	    INSTALL_STATUS="1"; # has previous install
+    else
+	    INSTALL_STATUS="2"; # new install
+    fi
+
       if [ "$TASK_NAME" == "init" ]; then
-            # checking sytem status
-            SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
                   INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
 		  SERVICES="";
                   for SERVICE in $(echo $INSTALLED_SERVICES); do
@@ -262,20 +268,24 @@ execute_task() {
 		  	  fi;
 			  SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
                   done
-	    if [ "$SYSTEM_STATUS" != "" ]; then
-		    INSTALL_STATUS="1"; # has previous install
-            else
-		    INSTALL_STATUS="2"; # new install
-            fi
 
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
       elif [ "$TASK_NAME" == "install" ]; then
-	    # TODO - start install.sh
-            sh /scripts/install.sh "$B64_JSON" "$service_exec" "true" "$INSTALL_KEY" "$GLOBAL_VERSION"
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0); # install has started
+      	    redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"; # web_in
 
-            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": 1 }' | jq -r . | base64 -w0); # TEST
-            #JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+    	    #if [ "$INSTALL_STATUS" == "2" ]; then 
+	    # force install?
+	    	# TODO - start install.sh
+            	sh /scripts/install.sh "$B64_JSON" "$service_exec" "true" "$INSTALL_KEY" "$GLOBAL_VERSION"
+	    #fi;
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0);
+
+      elif [ "$TASK_NAME" == "containers" ]; then
+	    CONTAINERS=$("docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler");
+	    RESULT=$(echo "$CONTAINERS" | base64 -w0);
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0);
       fi 
 
       redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
@@ -417,7 +427,7 @@ while true; do
 
                   execute_task "$TASK" "$B64_JSON"
                   
-                  # MOVE TASK from generate into generated
+                  # MOVE TASK from web_in into web_out
                   redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
                   redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
 
