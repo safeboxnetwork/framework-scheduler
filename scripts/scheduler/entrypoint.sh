@@ -283,7 +283,7 @@ execute_task() {
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0);
 
       elif [ "$TASK_NAME" == "containers" ]; then
-	    CONTAINERS=$("docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler");
+	    CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler);
 	    RESULT=$(echo "$CONTAINERS" | base64 -w0);
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0);
       fi 
