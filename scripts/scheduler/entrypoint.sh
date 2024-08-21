@@ -286,6 +286,16 @@ execute_task() {
 	    CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler);
 	    RESULT=$(echo "$CONTAINERS" | base64 -w0);
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0);
+      elif [ "$TASK_NAME" == "repositories" ]; then
+            REPOS=$(cat /etc/user/config/repositories.json);
+	    if [ "$REPOS" != "" ]; then
+		    EXISTS="1";
+	    	    REPOS=$(echo "$REPOS" | base64 -w0);
+            else
+		    EXISTS="0";
+		    REPOS="";
+	    fi;
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "EXISTS": "'$EXISTS'", "REPOSITORIES": "'$REPOS'" }' | jq -r . | base64 -w0);
       fi 
 
       redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
