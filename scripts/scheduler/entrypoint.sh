@@ -279,8 +279,9 @@ execute_task() {
 	    INSTALL_STATUS="2"; # new install
     fi
 
+	SYSTEM_LIST=("core-dns.json" "cron.json" "domain-local-backend.json" "firewall-letsencrypt.json" "firewall-local-backend.json" "firewall-localloadbalancer-dns.json" "firewall-localloadbalancer-to-smarthostbackend.json" "firewall-smarthost-backend-dns.json" "firewall-smarthost-loadbalancer-dns.json" "firewall-smarthost-to-backend.json" "firewall-smarthostloadbalancer-from-publicbackend.json" "letsencrypt.json" "local-backend.json" "local-proxy.json" "service-framework.json" "smarthost-proxy-scheduler.json" "smarthost-proxy.json")
+
       if [ "$TASK_NAME" == "settings" ]; then
-	      LIST=("core-dns.json" "cron.json" "domain-local-backend.json" "firewall-letsencrypt.json" "")
                   INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
 		  SERVICES="";
                   for SERVICE in $(echo $INSTALLED_SERVICES); do
