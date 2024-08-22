@@ -75,7 +75,7 @@ $VOLUME_MOUNTS \
 $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
 
 # TEMP template JSON test nextcloud.json
-NEXTCLOUD_TEMPLATE="
+NEXTCLOUD_TEMPLATE='
 {
 	"name": "nextcloud",
 	"fields": [
@@ -97,7 +97,7 @@ NEXTCLOUD_TEMPLATE="
 		}
 	]
 }
-";
+';
 
 if [ "$SERVICE_DIR" == "" ]; then
 	SERVICE_DIR="/etc/user/config/services";
@@ -354,12 +354,12 @@ execute_task() {
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0);
 
       elif [ "$TASK_NAME" == "system" ]; then
-	#SYSTEM_LIST=("core-dns.json" "cron.json" "domain-local-backend.json" "firewall-letsencrypt.json" "firewall-local-backend.json" "firewall-localloadbalancer-dns.json" "firewall-localloadbalancer-to-smarthostbackend.json" "firewall-smarthost-backend-dns.json" "firewall-smarthost-loadbalancer-dns.json" "firewall-smarthost-to-backend.json" "firewall-smarthostloadbalancer-from-publicbackend.json" "letsencrypt.json" "local-backend.json" "local-proxy.json" "service-framework.json" "smarthost-proxy-scheduler.json" "smarthost-proxy.json")
-	SYSTEM_LIST=("core-dns.json" "cron.json" "letsencrypt.json" "local-proxy.json" "service-framework.json" "smarthost-proxy-scheduler.json" "smarthost-proxy.json")
+	#SYSTEM_LIST="core-dns.json cron.json domain-local-backend.json firewall-letsencrypt.json firewall-local-backend.json firewall-localloadbalancer-dns.json firewall-localloadbalancer-to-smarthostbackend.json firewall-smarthost-backend-dns.json firewall-smarthost-loadbalancer-dns.json firewall-smarthost-to-backend.json firewall-smarthostloadbalancer-from-publicbackend.json letsencrypt.json local-backend.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
+	SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json";
 	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
 	SERVICES="";
 	for SERVICE in $(echo $INSTALLED_SERVICES); do
-		for ITEM in "${SYSTEM_LIST[@]}"; do
+		for ITEM in $SYSTEM_LIST; do
 			if [ "$(basename $SERVICE)" == "$ITEM" ]; then # system file
 				CONTENT=$(cat $SERVICE | base64 -w0);
 				if [ "$SERVICES" != "" ]; then
