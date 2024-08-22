@@ -74,6 +74,29 @@ $VOLUME_MOUNTS \
 --env HOST_FILE=$HOST_FILE \
 $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
 
+# TEMP template JSON test nextcloud.json
+NEXTCLOUD_JSON="
+{
+	"name": "nextcloud",
+	"fields": [
+		{
+			"description": "Please add Nextcloud domain:",
+			"key": "NEXTCLOUD_DOMAIN",
+			"value": ""
+		},
+		{
+			"description": "Please add Nextcloud username:",
+			"key": "NEXTCLOUD_USERNAME",
+			"value": ""
+		},
+		{
+			"description": "Please add Nextcloud password:",
+			"key": "NEXTCLOUD_PASSWORD",
+			"value": ""
+		}
+	]
+}
+";
 
 check_volumes(){
 
@@ -296,6 +319,11 @@ execute_task() {
 		    REPOS="";
 	    fi;
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "EXISTS": "'$EXISTS'", "REPOSITORIES": "'$REPOS'" }' | jq -r . | base64 -w0);
+      elif [ "$TASK_NAME" == "deploy" ]; then
+		JSON="$(echo $B64_JSON | base64 -d)"
+  		DEPLOY=$(echo "$JSON" | jq -r .name)
+		PAYLOAD=$(echo $NEXTCLOUD_JSON | base64 -d)
+		JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "PAYLOAD": "'$PAYLOAD'" }' | jq -r . | base64 -w0);
       fi 
 
       redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
