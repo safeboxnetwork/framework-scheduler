@@ -326,6 +326,9 @@ execute_task() {
 				  SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
 			  fi;
                   done
+		  if [ "$SERVICE" == "" ]; then
+			  SERVICE='"services": "NONE"';
+	          fi;
 
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
