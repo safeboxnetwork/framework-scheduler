@@ -16,6 +16,12 @@ RUN chmod +x /usr/bin/redis-cli
 
 RUN apk add --update --no-cache docker-cli wget curl dos2unix jq openssl git     
 
+#### TEMPORARY KEY MANGEMENT
+RUN mkdir -p /root/.ssh
+COPY installer /root/.ssh/installer
+RUN chmod 660 /root/.ssh/installer
+###########################
+
 COPY scripts/scheduler/*.sh /scripts/
 RUN find ./scripts -name "*.sh" | xargs dos2unix
 RUN ["chmod", "+x", "-R", "/scripts/"]

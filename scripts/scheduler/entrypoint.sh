@@ -279,7 +279,23 @@ execute_task() {
 	    INSTALL_STATUS="2"; # new install
     fi
 
-      if [ "$TASK_NAME" == "init" ]; then
+      if [ "$TASK_NAME" == "settings" ]; then
+	      LIST=("core-dns.json" "cron.json" "domain-local-backend.json" "firewall-letsencrypt.json" "")
+                  INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
+		  SERVICES="";
+                  for SERVICE in $(echo $INSTALLED_SERVICES); do
+			  CONTENT=$(cat $SERVICE | base64 -w0);
+			  if [ "$SERVICES" != "" ]; then
+				  SEP=",";
+			  else
+				  SEP="";
+		  	  fi;
+			  SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
+                  done
+
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+
+      elif [ "$TASK_NAME" == "deployments" ]; then
                   INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
 		  SERVICES="";
                   for SERVICE in $(echo $INSTALLED_SERVICES); do
