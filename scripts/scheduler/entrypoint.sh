@@ -75,14 +75,15 @@ $VOLUME_MOUNTS \
 $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
 
 # TEMP template JSON test nextcloud.json
-NEXTCLOUD_JSON="
+NEXTCLOUD_TEMPLATE="
 {
 	"name": "nextcloud",
 	"fields": [
 		{
 			"description": "Please add Nextcloud domain:",
 			"key": "NEXTCLOUD_DOMAIN",
-			"value": ""
+			"value": "",
+			"required": "true"
 		},
 		{
 			"description": "Please add Nextcloud username:",
@@ -332,11 +333,17 @@ execute_task() {
 
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
-      elif [ "$TASK_NAME" == "deploy" ]; then
+      elif [ "$TASK_NAME" == "deployment" ]; then
 		JSON="$(echo $B64_JSON | base64 -d)"
-  		DEPLOY=$(echo "$JSON" | jq -r .name)
-		PAYLOAD=$(echo $NEXTCLOUD_JSON | base64 -d)
-		JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "PAYLOAD": "'$PAYLOAD'" }' | jq -r . | base64 -w0);
+  		DEPLOY_NAME=$(echo "$JSON" | jq -r .name)
+  		DEPLOY_ACTION=$(echo "$JSON" | jq -r .action)
+		if [ "$DEPLOY_ACTION" == "ask" ]; then
+			PAYLOAD=$(echo $NEXTCLOUD_TEMPLATE | base64 -d) # TODO
+			JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "PAYLOAD": "'$PAYLOAD'" }' | jq -r . | base64 -w0);
+		elif [ "$DEPLOY_ACTION" == "deploy" ]; then
+			# TODO install
+			JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$STATUS'" }' | jq -r . | base64 -w0);
+		fi;
 
       elif [ "$TASK_NAME" == "repositories" ]; then
             REPOS=$(cat /etc/user/config/repositories.json);
