@@ -279,39 +279,7 @@ execute_task() {
 	    INSTALL_STATUS="2"; # new install
     fi
 
-	SYSTEM_LIST=("core-dns.json" "cron.json" "domain-local-backend.json" "firewall-letsencrypt.json" "firewall-local-backend.json" "firewall-localloadbalancer-dns.json" "firewall-localloadbalancer-to-smarthostbackend.json" "firewall-smarthost-backend-dns.json" "firewall-smarthost-loadbalancer-dns.json" "firewall-smarthost-to-backend.json" "firewall-smarthostloadbalancer-from-publicbackend.json" "letsencrypt.json" "local-backend.json" "local-proxy.json" "service-framework.json" "smarthost-proxy-scheduler.json" "smarthost-proxy.json")
-
-      if [ "$TASK_NAME" == "system" ]; then
-	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
-	SERVICES="";
-	for SERVICE in $(echo $INSTALLED_SERVICES); do
-		CONTENT=$(cat $SERVICE | base64 -w0);
-		if [ "$SERVICES" != "" ]; then
-			SEP=",";
-		else
-			SEP="";
-		fi;
-		SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
-	done
-
-	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
-
-      elif [ "$TASK_NAME" == "deployments" ]; then
-                  INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
-		  SERVICES="";
-                  for SERVICE in $(echo $INSTALLED_SERVICES); do
-			  CONTENT=$(cat $SERVICE | base64 -w0);
-			  if [ "$SERVICES" != "" ]; then
-				  SEP=",";
-			  else
-				  SEP="";
-		  	  fi;
-			  SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
-                  done
-
-            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
-
-      elif [ "$TASK_NAME" == "install" ]; then
+      if [ "$TASK_NAME" == "install" ]; then
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0); # install has started
       	    redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"; # web_in
 
@@ -322,10 +290,51 @@ execute_task() {
 	    #fi;
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0);
 
-      elif [ "$TASK_NAME" == "containers" ]; then
-	    CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler);
-	    RESULT=$(echo "$CONTAINERS" | base64 -w0);
-            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0);
+      elif [ "$TASK_NAME" == "system" ]; then
+	#SYSTEM_LIST=("core-dns.json" "cron.json" "domain-local-backend.json" "firewall-letsencrypt.json" "firewall-local-backend.json" "firewall-localloadbalancer-dns.json" "firewall-localloadbalancer-to-smarthostbackend.json" "firewall-smarthost-backend-dns.json" "firewall-smarthost-loadbalancer-dns.json" "firewall-smarthost-to-backend.json" "firewall-smarthostloadbalancer-from-publicbackend.json" "letsencrypt.json" "local-backend.json" "local-proxy.json" "service-framework.json" "smarthost-proxy-scheduler.json" "smarthost-proxy.json")
+	SYSTEM_LIST=("core-dns.json" "cron.json" "letsencrypt.json" "local-proxy.json" "service-framework.json" "smarthost-proxy-scheduler.json" "smarthost-proxy.json")
+	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
+	SERVICES="";
+	for SERVICE in $(echo $INSTALLED_SERVICES); do
+		for ITEM in "${SYSTEM_LIST[@]}"; do
+			if [ "$(basename $SERVICE)" == "$ITEM" ]; then # system file
+				CONTENT=$(cat $SERVICE | base64 -w0);
+				if [ "$SERVICES" != "" ]; then
+					SEP=",";
+				else
+					SEP="";
+				fi;
+				SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
+				break;
+			fi;
+		done;
+	done
+
+	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+
+      elif [ "$TASK_NAME" == "deployments" ]; then
+                  INSTALLED_SERVICES=$(ls /etc/user/config/services/service-*.json );
+		  SERVICES="";
+                  for SERVICE in $(echo $INSTALLED_SERVICES); do
+			  if [ "$(basename $SERVICE)" != "service-framework.json" ]; then # NOT system file
+				  CONTENT=$(cat $SERVICE | base64 -w0);
+				  if [ "$SERVICES" != "" ]; then
+					  SEP=",";
+				  else
+					  SEP="";
+				  fi;
+				  SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
+			  fi;
+                  done
+
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+
+      elif [ "$TASK_NAME" == "deploy" ]; then
+		JSON="$(echo $B64_JSON | base64 -d)"
+  		DEPLOY=$(echo "$JSON" | jq -r .name)
+		PAYLOAD=$(echo $NEXTCLOUD_JSON | base64 -d)
+		JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "PAYLOAD": "'$PAYLOAD'" }' | jq -r . | base64 -w0);
+
       elif [ "$TASK_NAME" == "repositories" ]; then
             REPOS=$(cat /etc/user/config/repositories.json);
 	    if [ "$REPOS" != "" ]; then
@@ -336,11 +345,12 @@ execute_task() {
 		    REPOS="";
 	    fi;
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "EXISTS": "'$EXISTS'", "REPOSITORIES": "'$REPOS'" }' | jq -r . | base64 -w0);
-      elif [ "$TASK_NAME" == "deploy" ]; then
-		JSON="$(echo $B64_JSON | base64 -d)"
-  		DEPLOY=$(echo "$JSON" | jq -r .name)
-		PAYLOAD=$(echo $NEXTCLOUD_JSON | base64 -d)
-		JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "PAYLOAD": "'$PAYLOAD'" }' | jq -r . | base64 -w0);
+
+      elif [ "$TASK_NAME" == "containers" ]; then # TODO
+	    CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler);
+	    RESULT=$(echo "$CONTAINERS" | base64 -w0);
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0);
+
       fi 
 
       redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
