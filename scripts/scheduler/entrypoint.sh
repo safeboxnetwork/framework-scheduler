@@ -99,6 +99,68 @@ NEXTCLOUD_TEMPLATE="
 }
 ";
 
+if [ "$SERVICE_DIR" == "" ]; then
+	SERVICE_DIR="/etc/user/config/services";
+fi;
+
+GIT_REPO=$GIT_REPO
+if [ "$GIT_REPO" == "" ]; then
+	GIT_REPO=git.format.hu
+fi
+
+ORGANIZATION=$ORGANIZATION
+if [ "$ORGANIZATION" == "" ]; then
+	ORGANIZATION=format
+fi
+
+deploy_additionals(){
+
+	local NAME="$1"
+	local JSON="$(echo "$2" | base64 -d)"
+
+	# Loop through each key in the JSON and create a variable
+	for key in $(echo "$JSON" | jq -r 'keys[]'); do
+	  value=$(echo "$JSON" | jq -r --arg k "$key" '.[$k]')
+	  eval "$key=$value"
+	done
+
+	# env variables are named by "key" from the source template
+	# for example NEXTCLOUD_DOMAIN, NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD have to be set by according to template
+
+	case "$NAME" in
+		"nextcloud")
+			deploy_nextcloud
+		;;
+	esac
+}
+
+deploy_nextcloud(){
+
+	DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)";
+        DB_USER="$(echo $RANDOM | md5sum | head -c 8)";
+        DB_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
+        DB_ROOT_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
+
+	# TODO repo	
+	git clone ssh://$GIT_REPO/$ORGANIZATION/nextcloud.git /tmp/nextcloud;
+	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" /tmp/nextcloud/nextcloud-secret.json;
+	sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g" /tmp/nextcloud/nextcloud-secret.json;
+	sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g" /tmp/nextcloud/nextcloud-secret.json;
+	sed -i "s/DB_MYSQL/$DB_MYSQL/g" /tmp/nextcloud/nextcloud-secret.json;
+	sed -i "s/DB_USER/$DB_USER/g" /tmp/nextcloud/nextcloud-secret.json;
+	sed -i "s/DB_PASSWORD/$DB_PASSWORD/g" /tmp/nextcloud/nextcloud-secret.json;
+	sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g" /tmp/nextcloud/nextcloud-secret.json;
+	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" /tmp/nextcloud/domain-nextcloud.json
+
+	cp -rv /tmp/nextcloud/nextcloud-secret.json /etc/user/secret/nextcloud.json;
+	
+	cp -rv /tmp/nextcloud/nextcloud.json $SERVICE_DIR/nextcloud.json;
+	cp -rv /tmp/nextcloud/domain-nextcloud.json $SERVICE_DIR/domain-nextcloud.json;
+	cp -rv /tmp/nextcloud/firewall-nextcloud.json $SERVICE_DIR/firewall-nextcloud.json;
+	cp -rv /tmp/nextcloud/firewall-nextcloud-server-dns.json $SERVICE_DIR/firewall-nextcloud-server-dns.json;
+	cp -rv /tmp/nextcloud/firewall-nextcloud-server-smtp.json $SERVICE_DIR/firewall-nextcloud-server-smtp.json;
+}
+
 check_volumes(){
 
 	RET=1;
@@ -335,13 +397,14 @@ execute_task() {
 
       elif [ "$TASK_NAME" == "deployment" ]; then
 		JSON="$(echo $B64_JSON | base64 -d)"
-  		DEPLOY_NAME=$(echo "$JSON" | jq -r .name)
-  		DEPLOY_ACTION=$(echo "$JSON" | jq -r .action)
+  		DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME)
+  		DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
 		if [ "$DEPLOY_ACTION" == "ask" ]; then
 			PAYLOAD=$(echo $NEXTCLOUD_TEMPLATE | base64 -d) # TODO
 			JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "PAYLOAD": "'$PAYLOAD'" }' | jq -r . | base64 -w0);
 		elif [ "$DEPLOY_ACTION" == "deploy" ]; then
-			# TODO install
+  			DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD)
+			deploy_additionals "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
 			JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$STATUS'" }' | jq -r . | base64 -w0);
 		fi;
 
