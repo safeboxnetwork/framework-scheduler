@@ -250,6 +250,16 @@ check_framework_scheduler_status(){
 
 }
 
+add_repository() {
+	NEW_REPO="$1";
+
+	if [ ! -f "/etc/user/config/repositories.json" ]; then
+		create_repositories_json;
+	fi
+	UPDATED_REPOS=$(cat /etc/user/config/repositories.json | jq '.repositories += ["'$NEW_REPO'"]')
+	echo "$UPDATED_REPOS" | jq -r . > /etc/user/config/repositories.json
+}
+
 create_repositories_json() {
 		{
 			echo '
@@ -463,6 +473,12 @@ execute_task() {
 	    fi;
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "EXISTS": "'$EXISTS'", "REPOSITORIES": "'$REPOS'" }' | jq -r . | base64 -w0);
 
+      elif [ "$TASK_NAME" == "add_repository" ]; then
+		JSON="$(echo $B64_JSON | base64 -d)"
+		NEW_REPO=$(echo "$JSON" | jq -r .NEW_REPO)
+		add_repository "$NEW_REPO"
+            	JSON_TARGET=""
+
       elif [ "$TASK_NAME" == "containers" ]; then # TODO
 	    CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler);
 	    RESULT=$(echo "$CONTAINERS" | base64 -w0);
@@ -470,7 +486,10 @@ execute_task() {
 
       fi 
 
-      redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
+      if [ "$JSON_TARGET" != "" ]; then
+		redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
+      fi 
+
 }
 
 check_running() {
