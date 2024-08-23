@@ -74,31 +74,6 @@ $VOLUME_MOUNTS \
 --env HOST_FILE=$HOST_FILE \
 $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
 
-# TEMP template JSON test nextcloud.json
-NEXTCLOUD_TEMPLATE='
-{
-	"name": "nextcloud",
-	"fields": [
-		{
-			"description": "Please add Nextcloud domain:",
-			"key": "NEXTCLOUD_DOMAIN",
-			"value": "",
-			"required": "true"
-		},
-		{
-			"description": "Please add Nextcloud username:",
-			"key": "NEXTCLOUD_USERNAME",
-			"value": ""
-		},
-		{
-			"description": "Please add Nextcloud password:",
-			"key": "NEXTCLOUD_PASSWORD",
-			"value": ""
-		}
-	]
-}
-';
-
 if [ "$SERVICE_DIR" == "" ]; then
 	SERVICE_DIR="/etc/user/config/services";
 fi;
@@ -159,6 +134,28 @@ deploy_nextcloud(){
 	cp -rv /tmp/nextcloud/firewall-nextcloud.json $SERVICE_DIR/firewall-nextcloud.json;
 	cp -rv /tmp/nextcloud/firewall-nextcloud-server-dns.json $SERVICE_DIR/firewall-nextcloud-server-dns.json;
 	cp -rv /tmp/nextcloud/firewall-nextcloud-server-smtp.json $SERVICE_DIR/firewall-nextcloud-server-smtp.json;
+}
+
+get_repositories(){
+
+	local REPOS;
+	local BASE;
+	local TREES="";
+
+	REPOS=$(jq -r .repositories[] /etc/user/config/repositories.json); # list of repos, delimiter by space
+	for REPO in $REPOS; do
+		BASE=$(basename $REPO | cut -d '.' -f1)
+		if [ ! -f "/tmp/$BASE" ]; then
+			git clone $REPO /tmp/$BASE;
+		else
+			git pull $REPO /tmp/$BASE;
+		fi;
+		if [ -f "/tmp/$BASE/applications-tree.json" ]; then
+			TREES=$TREES" /tmp/$BASE/application-tree.json"
+		fi;
+	done;
+
+	echo $TREES;
 }
 
 check_volumes(){
@@ -251,6 +248,16 @@ check_framework_scheduler_status(){
 		fi
 	fi
 
+}
+
+create_repositories_json() {
+		{
+			echo '
+{
+	"repositories": [ "git@git.format.hu:format/default-applications-tree.git" ]
+}
+';
+		} | jq -r . > /etc/user/config/repositories.json
 }
 
 create_system_json() {
@@ -376,6 +383,26 @@ execute_task() {
 	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
       elif [ "$TASK_NAME" == "deployments" ]; then
+	        DEPLOYMENTS=""
+		TREES=$(get_repositories);
+		for TREE in $TREES do;
+			APPS=$(jq -rc '.apps[]' $TREE);
+			for APP in $APPS ; do
+				APP_NAME=$(echo "$APP" | jq -r '.name')
+				APP_VERSION=$(echo "$APP" | jq -r '.version')
+				  if [ "$DEPLOYMENTS" != "" ]; then
+					  SEP=",";
+				  else
+					  SEP="";
+				  fi;
+				  DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": "'$APP_VERSION'"';
+			done;
+		done;
+		  if [ "$DEPLOYMENTS" == "" ]; then
+			  DEPLOYMENTS='"deployments": "NONE"';
+	          fi;
+
+
                   INSTALLED_SERVICES=$(ls /etc/user/config/services/service-*.json );
 		  SERVICES="";
                   for SERVICE in $(echo $INSTALLED_SERVICES); do
@@ -389,26 +416,43 @@ execute_task() {
 				  SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
 			  fi;
                   done
-		  if [ "$SERVICE" == "" ]; then
-			  SERVICE='"services": "NONE"';
+		  if [ "$SERVICES" == "" ]; then
+			  SERVICES='"services": "NONE"';
 	          fi;
 
-            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "DEPLOYMENTS": {'$DEPLOYMENTS'}, "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
       elif [ "$TASK_NAME" == "deployment" ]; then
 		JSON="$(echo $B64_JSON | base64 -d)"
-  		DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME)
-  		DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
-		if [ "$DEPLOY_ACTION" == "ask" ]; then
-			PAYLOAD=$(echo $NEXTCLOUD_TEMPLATE | base64 -d) # TODO
-			JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "PAYLOAD": "'$PAYLOAD'" }' | jq -r . | base64 -w0);
-		elif [ "$DEPLOY_ACTION" == "deploy" ]; then
-  			DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD)
-			deploy_additionals "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
-			JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$STATUS'" }' | jq -r . | base64 -w0);
-		fi;
+		DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME)
+		DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
+	        TREES=$(get_repositories);
+
+		for TREE in $TREES do;
+			APPS=$(jq -rc '.apps[]' $TREE);
+			for APP in $APPS ; do
+				APP_NAME=$(echo "$APP" | jq -r '.name')
+				APP_VERSION=$(echo "$APP" | jq -r '.version')
+				APP_DIR=$(dirname $TREE)"/"$APP_NAME
+				APP_TEMPLATE=$(dirname $TREE)"/"$APP_NAME"/template.json"
+				echo $APP_TEMPLATE
+				if [ "$APP_NAME" == "$DEPLOY_NAME" ]; then
+					if [ "$DEPLOY_ACTION" == "ask" ]; then
+						PAYLOAD=$(cat $APP_TEMPLATE | base64 -d)
+						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "PAYLOAD": "'$PAYLOAD'" }' | jq -r . | base64 -w0);
+					elif [ "$DEPLOY_ACTION" == "deploy" ]; then
+						DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD)
+						deploy_additionals "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
+						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$STATUS'" }' | jq -r . | base64 -w0);
+					fi;
+				fi;
+			done;
+		done;
 
       elif [ "$TASK_NAME" == "repositories" ]; then
+		if [ ! -f "/etc/user/config/repositories.json" ]; then
+			create_repositories_json;
+		fi
             REPOS=$(cat /etc/user/config/repositories.json);
 	    if [ "$REPOS" != "" ]; then
 		    EXISTS="1";
