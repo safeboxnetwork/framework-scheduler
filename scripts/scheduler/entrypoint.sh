@@ -395,7 +395,7 @@ execute_task() {
       elif [ "$TASK_NAME" == "deployments" ]; then
 	        DEPLOYMENTS=""
 		TREES=$(get_repositories);
-		for TREE in $TREES do;
+		for TREE in $TREES; do
 			APPS=$(jq -rc '.apps[]' $TREE);
 			for APP in $APPS ; do
 				APP_NAME=$(echo "$APP" | jq -r '.name')
@@ -437,7 +437,7 @@ execute_task() {
 		DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
 	        TREES=$(get_repositories);
 
-		for TREE in $TREES do;
+		for TREE in $TREES; do
 			APPS=$(jq -rc '.apps[]' $TREE);
 			for APP in $APPS ; do
 				APP_NAME=$(echo "$APP" | jq -r '.name')
