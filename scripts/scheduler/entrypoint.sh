@@ -151,7 +151,7 @@ get_repositories(){
 			git pull $REPO /tmp/$BASE;
 		fi;
 		if [ -f "/tmp/$BASE/applications-tree.json" ]; then
-			TREES=$TREES" /tmp/$BASE/application-tree.json"
+			TREES=$TREES" /tmp/$BASE/applications-tree.json"
 		fi;
 	done;
 
@@ -411,7 +411,6 @@ execute_task() {
 		  if [ "$DEPLOYMENTS" == "" ]; then
 			  DEPLOYMENTS='"deployments": "NONE"';
 	          fi;
-
 
                   INSTALLED_SERVICES=$(ls /etc/user/config/services/service-*.json );
 		  SERVICES="";
