@@ -35,6 +35,22 @@ CURL_RETRIES=${CURL_RETRIES:-360}
 
 SCHEDULER_SERVICEFILE_GENERATE_TEST=${SCHEDULER_SERVICEFILE_GENERATE_TEST:-false}
 
+check_installer_key() {
+	mkdir -p /root/.ssh
+	if [ -f /etc/user/data/installer ]; then
+		ln -s /etc/user/data/installer /root/.ssh/id_rsa
+		echo '
+Host git.format.hu
+    User git
+    Port 20202
+    HostName git.format.hu
+    PreferredAuthentications publickey
+    IdentityFile /root/.ssh/id_rsa
+    IdentitiesOnly yes
+    StrictHostKeyChecking no 
+		' > /root/.ssh/config
+	fi
+}	
 
 if [[ -n "$DOCKER_REGISTRY_URL" && "$DOCKER_REGISTRY_URL" != "null" ]]; then
     SETUP="/setup"
@@ -144,6 +160,9 @@ get_repositories(){
 
 	REPOS=$(jq -r .repositories[] /etc/user/config/repositories.json); # list of repos, delimiter by space
 	for REPO in $REPOS; do
+
+		check_installer_key	
+
 		BASE=$(basename $REPO | cut -d '.' -f1)
 		if [ ! -f "/tmp/$BASE" ]; then
 			git clone $REPO /tmp/$BASE;
