@@ -455,7 +455,7 @@ execute_task() {
 		DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME)
 		DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
 	        TREES=$(get_repositories);
-
+echo $JSON
 		for TREE in $TREES; do
 			APPS=$(jq -rc '.apps[]' $TREE);
 			for APP in $APPS ; do
@@ -466,7 +466,7 @@ execute_task() {
 				echo $APP_TEMPLATE
 				if [ "$APP_NAME" == "$DEPLOY_NAME" ]; then
 					if [ "$DEPLOY_ACTION" == "ask" ]; then
-						TEMPLATE=$(cat $APP_TEMPLATE | base64 -d)
+						TEMPLATE=$(cat $APP_TEMPLATE | base64 -w0)
 						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0);
 					elif [ "$DEPLOY_ACTION" == "deploy" ]; then
 						DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD)
