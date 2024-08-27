@@ -38,6 +38,9 @@ SCHEDULER_SERVICEFILE_GENERATE_TEST=${SCHEDULER_SERVICEFILE_GENERATE_TEST:-false
 check_installer_key() {
 	mkdir -p /root/.ssh
 	if [ -f /etc/user/data/installer ]; then
+		if [ -f /root/ssh/id_rsa ]; then # remove symlink if exists
+			rm /root/.ssh/id_rsa
+		fi;
 		ln -s /etc/user/data/installer /root/.ssh/id_rsa
 		echo '
 Host git.format.hu
