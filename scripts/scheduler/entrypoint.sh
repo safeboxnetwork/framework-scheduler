@@ -164,7 +164,7 @@ get_repositories(){
 		check_installer_key	
 
 		BASE=$(basename $REPO | cut -d '.' -f1)
-		if [ ! -f "/tmp/$BASE" ]; then
+		if [ ! -d "/tmp/$BASE" ]; then
 			git clone $REPO /tmp/$BASE;
 		else
 			git pull $REPO /tmp/$BASE;
