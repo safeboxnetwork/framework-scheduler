@@ -35,26 +35,6 @@ CURL_RETRIES=${CURL_RETRIES:-360}
 
 SCHEDULER_SERVICEFILE_GENERATE_TEST=${SCHEDULER_SERVICEFILE_GENERATE_TEST:-false}
 
-check_installer_key() {
-	mkdir -p /root/.ssh
-	if [ -f /etc/user/data/installer ]; then
-		if [ -f /root/.ssh/id_rsa ]; then # remove symlink if exists
-			rm /root/.ssh/id_rsa
-		fi;
-		ln -s /etc/user/data/installer /root/.ssh/id_rsa
-		echo '
-Host git.format.hu
-    User git
-    Port 20202
-    HostName git.format.hu
-    PreferredAuthentications publickey
-    IdentityFile /root/.ssh/id_rsa
-    IdentitiesOnly yes
-    StrictHostKeyChecking no 
-		' > /root/.ssh/config
-	fi
-}	
-
 if [[ -n "$DOCKER_REGISTRY_URL" && "$DOCKER_REGISTRY_URL" != "null" ]]; then
     SETUP="/setup"
 else
@@ -107,10 +87,42 @@ if [ "$ORGANIZATION" == "" ]; then
 	ORGANIZATION=format
 fi
 
+DEBUG=1;
+
+# writes debug message if DEBUG variable is set
+debug() {
+	if [ $DEBUG -eq 1 ]; then
+		echo "DEBUG: "$1 $2 $3
+	fi;
+}
+
+check_installer_key() {
+	mkdir -p /root/.ssh
+	if [ -f /etc/user/data/installer ]; then
+		if [ -f /root/.ssh/id_rsa ]; then # remove symlink if exists
+			rm /root/.ssh/id_rsa
+		fi;
+		ln -s /etc/user/data/installer /root/.ssh/id_rsa
+		echo '
+Host git.format.hu
+    User git
+    Port 20202
+    HostName git.format.hu
+    PreferredAuthentications publickey
+    IdentityFile /root/.ssh/id_rsa
+    IdentitiesOnly yes
+    StrictHostKeyChecking no 
+		' > /root/.ssh/config
+	fi
+}	
+
 deploy_additionals(){
 
 	local NAME="$1"
 	local JSON="$(echo "$2" | base64 -d)"
+
+	debug "DEPLOY: $NAME";
+	debug "JSON: $JSON";
 
 	# Loop through each key in the JSON and create a variable
 	for key in $(echo "$JSON" | jq -r 'keys[]'); do
@@ -370,7 +382,7 @@ execute_task() {
       DATE=$( date +"%Y%m%d%H%M")
 
       # Executing task
-      echo "TASK: $(echo $TASK | cut -d ':' -f1)"
+      debug "TASK: $(echo $TASK | cut -d ':' -f1)"
       TASK_NAME=$(echo $TASK | cut -d ':' -f1);
 
     # checking sytem status
@@ -458,7 +470,8 @@ execute_task() {
 		DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME)
 		DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
 	        TREES=$(get_repositories);
-echo $JSON
+		debug "$JSON"
+
 		for TREE in $TREES; do
 			APPS=$(jq -rc '.apps[]' $TREE);
 			for APP in $APPS ; do
@@ -466,13 +479,13 @@ echo $JSON
 				APP_VERSION=$(echo "$APP" | jq -r '.version')
 				APP_DIR=$(dirname $TREE)"/"$APP_NAME
 				APP_TEMPLATE=$(dirname $TREE)"/"$APP_NAME"/template.json"
-				echo $APP_TEMPLATE
+				debug "$APP_TEMPLATE"
 				if [ "$APP_NAME" == "$DEPLOY_NAME" ]; then
 					if [ "$DEPLOY_ACTION" == "ask" ]; then
 						TEMPLATE=$(cat $APP_TEMPLATE | base64 -w0)
 						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0);
 					elif [ "$DEPLOY_ACTION" == "deploy" ]; then
-						DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD)
+						DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
 						deploy_additionals "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
 						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$STATUS'" }' | jq -r . | base64 -w0);
 					fi;
@@ -506,6 +519,8 @@ echo $JSON
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0);
 
       fi 
+
+	debug "JSON_TARGET: $JSON_TARGET";
 
       if [ "$JSON_TARGET" != "" ]; then
 		redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
