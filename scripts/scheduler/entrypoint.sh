@@ -129,7 +129,7 @@ deploy_additionals(){
         DB_ROOT_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
 
 	# copy json files into service directory
-	cp -rv $DIR/$NAME-secret.json $SECRET_DIR/$NAME.json
+	cp -rv $DIR/$NAME-secret.json $SECRET_DIR/$NAME/$NAME.json
 	
 	cp -rv $DIR/service-$NAME.json $SERVICE_DIR/service-$NAME.json;
 	cp -rv $DIR/domain-$NAME.json $SERVICE_DIR/domain-$NAME.json;
@@ -139,13 +139,13 @@ deploy_additionals(){
 
 # TODO - for key
 	# replace variables in secret and domain files
-	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SECRET_DIR/$NAME.json;
-	sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g" $SECRET_DIR/$NAME.json;
-	sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g" $SECRET_DIR/$NAME.json;
-	sed -i "s/DB_MYSQL/$DB_MYSQL/g" $SECRET_DIR/$NAME.json;
-	sed -i "s/DB_USER/$DB_USER/g" $SECRET_DIR/$NAME.json;
-	sed -i "s/DB_PASSWORD/$DB_PASSWORD/g" $SECRET_DIR/$NAME.json;
-	sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g" $SECRET_DIR/$NAME.json;
+	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SECRET_DIR/$NAME/$NAME.json;
+	sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g" $SECRET_DIR/$NAME/$NAME.json;
+	sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g" $SECRET_DIR/$NAME/$NAME.json;
+	sed -i "s/DB_MYSQL/$DB_MYSQL/g" $SECRET_DIR/$NAME/$NAME.json;
+	sed -i "s/DB_USER/$DB_USER/g" $SECRET_DIR/$NAME/$NAME.json;
+	sed -i "s/DB_PASSWORD/$DB_PASSWORD/g" $SECRET_DIR/$NAME/$NAME.json;
+	sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g" $SECRET_DIR/$NAME/$NAME.json;
 
 	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SERVICE_DIR/domain-$NAME.json
 
