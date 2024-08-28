@@ -138,6 +138,8 @@ deploy_additionals(){
 			deploy_nextcloud
 		;;
 	esac
+
+	$service_exec service-nextcloud.json start &
 }
 
 deploy_nextcloud(){
