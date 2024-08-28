@@ -153,11 +153,6 @@ deploy_additionals(){
 	$service_exec service-$NAME.json start &
 }
 
-deploy(){
-
-
-}
-
 get_repositories(){
 
 	local REPOS;
