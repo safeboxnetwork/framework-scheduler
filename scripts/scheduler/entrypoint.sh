@@ -173,10 +173,10 @@ get_repositories(){
 	local BASE;
 	local TREES="";
 
+	check_installer_key
+
 	REPOS=$(jq -r .repositories[] /etc/user/config/repositories.json); # list of repos, delimiter by space
 	for REPO in $REPOS; do
-
-		check_installer_key	
 
 		BASE=$(basename $REPO | cut -d '.' -f1)
 		if [ ! -d "/tmp/$BASE" ]; then
