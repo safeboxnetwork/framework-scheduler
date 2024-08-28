@@ -133,40 +133,38 @@ deploy_additionals(){
 	# env variables are named by "key" from the source template
 	# for example NEXTCLOUD_DOMAIN, NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD have to be set by according to template
 
-	case "$NAME" in
-		"nextcloud")
-			deploy_nextcloud
-		;;
-	esac
+	deploy "$NAME"
 
-	$service_exec service-nextcloud.json start &
+	$service_exec service-$NAME.json start &
 }
 
-deploy_nextcloud(){
+deploy(){
+
+	local NAME="$1"
 
 	DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)";
         DB_USER="$(echo $RANDOM | md5sum | head -c 8)";
         DB_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
         DB_ROOT_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
 
-	# TODO repo	
-	git clone ssh://$GIT_REPO/$ORGANIZATION/nextcloud.git /tmp/nextcloud;
-	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" /tmp/nextcloud/nextcloud-secret.json;
-	sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g" /tmp/nextcloud/nextcloud-secret.json;
-	sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g" /tmp/nextcloud/nextcloud-secret.json;
-	sed -i "s/DB_MYSQL/$DB_MYSQL/g" /tmp/nextcloud/nextcloud-secret.json;
-	sed -i "s/DB_USER/$DB_USER/g" /tmp/nextcloud/nextcloud-secret.json;
-	sed -i "s/DB_PASSWORD/$DB_PASSWORD/g" /tmp/nextcloud/nextcloud-secret.json;
-	sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g" /tmp/nextcloud/nextcloud-secret.json;
-	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" /tmp/nextcloud/domain-nextcloud.json
+	# TODO repo
+	git clone ssh://$GIT_REPO/$ORGANIZATION/$NAME.git /tmp/$NAME;
+	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" /tmp/$NAME/$NAME-secret.json;
+	sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g" /tmp/$NAME/$NAME-secret.json;
+	sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g" /tmp/$NAME/$NAME-secret.json;
+	sed -i "s/DB_MYSQL/$DB_MYSQL/g" /tmp/$NAME/$NAME-secret.json;
+	sed -i "s/DB_USER/$DB_USER/g" /tmp/$NAME/$NAME-secret.json;
+	sed -i "s/DB_PASSWORD/$DB_PASSWORD/g" /tmp/$NAME/$NAME-secret.json;
+	sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g" /tmp/$NAME/$NAME-secret.json;
+	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" /tmp/$NAME/domain-$NAME.json
 
-	cp -rv /tmp/nextcloud/nextcloud-secret.json /etc/user/secret/nextcloud.json;
+	cp -rv /tmp/$NAME/$NAME-secret.json /etc/user/secret/$NAME.json;
 	
-	cp -rv /tmp/nextcloud/nextcloud.json $SERVICE_DIR/nextcloud.json;
-	cp -rv /tmp/nextcloud/domain-nextcloud.json $SERVICE_DIR/domain-nextcloud.json;
-	cp -rv /tmp/nextcloud/firewall-nextcloud.json $SERVICE_DIR/firewall-nextcloud.json;
-	cp -rv /tmp/nextcloud/firewall-nextcloud-server-dns.json $SERVICE_DIR/firewall-nextcloud-server-dns.json;
-	cp -rv /tmp/nextcloud/firewall-nextcloud-server-smtp.json $SERVICE_DIR/firewall-nextcloud-server-smtp.json;
+	cp -rv /tmp/$NAME/$NAME.json $SERVICE_DIR/$NAME.json;
+	cp -rv /tmp/$NAME/domain-$NAME.json $SERVICE_DIR/domain-$NAME.json;
+	cp -rv /tmp/$NAME/firewall-$NAME.json $SERVICE_DIR/firewall-$NAME.json;
+	cp -rv /tmp/$NAME/firewall-$NAME-server-dns.json $SERVICE_DIR/firewall-$NAME-server-dns.json;
+	cp -rv /tmp/$NAME/firewall-$NAME-server-smtp.json $SERVICE_DIR/firewall-$NAME-server-smtp.json;
 }
 
 get_repositories(){
