@@ -128,6 +128,10 @@ deploy_additionals(){
         DB_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
         DB_ROOT_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
 
+	if [ ! -d "$SECRET_DIR/$NAME" ]; then
+		mkdir -p "$SECRET_DIR/$NAME";
+	fi;
+
 	# copy json files into service directory
 	cp -rv $DIR/$NAME-secret.json $SECRET_DIR/$NAME/$NAME.json
 	
