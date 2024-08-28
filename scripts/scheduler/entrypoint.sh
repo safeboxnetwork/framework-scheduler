@@ -123,29 +123,22 @@ deploy_additionals(){
 	# env variables are named by "key" from the source template
 	# for example NEXTCLOUD_DOMAIN, NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD have to be set by according to template
 
-	deploy "$DIR" "$NAME"
-
-	$service_exec service-$NAME.json start &
-}
-
-deploy(){
-
-	local DIR="$1"
-	local NAME="$2"
-
 	DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)";
         DB_USER="$(echo $RANDOM | md5sum | head -c 8)";
         DB_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
         DB_ROOT_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
 
-	cp -rv $DIR/$NAME/$NAME-secret.json $SECRET_DIR/$NAME.json
+	# copy json files into service directory
+	cp -rv $DIR/$NAME-secret.json $SECRET_DIR/$NAME.json
 	
-	cp -rv $DIR/$NAME/service-$NAME.json $SERVICE_DIR/service-$NAME.json;
-	cp -rv $DIR/$NAME/domain-$NAME.json $SERVICE_DIR/domain-$NAME.json;
-	cp -rv $DIR/$NAME/firewall-$NAME.json $SERVICE_DIR/firewall-$NAME.json;
-	cp -rv $DIR/$NAME/firewall-$NAME-server-dns.json $SERVICE_DIR/firewall-$NAME-server-dns.json;
-	cp -rv $DIR/$NAME/firewall-$NAME-server-smtp.json $SERVICE_DIR/firewall-$NAME-server-smtp.json;
+	cp -rv $DIR/service-$NAME.json $SERVICE_DIR/service-$NAME.json;
+	cp -rv $DIR/domain-$NAME.json $SERVICE_DIR/domain-$NAME.json;
+	cp -rv $DIR/firewall-$NAME.json $SERVICE_DIR/firewall-$NAME.json;
+	cp -rv $DIR/firewall-$NAME-server-dns.json $SERVICE_DIR/firewall-$NAME-server-dns.json;
+	cp -rv $DIR/firewall-$NAME-server-smtp.json $SERVICE_DIR/firewall-$NAME-server-smtp.json;
 
+# TODO - for key
+	# replace variables in secret and domain files
 	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SECRET_DIR/$NAME.json;
 	sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g" $SECRET_DIR/$NAME.json;
 	sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g" $SECRET_DIR/$NAME.json;
@@ -153,7 +146,16 @@ deploy(){
 	sed -i "s/DB_USER/$DB_USER/g" $SECRET_DIR/$NAME.json;
 	sed -i "s/DB_PASSWORD/$DB_PASSWORD/g" $SECRET_DIR/$NAME.json;
 	sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g" $SECRET_DIR/$NAME.json;
+
 	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SERVICE_DIR/domain-$NAME.json
+
+	# start service
+	$service_exec service-$NAME.json start &
+}
+
+deploy(){
+
+
 }
 
 get_repositories(){
