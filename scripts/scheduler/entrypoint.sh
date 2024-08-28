@@ -5,6 +5,8 @@ cd /scripts
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 USER_INIT_PATH=$USER_INIT_PATH
 GLOBAL_VERSION=${GLOBAL_VERSION:-1.0.1}
+SERVICE_DIR=${SERVICE_DIR:-/etc/user/config/services};
+SECRET_DIR=${SECRET_DIR:-/etc/user/secret};
 
 FRAMEWORK_SCHEDULER_IMAGE=${FRAMEWORK_SCHEDULER_IMAGE:-framework-scheduler}
 FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
@@ -73,19 +75,6 @@ $VOLUME_MOUNTS \
 --env HOST_FILE=$HOST_FILE \
 $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
 
-if [ "$SERVICE_DIR" == "" ]; then
-	SERVICE_DIR="/etc/user/config/services";
-fi;
-
-GIT_REPO=$GIT_REPO
-if [ "$GIT_REPO" == "" ]; then
-	GIT_REPO=git.format.hu
-fi
-
-ORGANIZATION=$ORGANIZATION
-if [ "$ORGANIZATION" == "" ]; then
-	ORGANIZATION=format
-fi
 
 DEBUG=1;
 
@@ -118,8 +107,9 @@ Host git.format.hu
 
 deploy_additionals(){
 
-	local NAME="$1"
-	local JSON="$(echo "$2" | base64 -d)"
+	local DIR="$1"
+	local NAME="$2"
+	local JSON="$(echo "$3" | base64 -d)"
 
 	debug "DEPLOY: $NAME";
 	debug "JSON: $JSON";
@@ -133,38 +123,37 @@ deploy_additionals(){
 	# env variables are named by "key" from the source template
 	# for example NEXTCLOUD_DOMAIN, NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD have to be set by according to template
 
-	deploy "$NAME"
+	deploy "$DIR" "$NAME"
 
 	$service_exec service-$NAME.json start &
 }
 
 deploy(){
 
-	local NAME="$1"
+	local DIR="$1"
+	local NAME="$2"
 
 	DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)";
         DB_USER="$(echo $RANDOM | md5sum | head -c 8)";
         DB_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
         DB_ROOT_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
 
-	# TODO repo
-	git clone ssh://$GIT_REPO/$ORGANIZATION/$NAME.git /tmp/$NAME;
-	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" /tmp/$NAME/$NAME-secret.json;
-	sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g" /tmp/$NAME/$NAME-secret.json;
-	sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g" /tmp/$NAME/$NAME-secret.json;
-	sed -i "s/DB_MYSQL/$DB_MYSQL/g" /tmp/$NAME/$NAME-secret.json;
-	sed -i "s/DB_USER/$DB_USER/g" /tmp/$NAME/$NAME-secret.json;
-	sed -i "s/DB_PASSWORD/$DB_PASSWORD/g" /tmp/$NAME/$NAME-secret.json;
-	sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g" /tmp/$NAME/$NAME-secret.json;
-	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" /tmp/$NAME/domain-$NAME.json
-
-	cp -rv /tmp/$NAME/$NAME-secret.json /etc/user/secret/$NAME.json;
+	cp -rv $DIR/$NAME/$NAME-secret.json $SECRET_DIR/$NAME.json
 	
-	cp -rv /tmp/$NAME/$NAME.json $SERVICE_DIR/$NAME.json;
-	cp -rv /tmp/$NAME/domain-$NAME.json $SERVICE_DIR/domain-$NAME.json;
-	cp -rv /tmp/$NAME/firewall-$NAME.json $SERVICE_DIR/firewall-$NAME.json;
-	cp -rv /tmp/$NAME/firewall-$NAME-server-dns.json $SERVICE_DIR/firewall-$NAME-server-dns.json;
-	cp -rv /tmp/$NAME/firewall-$NAME-server-smtp.json $SERVICE_DIR/firewall-$NAME-server-smtp.json;
+	cp -rv $DIR/$NAME/service-$NAME.json $SERVICE_DIR/service-$NAME.json;
+	cp -rv $DIR/$NAME/domain-$NAME.json $SERVICE_DIR/domain-$NAME.json;
+	cp -rv $DIR/$NAME/firewall-$NAME.json $SERVICE_DIR/firewall-$NAME.json;
+	cp -rv $DIR/$NAME/firewall-$NAME-server-dns.json $SERVICE_DIR/firewall-$NAME-server-dns.json;
+	cp -rv $DIR/$NAME/firewall-$NAME-server-smtp.json $SERVICE_DIR/firewall-$NAME-server-smtp.json;
+
+	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SECRET_DIR/$NAME.json;
+	sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g" $SECRET_DIR/$NAME.json;
+	sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g" $SECRET_DIR/$NAME.json;
+	sed -i "s/DB_MYSQL/$DB_MYSQL/g" $SECRET_DIR/$NAME.json;
+	sed -i "s/DB_USER/$DB_USER/g" $SECRET_DIR/$NAME.json;
+	sed -i "s/DB_PASSWORD/$DB_PASSWORD/g" $SECRET_DIR/$NAME.json;
+	sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g" $SECRET_DIR/$NAME.json;
+	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SERVICE_DIR/domain-$NAME.json
 }
 
 get_repositories(){
@@ -172,6 +161,7 @@ get_repositories(){
 	local REPOS;
 	local BASE;
 	local TREES="";
+	local REPO;
 
 	check_installer_key
 
@@ -478,15 +468,15 @@ execute_task() {
 				APP_NAME=$(echo "$APP" | jq -r '.name')
 				APP_VERSION=$(echo "$APP" | jq -r '.version')
 				APP_DIR=$(dirname $TREE)"/"$APP_NAME
-				APP_TEMPLATE=$(dirname $TREE)"/"$APP_NAME"/template.json"
 				debug "$APP_TEMPLATE"
 				if [ "$APP_NAME" == "$DEPLOY_NAME" ]; then
 					if [ "$DEPLOY_ACTION" == "ask" ]; then
+						APP_TEMPLATE=$APP_DIR"/template.json"
 						TEMPLATE=$(cat $APP_TEMPLATE | base64 -w0)
 						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0);
 					elif [ "$DEPLOY_ACTION" == "deploy" ]; then
 						DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
-						deploy_additionals "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
+						deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
 						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$STATUS'" }' | jq -r . | base64 -w0);
 					fi;
 				fi;
