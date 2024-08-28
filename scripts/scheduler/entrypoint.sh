@@ -169,7 +169,8 @@ get_repositories(){
 		if [ ! -d "/tmp/$BASE" ]; then
 			git clone $REPO /tmp/$BASE;
 		else
-			git pull $REPO /tmp/$BASE;
+			cd /tmp/$BASE;
+			git pull;
 		fi;
 		if [ -f "/tmp/$BASE/applications-tree.json" ]; then
 			TREES=$TREES" /tmp/$BASE/applications-tree.json"
