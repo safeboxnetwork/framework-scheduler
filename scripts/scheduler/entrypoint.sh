@@ -60,7 +60,7 @@ CA="--env CA_PATH=$CA_PATH"
 CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
 mkdir -p $CA_PATH
 
-VOLUME_MOUNTS="-v SYSTEM_DATA:/etc/system/data -v USER_CONFIG:/etc/user/config:rw -v SYSTEM_CONFIG:/etc/system/config:rw";
+VOLUME_MOUNTS="-v SYSTEM_DATA:/etc/system/data -v SYSTEM_CONFIG:/etc/system/config -v SYSTEM_LOG:/etc/system/log -v USER_DATA:/etc/user/data -v USER_CONFIG:/etc/user/config -v USER_SECRET:/etc/user/secret";
 
 service_exec="/usr/bin/docker run --rm \
 $DNS \
