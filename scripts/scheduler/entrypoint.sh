@@ -114,20 +114,6 @@ deploy_additionals(){
 	debug "DEPLOY: $NAME";
 	debug "JSON: $JSON";
 
-	# Loop through each key in the JSON and create a variable
-	for key in $(echo "$JSON" | jq -r 'keys[]'); do
-	  value=$(echo "$JSON" | jq -r --arg k "$key" '.[$k]')
-	  eval "$key=$value"
-	done
-
-	# env variables are named by "key" from the source template
-	# for example NEXTCLOUD_DOMAIN, NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD have to be set by according to template
-
-	DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)";
-        DB_USER="$(echo $RANDOM | md5sum | head -c 8)";
-        DB_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
-        DB_ROOT_PASSWORD="$(echo $RANDOM | md5sum | head -c 10)";
-
 	if [ ! -d "$SECRET_DIR/$NAME" ]; then
 		mkdir -p "$SECRET_DIR/$NAME";
 	fi;
@@ -141,17 +127,20 @@ deploy_additionals(){
 	cp -rv $DIR/firewall-$NAME-server-dns.json $SERVICE_DIR/firewall-$NAME-server-dns.json;
 	cp -rv $DIR/firewall-$NAME-server-smtp.json $SERVICE_DIR/firewall-$NAME-server-smtp.json;
 
-# TODO - for key
-	# replace variables in secret and domain files
-	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SECRET_DIR/$NAME/$NAME.json;
-	sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g" $SECRET_DIR/$NAME/$NAME.json;
-	sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g" $SECRET_DIR/$NAME/$NAME.json;
-	sed -i "s/DB_MYSQL/$DB_MYSQL/g" $SECRET_DIR/$NAME/$NAME.json;
-	sed -i "s/DB_USER/$DB_USER/g" $SECRET_DIR/$NAME/$NAME.json;
-	sed -i "s/DB_PASSWORD/$DB_PASSWORD/g" $SECRET_DIR/$NAME/$NAME.json;
-	sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g" $SECRET_DIR/$NAME/$NAME.json;
+	# env variables are named by "key" from the source template
+	# for example NEXTCLOUD_DOMAIN, NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD have to be set by according to template
 
-	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SERVICE_DIR/domain-$NAME.json
+	# Loop through each key in the JSON and create a variable
+	for key in $(echo "$JSON" | jq -r 'keys[]'); do
+	  value=$(echo "$JSON" | jq -r --arg k "$key" '.[$k]')
+	  eval "$key=$value"
+
+	  # replace variables in secret and domain files
+	  sed -i "s/#"$key"/"$value"/g" $SECRET_DIR/$NAME/$NAME.json;
+	  sed -i "s/#"$key"/"$value"/g" $SERVICE_DIR/domain-$NAME.json
+	done
+
+#	DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)";
 
 	# start service
 	debug "$service_exec service-$NAME.json start info prechecked &"
