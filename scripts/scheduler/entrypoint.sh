@@ -154,7 +154,8 @@ deploy_additionals(){
 	sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g" $SERVICE_DIR/domain-$NAME.json
 
 	# start service
-	$service_exec service-$NAME.json start &
+	debug "$service_exec service-$NAME.json start info prechecked &"
+	$service_exec service-$NAME.json start info prechecked &
 }
 
 get_repositories(){
@@ -171,10 +172,10 @@ get_repositories(){
 
 		BASE=$(basename $REPO | cut -d '.' -f1)
 		if [ ! -d "/tmp/$BASE" ]; then
-			git clone $REPO /tmp/$BASE;
+			git clone $REPO /tmp/$BASE > /dev/null;
 		else
 			cd /tmp/$BASE;
-			git pull;
+			git pull > /dev/null;
 		fi;
 		if [ -f "/tmp/$BASE/applications-tree.json" ]; then
 			TREES=$TREES" /tmp/$BASE/applications-tree.json"
@@ -205,6 +206,10 @@ check_volumes(){
 	fi;
 	if [ ! -d "/etc/user/config/" ]; then
 		/usr/bin/docker volume create USER_CONFIG;
+		RET=0;
+	fi;
+	if [ ! -d "/etc/user/secret/" ]; then
+		/usr/bin/docker volume create USER_SECRET;
 		RET=0;
 	fi;
 
@@ -610,12 +615,14 @@ if [ "$VOL" != "1" ]; then
 		-v SYSTEM_LOG:/etc/system/log \
 		-v USER_DATA:/etc/user/data \
 		-v USER_CONFIG:/etc/user/config \
+		-v USER_SECRET:/etc/user/secret \
+		--name $FRAMEWORK_SCHEDULER_NAME \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
-	  	--name $FRAMEWORK_SCHEDULER_NAME \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 	  $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION;
-      /usr/bin/docker stop $HOSTNAME;
+      /usr/bin/docker rm -f $HOSTNAME;
 fi;
+
 
 DF=$(check_dirs_and_files);
 if [ "$DF" != "1" ]; then
