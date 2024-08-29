@@ -170,11 +170,12 @@ if [[ $FIRST_INSTALL == "true" ]]; then
 	$VAR_DISCOVERY_DIRECTORY \
 	$VAR_DISCOVERY_CONFIG_FILE \
 	$VAR_DISCOVERY_CONFIG_DIRECTORY \
-	--volume USER_DATA:/etc/user/data \
-	--volume USER_CONFIG:/etc/user/config \
 	--volume SYSTEM_DATA:/etc/system/data \
 	--volume SYSTEM_CONFIG:/etc/system/config \
 	--volume SYSTEM_LOG:/etc/system/log \
+	--volume USER_DATA:/etc/user/data \
+	--volume USER_CONFIG:/etc/user/config \
+	--volume USER_SECRET:/etc/user/secret \
 	--mount src=USER_DATA,dst=/root/.ssh/id_rsa,volume-subpath=installer \
 	--env LETSENCRYPT_MAIL=$LETSENCRYPT_MAIL \
 	--env LETSENCRYPT_SERVERNAME=$LETSENCRYPT_SERVERNAME \
