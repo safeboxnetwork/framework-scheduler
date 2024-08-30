@@ -133,14 +133,12 @@ deploy_additionals(){
 	# Loop through each key in the JSON and create a variable
 	for key in $(echo "$JSON" | jq -r 'keys[]'); do
 	  value=$(echo "$JSON" | jq -r --arg k "$key" '.[$k]')
-	  eval "$key=$value"
+	  # eval "$key=$value"
 
 	  # replace variables in secret and domain files
 	  sed -i "s/#"$key"/"$value"/g" $SECRET_DIR/$NAME/$NAME.json;
 	  sed -i "s/#"$key"/"$value"/g" $SERVICE_DIR/domain-$NAME.json
 	done
-
-#	DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)";
 
 	# start service
 	debug "$service_exec service-$NAME.json start info prechecked &"
