@@ -141,8 +141,8 @@ deploy_additionals(){
 	done
 
 	# start service
-	debug "$service_exec service-$NAME.json start info prechecked &"
-	$service_exec service-$NAME.json start info prechecked &
+	debug "$service_exec service-$NAME.json start info &"
+	$service_exec service-$NAME.json start info &
 }
 
 get_repositories(){
