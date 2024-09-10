@@ -5,54 +5,34 @@ FIRST_INSTALL=$3
 INSTALL_KEY=$4
 GLOBAL_VERSION=$5
 
-ask_envs() {
-	echo "VPN proxy? (Y/n)";
-	read -r ANSWER;
-	if [ "$ANSWER" == "n" ] || [ "$ANSWER" == "N" ]; then
-		VPN_PROXY="no";
-	else
-		VPN_PROXY="yes";
+get_vpn_key() {
 
+	if [ "$VPN_PASS" != "" ]; then
+		dateFromServer=$(curl -v --silent https://demo.format.hu/ 2>&1 | grep -i '< date' | sed -e 's/< date: //gi')
+		VPN_DATE=$(date +"%Y%m%d" -d "$dateFromServer");
+		VPN_HASH=$(echo -n $(( $VPN_PASS * $VPN_DATE )) | sha256sum | cut -d " " -f1);
+		VPN_URL="$VPN_DOMAIN/$VPN_HASH/secret";
+		echo "DEBUG: $VPN_DATE";
+		echo "DEBUG: $VPN_URL";
+		HTTP_CODE=$(curl -s -I -w "%{http_code}" $VPN_URL -o /dev/null);
 
-			if [ "$VPN_PASS" != "" ]; then
-				dateFromServer=$(curl -v --silent https://demo.format.hu/ 2>&1 | grep -i '< date' | sed -e 's/< date: //gi')
-				VPN_DATE=$(date +"%Y%m%d" -d "$dateFromServer");
-				VPN_HASH=$(echo -n $(( $VPN_PASS * $VPN_DATE )) | sha256sum | cut -d " " -f1);
-				VPN_URL="$VPN_DOMAIN/$VPN_HASH/secret";
-				echo "DEBUG: $VPN_DATE";
-				echo "DEBUG: $VPN_URL";
-				HTTP_CODE=$(curl -s -I -w "%{http_code}" $VPN_URL -o /dev/null);
-				break;
-			fi;
+		echo "DEBUG: $HTTP_CODE";
+		if [ "$HTTP_CODE" == "200" ]; then
+			# download VPN key
+			VPN_KEY=$(curl -s $VPN_URL);
+			echo $VPN_KEY;
 
-			echo "DEBUG: $HTTP_CODE";
-			if [ "$HTTP_CODE" == "200" ]; then
-				# download VPN key
-				VPN_KEY=$(curl -s $VPN_URL);
-				echo $VPN_KEY;
-
-				$SUDO_CMD mkdir -p /etc/user/secret/vpn-proxy;
-				echo $VPN_KEY | base64 -d > /tmp/wg0.conf;
-				$SUDO_CMD mv /tmp/wg0.conf /etc/user/secret/vpn-proxy/;
-				break;
-			else
-				echo "Download of VPN KEY was unsuccessful from URL: $VPN_URL";
-
-				echo "Do you want to retry? (Y/n)";
-				read -r VPN_RETRY;
-				if [ "$VPN_RETRY" == "n" ] || [ "$VPN_RETRY" == "N" ]; then
-					VPN_PROXY="no";
-					echo "VPN proxy was skipped.";
-					break;
-				fi
-			fi;
-
-		if [ "$VPN_PROXY" == "yes" ]; then
-			if [ "$LETSENCRYPT_SERVERNAME" = "" ]; then
-				LETSENCRYPT_SERVERNAME="letsencrypt";
-			fi;
+			$SUDO_CMD mkdir -p /etc/user/secret/vpn-proxy;
+			echo $VPN_KEY | base64 -d > /tmp/wg0.conf;
+			$SUDO_CMD mv /tmp/wg0.conf /etc/user/secret/vpn-proxy/;
+		else
+			echo "Download of VPN KEY was unsuccessful from URL: $VPN_URL";
+			echo "VPN proxy was skipped.";
+			VPN_PROXY="no";
 		fi;
-	fi
+	else
+		echo "$VPN_PASS is empty";
+	fi;
 }
 
 discover_services() {
@@ -138,6 +118,12 @@ if [[ $FIRST_INSTALL == "true" ]]; then
 		VAR_CRON="--env CRON=$CRON";
 	fi
 
+	if [ "$VPN_PROXY" == "yes" ]; then
+		if [ "$LETSENCRYPT_SERVERNAME" = "" ]; then
+			LETSENCRYPT_SERVERNAME="letsencrypt";
+		fi;
+	fi;
+
 	# discovery
 
 	if [ "$DISCOVERY" != "" ]; then
@@ -209,6 +195,9 @@ if [ "$INIT" == "true" ]; then
 	fi
 
 	if [ "$VPN_PROXY" == "yes" ]; then
+
+		get_vpn_key;
+
 		$SERVICE_EXEC vpn-proxy start
 		echo "$INIT_SERVICE_PATH/vpn-proxy.json" >> $AUTO_START_SERVICES/.init_services
 		echo "$INIT_SERVICE_PATH/firewall-vpn-smarthost-loadbalancer" >> $AUTO_START_SERVICES/.init_services 
