@@ -410,6 +410,27 @@ execute_task() {
 
 	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
+      elif [ "$TASK_NAME" == "services" ]; then
+	SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json";
+	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
+	SERVICES="";
+	for SERVICE in $(echo $INSTALLED_SERVICES); do
+		for ITEM in $SYSTEM_LIST; do
+			if [ "$(basename $SERVICE)" != "$ITEM" ]; then # not a system file
+				CONTENT=$(cat $SERVICE | base64 -w0);
+				if [ "$SERVICES" != "" ]; then
+					SEP=",";
+				else
+					SEP="";
+				fi;
+				SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
+				break;
+			fi;
+		done;
+	done
+
+	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+
       elif [ "$TASK_NAME" == "deployments" ]; then
 	        DEPLOYMENTS=""
 		TREES=$(get_repositories);
@@ -497,7 +518,7 @@ execute_task() {
 		add_repository "$NEW_REPO"
             	JSON_TARGET=""
 
-      elif [ "$TASK_NAME" == "containers" ]; then # TODO
+      elif [ "$TASK_NAME" == "containers" ]; then # not in use
 	    CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler);
 	    RESULT=$(echo "$CONTAINERS" | base64 -w0);
             JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0);
