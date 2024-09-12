@@ -2,6 +2,8 @@
 
 cd /scripts
 
+DEBUG_MODE=${DEBUG_MODE:-false}
+
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 USER_INIT_PATH=$USER_INIT_PATH
 GLOBAL_VERSION=${GLOBAL_VERSION:-1.0.1}
@@ -627,6 +629,11 @@ if [ "$STATUS" != "1" ]; then
 fi;
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
+	  if [ "$DEBUG_MODE" == "true" ]; then
+	  	DOCKER_START="--entrypoint=sh  "$DOCKER_REGISTRY_URL"/"$FRAMEWORK_SCHEDULER_IMAGE":"$FRAMEWORK_SCHEDULER_VERSION" -c 'sleep 86400'";
+	  else
+	  	DOCKER_START="$DOCKER_REGISTRY_URL"/"$FRAMEWORK_SCHEDULER_IMAGE":"$FRAMEWORK_SCHEDULER_VERSION";
+	  fi
       /usr/bin/docker run -d \
 	  	-v /var/run/docker.sock:/var/run/docker.sock \
 		-v SYSTEM_DATA:/etc/system/data \
@@ -638,9 +645,7 @@ if [ "$VOL" != "1" ]; then
 		--name $FRAMEWORK_SCHEDULER_NAME \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
-	  $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION;
-#		--entrypoint=sh \
-#	  $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c 'sleep 86400';
+	  $DOCKER_START;
       /usr/bin/docker rm -f $HOSTNAME;
 fi;
 
