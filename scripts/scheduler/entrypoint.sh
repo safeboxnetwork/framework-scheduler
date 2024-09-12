@@ -424,8 +424,15 @@ execute_task() {
 			else
 				SEP="";
 			fi;
-			SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
-			break;
+
+			SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
+			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
+			CONTAINERS="";
+			for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
+				CONTAINERS="$CONTAINERS "$(docker ps --format '{{.Names}}' | grep -v framework-scheduler | grep $CONTAINER_NAME);
+			done;
+			#RESULT=$(echo "$CONTAINERS" | base64 -w0);
+			SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"content": "'$CONTENT'", "running": "'$CONTAINERS'"}';
 		fi;
 	done
 
