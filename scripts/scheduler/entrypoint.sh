@@ -645,6 +645,7 @@ if [ "$VOL" != "1" ]; then
 		--name $FRAMEWORK_SCHEDULER_NAME \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
+		--env RUN_FORCE=$RUN_FORCE \
 	  $DOCKER_START;
       /usr/bin/docker rm -f $HOSTNAME;
 fi;
