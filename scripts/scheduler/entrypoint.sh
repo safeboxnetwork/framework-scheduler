@@ -425,8 +425,15 @@ execute_task() {
 			else
 				SEP="";
 			fi;
-			SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
-			break;
+
+			SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
+			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
+			CONTAINERS="";
+			for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
+				CONTAINERS="$CONTAINERS "$(docker ps --format '{{.Names}}' | grep -v framework-scheduler | grep $CONTAINER_NAME);
+			done;
+			#RESULT=$(echo "$CONTAINERS" | base64 -w0);
+			SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"content": "'$CONTENT'", "running": "'$CONTAINERS'"}';
 		fi;
 	done
 
@@ -632,6 +639,8 @@ if [ "$VOL" != "1" ]; then
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 	  $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION;
+#		--entrypoint=sh \
+#	  $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c 'sleep 86400';
       /usr/bin/docker rm -f $HOSTNAME;
 fi;
 
