@@ -415,7 +415,7 @@ execute_task() {
 	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
 	SERVICES="";
 	for SERVICE in $(echo $INSTALLED_SERVICES); do
-		X=$(echo $SYSTEM_LIST | grep -w "$SERVICE");
+		X=$(echo $SYSTEM_LIST | grep -w "$(basename $SERVICE)");
 
 		if [ "$X" == "" ]; then # not a system file
 			CONTENT=$(cat $SERVICE | base64 -w0);
