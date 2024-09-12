@@ -415,18 +415,18 @@ execute_task() {
 	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
 	SERVICES="";
 	for SERVICE in $(echo $INSTALLED_SERVICES); do
-		for ITEM in $SYSTEM_LIST; do
-			if [ "$(basename $SERVICE)" != "$ITEM" ]; then # not a system file
-				CONTENT=$(cat $SERVICE | base64 -w0);
-				if [ "$SERVICES" != "" ]; then
-					SEP=",";
-				else
-					SEP="";
-				fi;
-				SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
-				break;
+		X=$(echo $SYSTEM_LIST | grep -w "$SERVICE");
+
+		if [ "$X" == "" ]; then # not a system file
+			CONTENT=$(cat $SERVICE | base64 -w0);
+			if [ "$SERVICES" != "" ]; then
+				SEP=",";
+			else
+				SEP="";
 			fi;
-		done;
+			SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
+			break;
+		fi;
 	done
 
 	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
