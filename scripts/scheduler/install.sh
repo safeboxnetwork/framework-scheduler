@@ -219,10 +219,8 @@ if [ "$INIT" == "true" ]; then
 		echo "$INIT_SERVICE_PATH/firewall-smarthost-to-backend.json" >> $AUTO_START_SERVICES/.init_services
 		echo "$INIT_SERVICE_PATH/smarthost-proxy-scheduler.json" >> $AUTO_START_SERVICES/.init_services
 		echo "$INIT_SERVICE_PATH/local-proxy.json" >> $AUTO_START_SERVICES/.init_services
-		
-		echo "Would you like to run local backend? (Y/n)";
-		read -r ANSWER;
-		if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ] ; then
+	
+		if [ "$LOCAL_BACKEND" == "yes" ]; then
 			$SERVICE_EXEC local-backend start
 			echo "$INIT_SERVICE_PATH/local-backend.json" >> $AUTO_START_SERVICES/.init_services
 			echo "$INIT_SERVICE_PATH/firewall-local-backend.json" >> $AUTO_START_SERVICES/.init_services
@@ -232,10 +230,11 @@ if [ "$INIT" == "true" ]; then
 
 fi;
 
+ADDITIONALS=""; # COMMENT
+ADDITIONAL_SERVICES="";
+
 # install additionals - run installer-tool again but additional_install.sh instead of deploy.sh
 if [ "$ADDITIONALS" == "yes" ]; then
-
-	ADDITIONAL_SERVICES="";
 
 	if [ "$NEXTCLOUD" == "yes" ]; then
 		VAR_NEXTCLOUD="--env NEXTCLOUD=$NEXTCLOUD";
