@@ -630,11 +630,11 @@ fi;
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
 	  if [ "$DEBUG_MODE" == "true" ]; then
-	  	DOCKER_START="--entrypoint=sh  "$DOCKER_REGISTRY_URL"/"$FRAMEWORK_SCHEDULER_IMAGE":"$FRAMEWORK_SCHEDULER_VERSION" -c \'sleep 86400\'";
+	  	DOCKER_START="--entrypoint=sh $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c 'sleep 86400'"
 	  else
-	  	DOCKER_START="$DOCKER_REGISTRY_URL"/"$FRAMEWORK_SCHEDULER_IMAGE":"$FRAMEWORK_SCHEDULER_VERSION";
+	  	DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
 	  fi
-      /usr/bin/docker run -d \
+      DOCKER_RUN="/usr/bin/docker run -d \
 	  	-v /var/run/docker.sock:/var/run/docker.sock \
 		-v SYSTEM_DATA:/etc/system/data \
 		-v SYSTEM_CONFIG:/etc/system/config \
@@ -646,7 +646,8 @@ if [ "$VOL" != "1" ]; then
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 		--env RUN_FORCE=$RUN_FORCE \
-	  $DOCKER_START;
+	  $DOCKER_START";
+      eval "$DOCKER_RUN";
       /usr/bin/docker rm -f $HOSTNAME;
 fi;
 
