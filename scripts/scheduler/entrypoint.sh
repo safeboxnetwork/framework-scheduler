@@ -363,6 +363,73 @@ create_framework_json() {
   ' | jq -r . >/etc/user/config/services/service-framework.json
 }
 
+
+check_update() {
+
+	local IMAGE="$1";
+
+	REPOSITORY_URL=$(echo $IMAGE | cut -d '/' -f1);
+
+	# Check whether repository url is available
+
+	CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/";
+	CURL_CHECK_CODE=$(eval $CURL_CHECK);
+	if [[ "$CURL_CHECK_CODE" == "200" ]] ; then 
+		debug "$REPOSITORY_URL accessed successful";
+
+		# if repository url is not set
+		if [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]] ; then
+			REPOSITORY_URL="docker.io";
+			TEMP_PATH=$IMAGE;
+		else
+			# -f2- IMAGE can contain subdirectories
+			TEMP_PATH=$(echo $IMAGE | cut -d '/' -f2-);
+		fi;
+
+		debug "TEMP PATH: $TEMP_PATH";
+		TEMP_IMAGE=$(echo $TEMP_PATH | cut -d ':' -f1);
+		TEMP_VERSION=$(echo $TEMP_PATH | cut -d ':' -f2);
+		if [ "$TEMP_VERSION" == "$TEMP_IMAGE" ]; then # version is not set
+			TEMP_VERSION="latest";
+		fi;
+
+		debug "https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION";
+		debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
+		digest=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION" | jq -r '.config.digest');
+		local_digest=$(docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION)
+		debug "DIGEST: $digest";
+		debug "LOCAL DIGEST: $local_digest";
+
+		if [ "$digest" != "$local_digest" ] ; then
+			echo "Update available. Executing update command..."
+			DOCKER_PULL="docker pull $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION"
+			eval $DOCKER_PULL
+			STATUS=$? 	
+			debug "PULL STATUS: $STATUS"
+			if [ $STATUS != 0 ] ; then # Exit status of last task
+				echo "PULL ERROR: $DOCKER_PULL no any new image accessible in registry $REPOSITORY_URL";
+			else
+				UPDATE="1";
+			fi
+		else
+			echo "Already up to date. Nothing to do."
+		fi
+	else 
+		debug "$REPOSITORY_URL not accessible, http error code: $CURL_CHECK_CODE";
+
+		echo "Force image pull has started without digest check...";
+		DOCKER_PULL="docker pull $IMAGE"
+		eval $DOCKER_PULL
+		STATUS=$?
+		debug "PULL STATUS: $STATUS"
+		if [ $STATUS != 0 ] ; then # Exit status of last task
+			echo "PULL ERROR: $DOCKER_PULL no any new image accessible in registry $REPOSITORY_URL";
+		else
+			UPDATE="1";
+		fi
+	fi
+}
+
 execute_task() {
       TASK="$1"
       B64_JSON="$2"
@@ -458,10 +525,17 @@ execute_task() {
 			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
 			CONTAINERS="";
 			for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
-				CONTAINERS="$CONTAINERS "$(docker ps --format '{{.Names}}' | grep "$CONTAINER_NAME");
+				UPDATE="";
+				IMAGE=$(echo $CONTAINER | jq -rc .IMAGE);
+				check_update "$IMAGE"
+				if [ "$UPDATE" == "1" ]; then
+					UPDATE_CONTAINERS="$UPDATE_CONTAINERS $CONTAINER_NAME";
+				else
+					UPTODATE_CONTAINERS="$UPTODATE_CONTAINERS $CONTAINER_NAME";
+				fi;
 			done;
 			#RESULT=$(echo "$CONTAINERS" | base64 -w0);
-			SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"content": "'$CONTENT'", "running": "'$CONTAINERS'"}';
+			SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"uptodate": "'$UPTODATE_CONTAINERS'", "update": "'$UPDATE_CONTAINERS'"}';
 		fi;
 	done
 
