@@ -449,6 +449,24 @@ execute_task() {
 
 	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
 
+      elif [ "$TASK_NAME" == "updates" ]; then
+	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
+	SERVICES="";
+	for SERVICE in $(echo $INSTALLED_SERVICES); do
+		SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
+		if [ "$SERVICE_NAME" != "firewalls" ]; then
+			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
+			CONTAINERS="";
+			for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
+				CONTAINERS="$CONTAINERS "$(docker ps --format '{{.Names}}' | grep "$CONTAINER_NAME");
+			done;
+			#RESULT=$(echo "$CONTAINERS" | base64 -w0);
+			SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"content": "'$CONTENT'", "running": "'$CONTAINERS'"}';
+		fi;
+	done
+
+	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+
       elif [ "$TASK_NAME" == "deployments" ]; then
 	        DEPLOYMENTS=""
 		TREES=$(get_repositories);
