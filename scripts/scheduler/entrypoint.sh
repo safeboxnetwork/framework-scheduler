@@ -525,9 +525,11 @@ execute_task() {
 		SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
 		if [ "$SERVICE_NAME" != "firewalls" ]; then
 			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
-			CONTAINERS="";
+			UPDATE_CONTAINERS="";
+			UPTODATE_CONTAINERS="";
 			for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
-				IMAGE=$(cat $SERVICE | jq -rc '.containers[] | select(.NAME=="'$CONTAINER_NAME'") | .IMAGE');
+				#IMAGE=$(cat $SERVICE | jq -rc '.containers[] | select(.NAME=="'$CONTAINER_NAME'") | .IMAGE');
+				IMAGE=$(cat $SERVICE | jq -rc --arg NAME "$CONTAINER_NAME" '.containers[] | select(.NAME==$NAME) | .IMAGE');
 				if [ "$IMAGE" != "" ]; then 
 					UPDATE="";
 					check_update "$IMAGE"
