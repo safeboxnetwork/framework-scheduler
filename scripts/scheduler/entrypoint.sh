@@ -478,7 +478,7 @@ execute_task() {
 			SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
 			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
 			CONTAINERS="";
-			for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
+			for CONTAINER_NAME in $CONTAINER_NAMES; do 
 				CONTAINERS="$CONTAINERS "$(docker ps --format '{{.Names}}' | grep -v framework-scheduler | grep "$CONTAINER_NAME");
 			done;
 			#RESULT=$(echo "$CONTAINERS" | base64 -w0);
@@ -507,7 +507,7 @@ execute_task() {
 			if [ "$SERVICE_NAME" != "firewalls" ]; then
 				CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
 				CONTAINERS="";
-				for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
+				for CONTAINER_NAME in $CONTAINER_NAMES; do 
 					CONTAINERS="$CONTAINERS "$(docker ps --format '{{.Names}}' | grep -v framework-scheduler | grep "$CONTAINER_NAME");
 				done;
 				#RESULT=$(echo "$CONTAINERS" | base64 -w0);
@@ -527,7 +527,7 @@ execute_task() {
 			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
 			UPDATE_CONTAINERS="";
 			UPTODATE_CONTAINERS="";
-			for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
+			for CONTAINER_NAME in $CONTAINER_NAMES; do 
 				#IMAGE=$(cat $SERVICE | jq -rc '.containers[] | select(.NAME=="'$CONTAINER_NAME'") | .IMAGE');
 				IMAGE=$(cat $SERVICE | jq -rc --arg NAME "$CONTAINER_NAME" '.containers[] | select(.NAME==$NAME) | .IMAGE');
 				if [ "$IMAGE" != "" ]; then 
