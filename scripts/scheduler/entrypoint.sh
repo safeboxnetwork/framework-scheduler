@@ -368,6 +368,8 @@ check_update() {
 
 	local IMAGE="$1";
 
+	debug "IMAGE: $IMAGE";
+
 	REPOSITORY_URL=$(echo $IMAGE | cut -d '/' -f1);
 
 	# Check whether repository url is available
@@ -525,13 +527,15 @@ execute_task() {
 			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
 			CONTAINERS="";
 			for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
-				UPDATE="";
-				IMAGE=$(cat $SERVICE | jq -rc '.containers[] | select(.NAME=="'$NAME'") | .IMAGE');
-				check_update "$IMAGE"
-				if [ "$UPDATE" == "1" ]; then
-					UPDATE_CONTAINERS="$UPDATE_CONTAINERS $CONTAINER_NAME";
-				else
-					UPTODATE_CONTAINERS="$UPTODATE_CONTAINERS $CONTAINER_NAME";
+				IMAGE=$(cat $SERVICE | jq -rc '.containers[] | select(.NAME=="'$CONTAINER_NAME'") | .IMAGE');
+				if [ "$IMAGE" != "" ]; then 
+					UPDATE="";
+					check_update "$IMAGE"
+					if [ "$UPDATE" == "1" ]; then
+						UPDATE_CONTAINERS="$UPDATE_CONTAINERS $CONTAINER_NAME";
+					else
+						UPTODATE_CONTAINERS="$UPTODATE_CONTAINERS $CONTAINER_NAME";
+					fi;
 				fi;
 			done;
 			#RESULT=$(echo "$CONTAINERS" | base64 -w0);
