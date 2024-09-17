@@ -404,15 +404,16 @@ check_update() {
 
 		if [ "$digest" != "$local_digest" ] ; then
 			echo "Update available. Executing update command..."
-			DOCKER_PULL="docker pull $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION"
-			eval $DOCKER_PULL
-			STATUS=$? 	
-			debug "PULL STATUS: $STATUS"
-			if [ $STATUS != 0 ] ; then # Exit status of last task
-				echo "PULL ERROR: $DOCKER_PULL no any new image accessible in registry $REPOSITORY_URL";
-			else
-				UPDATE="1";
-			fi
+			UPDATE="1";
+			#DOCKER_PULL="docker pull $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION"
+			#eval $DOCKER_PULL
+			#STATUS=$? 	
+			#debug "PULL STATUS: $STATUS"
+			#if [ $STATUS != 0 ] ; then # Exit status of last task
+			#	echo "PULL ERROR: $DOCKER_PULL no any new image accessible in registry $REPOSITORY_URL";
+			#else
+			#	UPDATE="1";
+			#fi
 		else
 			echo "Already up to date. Nothing to do."
 		fi
