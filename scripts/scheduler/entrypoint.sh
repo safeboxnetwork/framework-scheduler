@@ -526,7 +526,7 @@ execute_task() {
 			CONTAINERS="";
 			for CONTAINER_NAME in "$CONTAINER_NAMES"; do 
 				UPDATE="";
-				IMAGE=$(echo $CONTAINER | jq -rc .IMAGE);
+				IMAGE=$(cat $SERVICE | jq -rc '.containers[] | select(.NAME=="'$NAME'") | .IMAGE');
 				check_update "$IMAGE"
 				if [ "$UPDATE" == "1" ]; then
 					UPDATE_CONTAINERS="$UPDATE_CONTAINERS $CONTAINER_NAME";
