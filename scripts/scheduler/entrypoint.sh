@@ -522,6 +522,12 @@ execute_task() {
 	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
 	SERVICES="";
 	for SERVICE in $(echo $INSTALLED_SERVICES); do
+		if [ "$SERVICES" != "" ]; then
+			SEP=",";
+		else
+			SEP="";
+		fi;
+
 		SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
 		if [ "$SERVICE_NAME" != "firewalls" ]; then
 			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
