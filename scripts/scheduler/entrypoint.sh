@@ -395,11 +395,19 @@ check_update() {
 			TEMP_VERSION="latest";
 		fi;
 
-		debug "https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION";
-		debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
-		digest=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION" | jq -r '.config.digest');
-		local_digest=$(docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION)
-		debug "DIGEST: $digest";
+		REMOTE_URL="https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION";
+		debug "$REMOTE_URL";
+		#digest=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "$REMOTE_URL" | jq -r '.config.digest');
+		# Digest for the whole manifest, which includes all architectures.
+		digest=$(curl -s -I -H "Accept: application/vnd.oci.image.index.v1+json" "$REMOTE_URL" | grep Docker-Content-Digest | cut -d ' ' -f2 | tr -d '\r\n');
+
+		#debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
+		#local_digest=$(docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION)
+		debug "docker image inspect $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION --format '{{index .RepoDigests 0}}' | cut -d '@' -f2";
+		# Digest for the whole manifest, which includes all architectures.
+		local_digest=$(docker image inspect $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION --format '{{index .RepoDigests 0}}' | cut -d '@' -f2)
+
+		debug "REMOTE DIGEST: $digest";
 		debug "LOCAL DIGEST: $local_digest";
 
 		if [ "$digest" != "$local_digest" ] ; then
