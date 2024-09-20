@@ -148,6 +148,16 @@ deploy_additionals(){
 	$service_exec service-$NAME.json start info &
 }
 
+remove_additionals(){
+	NAME="$1";
+
+	debug "UNINSTALL: $NAME";
+
+	# stop service
+	debug "$service_exec service-$NAME.json stop force dns-remove &"
+	$service_exec service-$NAME.json stop force dns-remove &
+}
+
 get_repositories(){
 
 	local REPOS;
@@ -623,7 +633,7 @@ execute_task() {
 					elif [ "$DEPLOY_ACTION" == "deploy" ]; then
 						DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
 						deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
-						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$STATUS'" }' | jq -r . | base64 -w0);
+						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0);
 					fi;
 				fi;
 			done;
