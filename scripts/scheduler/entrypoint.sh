@@ -321,7 +321,7 @@ create_user_json() {
 create_framework_json() {
 
     ADDITIONAL=""
-    ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart always", "PRE_START": [], "DEPEND": [], "CMD": ""'
+    ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart=always", "PRE_START": [], "DEPEND": [], "CMD": ""'
 
     echo '{
   "main": {
@@ -788,7 +788,7 @@ if [ "$VOL" != "1" ]; then
 		--env RUN_FORCE=$RUN_FORCE \
 	  $DOCKER_START";
       eval "$DOCKER_RUN";
-      #/usr/bin/docker rm -f $HOSTNAME;
+      /usr/bin/docker rm -f $HOSTNAME;
 fi;
 
 
