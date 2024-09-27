@@ -1,7 +1,6 @@
 #! /bin/sh
 
 cd /scripts
-
 DEBUG_MODE=${DEBUG_MODE:-false}
 
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
@@ -322,7 +321,7 @@ create_user_json() {
 create_framework_json() {
 
     ADDITIONAL=""
-    ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart unless-stopped", "PRE_START": [], "DEPEND": [], "CMD": ""'
+    ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart always", "PRE_START": [], "DEPEND": [], "CMD": ""'
 
     echo '{
   "main": {
@@ -782,13 +781,14 @@ if [ "$VOL" != "1" ]; then
 		-v USER_DATA:/etc/user/data \
 		-v USER_CONFIG:/etc/user/config \
 		-v USER_SECRET:/etc/user/secret \
+		--restart=always \
 		--name $FRAMEWORK_SCHEDULER_NAME \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 		--env RUN_FORCE=$RUN_FORCE \
 	  $DOCKER_START";
       eval "$DOCKER_RUN";
-      /usr/bin/docker rm -f $HOSTNAME;
+      #/usr/bin/docker rm -f $HOSTNAME;
 fi;
 
 
@@ -799,10 +799,17 @@ if [ "$DF" != "1" ]; then
 	create_framework_json;
 fi;
 
-# START SERVICES
-$service_exec service-framework.containers.redis-server start &
-$service_exec service-framework.containers.webserver start &
-sleep 5;
+RS=$(docker ps |grep redis-server);
+WS=$(docker ps |grep webserver);
+
+if [[ "$WS" == "" && "$RS" == "" ]]; then
+
+	# START SERVICES
+	$service_exec service-framework.containers.redis-server start &
+	$service_exec service-framework.containers.webserver start &
+	sleep 5;
+
+fi
 
 
 # poll redis infinitely for scheduler jobs
