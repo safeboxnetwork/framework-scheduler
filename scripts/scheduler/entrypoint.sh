@@ -495,13 +495,23 @@ execute_task() {
 
 			SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
 			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
+
+			CON_IDS="";
+			for CONTAINER_NAME in $CONTAINER_NAMES; do
+				CON_ID=$(docker ps -a --format '{{.ID}} {{.Names}}' | grep -E " $CONTAINER_NAME(-|$)" | awk '{print $1}');
+				CON_IDS=$CON_IDS" "$CON_ID;
+
+			done;
+			CON_IDS=$(echo "$CON_IDS" | tr ' ' '\n' | sort -u | tr '\n' ' ');
+
 			CONTAINERS="";
-			for CONTAINER_NAME in $CONTAINER_NAMES; do 
+			for CON_ID in $CON_IDS; do
 				if [ "$CONTAINERS" != "" ]; then
 					CONTAINERS=$CONTAINERS"|";
-				fi
-				CONTAINERS="$CONTAINERS"$(docker ps --format '{{.Names}}:{{.Status}}' | grep -v framework-scheduler | grep "$CONTAINER_NAME");
+				fi;
+				CONTAINERS="$CONTAINERS"$(docker ps -a --format "{{.Names}}#{{.Image}}#{{.Status}}" --filter "id=$CON_ID");
 			done;
+
 			#RESULT=$(echo "$CONTAINERS" | base64 -w0);
 			SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"content": "'$CONTENT'", "running": "'$CONTAINERS'"}';
 		fi;
