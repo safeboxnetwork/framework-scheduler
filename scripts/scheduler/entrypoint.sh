@@ -541,7 +541,7 @@ execute_task() {
 					if [ "$CONTAINERS" != "" ]; then
 						CONTAINERS=$CONTAINERS"|";
 					fi;
-                                        CONTAINERS="$CONTAINERS"$(docker ps -a --format "{{.Names}}:{{.Status}}" --filter "id=$CON_ID");
+					CONTAINERS="$CONTAINERS"$(docker ps -a --format "{{.Names}}#{{.Image}}#{{.Status}}" --filter "id=$CON_ID");
                                 done;
 
 				#RESULT=$(echo "$CONTAINERS" | base64 -w0);
