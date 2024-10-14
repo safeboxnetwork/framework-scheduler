@@ -88,6 +88,15 @@ debug() {
 	fi;
 }
 
+## Start prevously deployed firewall rules depend on framework scheduler startup at first time
+
+if [ -d /etc/user/config/services ]; then
+	cd /etc/user/config/services;
+	for FIREWALL in $(ls firewall*.json) 
+		do $service_exec $FIREWALL start &
+	done
+fi
+
 check_installer_key() {
 	mkdir -p /root/.ssh
 	if [ -f /etc/user/data/installer ]; then
