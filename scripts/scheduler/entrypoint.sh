@@ -145,6 +145,7 @@ deploy_additionals(){
 	for key in $(echo "$JSON" | jq -r 'keys[]'); do
 	  value=$(echo "$JSON" | jq -r --arg k "$key" '.[$k]')
 	  # eval "$key=$value"
+	  value=$(echo "$value" | sed 's/\//\\\//g') # escape / character
 
 	  # replace variables in secret and domain files
 	  sed -i "s/#"$key"/"$value"/g" $SECRET_DIR/$NAME/$NAME.json;
