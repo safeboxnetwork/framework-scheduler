@@ -58,6 +58,9 @@ HOST_FILE=$DNS_DIR"/hosts.local"
 mkdir -p $DNS_DIR
 touch $HOST_FILE;
 
+mkdir -p /etc/system/data/ssl/certs
+mkdir -p /etc/system/data/ssl/keys
+ 
 CA_PATH=/etc/system/data/ssl/certs
 CA="--env CA_PATH=$CA_PATH"
 CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
