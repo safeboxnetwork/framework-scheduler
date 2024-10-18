@@ -152,7 +152,8 @@ deploy_additionals(){
 
 	  # replace variables in secret and domain files
 	  sed -i "s/#"$key"/"$value"/g" $SECRET_DIR/$NAME/$NAME.json;
-	  sed -i "s/#"$key"/"$value"/g" $SERVICE_DIR/domain-$NAME.json
+	  #sed -i "s/#"$key"/"$value"/g" $SERVICE_DIR/domain-$NAME.json
+	  sed -i "s/#"$key"/"$value"/g" $SERVICE_DIR/*$NAME*.json
 	done
 
 	# start service
