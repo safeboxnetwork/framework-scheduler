@@ -135,11 +135,9 @@ deploy_additionals(){
 	# copy json files into service directory
 	cp -rv $DIR/$NAME-secret.json $SECRET_DIR/$NAME/$NAME.json
 	
-	cp -rv $DIR/service-$NAME.json $SERVICE_DIR/service-$NAME.json;
-	cp -rv $DIR/domain-$NAME.json $SERVICE_DIR/domain-$NAME.json;
-	cp -rv $DIR/firewall-$NAME.json $SERVICE_DIR/firewall-$NAME.json;
-	cp -rv $DIR/firewall-$NAME-server-dns.json $SERVICE_DIR/firewall-$NAME-server-dns.json;
-	cp -rv $DIR/firewall-$NAME-server-smtp.json $SERVICE_DIR/firewall-$NAME-server-smtp.json;
+	cp -rv $DIR/*.json $SERVICE_DIR/;
+	rm $SERVICE_DIR/template.json;
+	rm $SERVICE_DIR/$NAME-secret.json;
 
 	# env variables are named by "key" from the source template
 	# for example NEXTCLOUD_DOMAIN, NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD have to be set by according to template
