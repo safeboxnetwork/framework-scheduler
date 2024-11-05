@@ -149,9 +149,9 @@ deploy_additionals(){
 	  value=$(echo "$value" | sed 's/\//\\\//g') # escape / character
 
 	  # replace variables in secret and domain files
-	  sed -i "s/#"$key"/"$value"/g" $SECRET_DIR/$NAME/$NAME.json;
+	  sed -i "s/#$key/$value/g" $SECRET_DIR/$NAME/$NAME.json;
 	  #sed -i "s/#"$key"/"$value"/g" $SERVICE_DIR/domain-$NAME.json
-	  sed -i "s/#"$key"/"$value"/g" $SERVICE_DIR/*$NAME*.json
+	  sed -i "s/#$key/$value/g" $SERVICE_DIR/*$NAME*.json
 	done
 
 	# start service
@@ -666,6 +666,19 @@ execute_task() {
 					if [ "$DEPLOY_ACTION" == "ask" ]; then
 						APP_TEMPLATE=$APP_DIR"/template.json"
 						TEMPLATE=$(cat $APP_TEMPLATE | base64 -w0)
+						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0);
+					elif [ "$DEPLOY_ACTION" == "reinstall" ]; then
+						APP_TEMPLATE=$APP_DIR"/template.json"
+						TEMPLATE=$(cat $APP_TEMPLATE)
+						for LINE in $(cat $SERVICE_DIR/service-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]'); do
+							KEY=$(echo $LINE | jq -r .key);
+							VALUE=$(echo $LINE | jq -r .value);
+							debug "$KEY: $VALUE"
+							TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "SMTP_MSG_SIZE" then .value = "'$VALUE'" else . end)');
+							#echo $TEMPLATE;
+						done;
+
+						TEMPLATE=$(echo "$TEMPLATE" | base64 -w0)
 						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0);
 					elif [ "$DEPLOY_ACTION" == "deploy" ]; then
 						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0); # deployment has started
