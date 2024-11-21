@@ -6,8 +6,10 @@ DEBUG_MODE=${DEBUG_MODE:-false}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 USER_INIT_PATH=$USER_INIT_PATH
 GLOBAL_VERSION=${GLOBAL_VERSION:-latest}
-SERVICE_DIR=${SERVICE_DIR:-/etc/user/config/services};
-SECRET_DIR=${SECRET_DIR:-/etc/user/secret};
+SERVICE_DIR=${SERVICE_DIR:-/etc/user/config/services}
+SECRET_DIR=${SECRET_DIR:-/etc/user/secret}
+
+SHARED_DIR=${SHARED_DIR:-/var/tmp/shared}
 
 FRAMEWORK_SCHEDULER_IMAGE=${FRAMEWORK_SCHEDULER_IMAGE:-framework-scheduler}
 FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
@@ -56,17 +58,17 @@ DNS="--env DNS_DIR=$DNS_DIR"
 DNS_PATH="--volume $DNS_DIR:/etc/system/data/dns:rw"
 HOST_FILE=$DNS_DIR"/hosts.local"
 mkdir -p $DNS_DIR
-touch $HOST_FILE;
+touch $HOST_FILE
 
 mkdir -p /etc/system/data/ssl/certs
 mkdir -p /etc/system/data/ssl/keys
- 
+
 CA_PATH=/etc/system/data/ssl/certs
 CA="--env CA_PATH=$CA_PATH"
 CA_FILE="--volume $CA_PATH:$CA_PATH:ro"
 mkdir -p $CA_PATH
 
-VOLUME_MOUNTS="-v SYSTEM_DATA:/etc/system/data -v SYSTEM_CONFIG:/etc/system/config -v SYSTEM_LOG:/etc/system/log -v USER_DATA:/etc/user/data -v USER_CONFIG:/etc/user/config -v USER_SECRET:/etc/user/secret";
+VOLUME_MOUNTS="-v SYSTEM_DATA:/etc/system/data -v SYSTEM_CONFIG:/etc/system/config -v SYSTEM_LOG:/etc/system/log -v USER_DATA:/etc/user/data -v USER_CONFIG:/etc/user/config -v USER_SECRET:/etc/user/secret"
 
 service_exec="/usr/bin/docker run --rm \
 $DNS \
@@ -81,33 +83,32 @@ $VOLUME_MOUNTS \
 --env HOST_FILE=$HOST_FILE \
 $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
 
-
-DEBUG=1;
+DEBUG=1
 
 # writes debug message if DEBUG variable is set
 debug() {
-	if [ $DEBUG -eq 1 ]; then
-		echo "DEBUG: "$1 $2 $3
-	fi;
+    if [ $DEBUG -eq 1 ]; then
+        echo "DEBUG: "$1 $2 $3
+    fi
 }
 
 ## Start prevously deployed firewall rules depend on framework scheduler startup at first time
 
 if [ -d /etc/user/config/services ]; then
-	cd /etc/user/config/services;
-	for FIREWALL in $(ls firewall*.json) 
-		do $service_exec $FIREWALL start &
-	done
+    cd /etc/user/config/services
+    for FIREWALL in $(ls firewall*.json); do
+        $service_exec $FIREWALL start &
+    done
 fi
 
 check_installer_key() {
-	mkdir -p /root/.ssh
-	if [ -f /etc/user/data/installer ]; then
-		if [ -f /root/.ssh/id_rsa ]; then # remove symlink if exists
-			rm /root/.ssh/id_rsa
-		fi;
-		ln -s /etc/user/data/installer /root/.ssh/id_rsa
-		echo "Host '$GIT_URL'
+    mkdir -p /root/.ssh
+    if [ -f /etc/user/data/installer ]; then
+        if [ -f /root/.ssh/id_rsa ]; then # remove symlink if exists
+            rm /root/.ssh/id_rsa
+        fi
+        ln -s /etc/user/data/installer /root/.ssh/id_rsa
+        echo "Host '$GIT_URL'
     User git
     Port '$GIT_PORT'
     HostName '$GIT_URL'
@@ -115,206 +116,227 @@ check_installer_key() {
     IdentityFile /root/.ssh/id_rsa
     IdentitiesOnly yes
     StrictHostKeyChecking no 
-		" > /root/.ssh/config
-	fi
-}	
-
-deploy_additionals(){
-
-	local DIR="$1"
-	local NAME="$2"
-	local JSON="$(echo "$3" | base64 -d)"
-
-	debug "DEPLOY: $NAME";
-	debug "JSON: $JSON";
-
-	if [ ! -d "$SECRET_DIR/$NAME" ]; then
-		mkdir -p "$SECRET_DIR/$NAME";
-	fi;
-
-	# copy json files into service directory
-	cp -rv $DIR/$NAME-secret.json $SECRET_DIR/$NAME/$NAME.json
-	
-	cp -rv $DIR/*.json $SERVICE_DIR/;
-	rm $SERVICE_DIR/template.json;
-	rm $SERVICE_DIR/$NAME-secret.json;
-
-	# env variables are named by "key" from the source template
-	# for example NEXTCLOUD_DOMAIN, NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD have to be set by according to template
-
-	# Loop through each key in the JSON and create a variable
-	for key in $(echo "$JSON" | jq -r 'keys[]'); do
-	  value=$(echo "$JSON" | jq -r --arg k "$key" '.[$k]')
-	  # eval "$key=$value"
-	  value=$(echo "$value" | sed 's/\//\\\//g') # escape / character
-
-	  # replace variables in secret and domain files
-	  sed -i "s/#$key/$value/g" $SECRET_DIR/$NAME/$NAME.json;
-	  #sed -i "s/#"$key"/"$value"/g" $SERVICE_DIR/domain-$NAME.json
-	  sed -i "s/#$key/$value/g" $SERVICE_DIR/*$NAME*.json
-	done
-
-	# start service
-	debug "$service_exec service-$NAME.json start info"
-	$service_exec service-$NAME.json start info
+		" >/root/.ssh/config
+    fi
 }
 
-remove_additionals(){
-	NAME="$1";
+deploy_additionals() {
 
-	debug "UNINSTALL: $NAME";
+    local DIR="$1"
+    local NAME="$2"
+    local JSON="$(echo "$3" | base64 -d)"
 
-	# stop service
-	debug "$service_exec service-$NAME.json stop force dns-remove &"
-	$service_exec service-$NAME.json stop force dns-remove &
+    debug "DEPLOY: $NAME"
+    debug "JSON: $JSON"
+
+    if [ ! -d "$SECRET_DIR/$NAME" ]; then
+        mkdir -p "$SECRET_DIR/$NAME"
+    fi
+
+    # copy json files into service directory
+    cp -rv $DIR/$NAME-secret.json $SECRET_DIR/$NAME/$NAME.json
+
+    cp -rv $DIR/*.json $SERVICE_DIR/
+    rm $SERVICE_DIR/template.json
+    rm $SERVICE_DIR/$NAME-secret.json
+
+    # env variables are named by "key" from the source template
+    # for example NEXTCLOUD_DOMAIN, NEXTCLOUD_USERNAME, NEXTCLOUD_PASSWORD have to be set by according to template
+
+    # Loop through each key in the JSON and create a variable
+    for key in $(echo "$JSON" | jq -r 'keys[]'); do
+        value=$(echo "$JSON" | jq -r --arg k "$key" '.[$k]')
+        # eval "$key=$value"
+        value=$(echo "$value" | sed 's/\//\\\//g') # escape / character
+
+        # replace variables in secret and domain files
+        sed -i "s/#$key/$value/g" $SECRET_DIR/$NAME/$NAME.json
+        #sed -i "s/#"$key"/"$value"/g" $SERVICE_DIR/domain-$NAME.json
+        sed -i "s/#$key/$value/g" $SERVICE_DIR/*$NAME*.json
+    done
+
+    # start service
+    debug "$service_exec service-$NAME.json start info"
+    $service_exec service-$NAME.json start info
 }
 
-get_repositories(){
+remove_additionals() {
+    NAME="$1"
 
-	local REPOS;
-	local BASE;
-	local TREES="";
-	local REPO;
+    debug "UNINSTALL: $NAME"
 
-	check_installer_key
-
-	REPOS=$(jq -r .repositories[] /etc/user/config/repositories.json); # list of repos, delimiter by space
-	for REPO in $REPOS; do
-
-		BASE=$(basename $REPO | cut -d '.' -f1)
-		if [ ! -d "/tmp/$BASE" ]; then
-			git clone $REPO /tmp/$BASE > /dev/null;
-		else
-			cd /tmp/$BASE;
-			git pull > /dev/null;
-		fi;
-		if [ -f "/tmp/$BASE/applications-tree.json" ]; then
-			TREES=$TREES" /tmp/$BASE/applications-tree.json"
-		fi;
-	done;
-
-	echo $TREES;
+    # stop service
+    debug "$service_exec service-$NAME.json stop force dns-remove &"
+    $service_exec service-$NAME.json stop force dns-remove &
 }
 
-check_volumes(){
+get_repositories() {
 
-	RET=1;
-	if [ ! -d "/etc/system/data/" ]; then
-		/usr/bin/docker volume create SYSTEM_DATA;
-		RET=0;
-	fi
-	if [ ! -d "/etc/system/config/" ]; then
-		/usr/bin/docker volume create SYSTEM_CONFIG;
-		RET=0;
-	fi
-      	if [ ! -d "/etc/system/log/" ]; then
-		/usr/bin/docker volume create SYSTEM_LOG;
-		RET=0;
-	fi
-	if [ ! -d "/etc/user/data/" ]; then
-		/usr/bin/docker volume create USER_DATA;
-		RET=0;
-	fi;
-	if [ ! -d "/etc/user/config/" ]; then
-		/usr/bin/docker volume create USER_CONFIG;
-		RET=0;
-	fi;
-	if [ ! -d "/etc/user/secret/" ]; then
-		/usr/bin/docker volume create USER_SECRET;
-		RET=0;
-	fi;
+    local REPOS
+    local BASE
+    local TREES=""
+    local REPO
 
-	echo $RET;
+    check_installer_key
+
+    REPOS=$(jq -r .repositories[] /etc/user/config/repositories.json) # list of repos, delimiter by space
+    for REPO in $REPOS; do
+
+        BASE=$(basename $REPO | cut -d '.' -f1)
+        if [ ! -d "/tmp/$BASE" ]; then
+            git clone $REPO /tmp/$BASE >/dev/null
+        else
+            cd /tmp/$BASE
+            git pull >/dev/null
+        fi
+        if [ -f "/tmp/$BASE/applications-tree.json" ]; then
+            TREES=$TREES" /tmp/$BASE/applications-tree.json"
+        fi
+    done
+
+    echo $TREES
 }
 
-check_dirs_and_files(){
+check_volumes() {
 
-	RET=0;
-	if [ ! -d "/etc/user/config/services/" ]; then
-		mkdir /etc/user/config/services/
-	fi;
+    RET=1
+    if [ ! -d "/var/tmp/shared" ]; then
+        /usr/bin/docker volume create SHARED
+        RET=0
+    fi
 
-	if [ ! -d "/etc/user/config/services/tmp/" ]; then
-		mkdir /etc/user/config/services/tmp/
+    if [ ! -d "/etc/system/data/" ]; then
+        /usr/bin/docker volume create SYSTEM_DATA
+        RET=0
+    fi
+    if [ ! -d "/etc/system/config/" ]; then
+        /usr/bin/docker volume create SYSTEM_CONFIG
+        RET=0
+    fi
+    if [ ! -d "/etc/system/log/" ]; then
+        /usr/bin/docker volume create SYSTEM_LOG
+        RET=0
+    fi
+    if [ ! -d "/etc/user/data/" ]; then
+        /usr/bin/docker volume create USER_DATA
+        RET=0
+    fi
+    if [ ! -d "/etc/user/config/" ]; then
+        /usr/bin/docker volume create USER_CONFIG
+        RET=0
+    fi
+    if [ ! -d "/etc/user/secret/" ]; then
+        /usr/bin/docker volume create USER_SECRET
+        RET=0
+    fi
 
-		if [[ -f "/etc/user/config/system.json" && -f "/etc/user/config/user.json" ]]; then
-			RET=1;
-		fi;
-	fi;
-
-	if [ ! -d "/etc/system" ]; then
-		mkdir "/etc/system"
-	fi;
-
-	if [ ! -d "/etc/user/secret" ]; then
-		mkdir -p "/etc/user/secret"
-	fi;
-
-	echo $RET;
+    echo $RET
 }
 
-check_subnets(){
+check_dirs_and_files() {
 
-	RET=1;
-	SUBNETS=$(for ALL in $(/usr/bin/docker network ls | grep bridge | awk '{print $1}') ; do /usr/bin/docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' ; done)
-	RES=$(echo "$SUBNETS" | grep "172.19.");
-	if [ "$RES" != "" ]; then
-		for R in $RES ; do
-			NUMBER=$(echo $R | cut -d '.' -f3);
-			if [[ $NUMBER -ge 0 && $NUMBER -le 254 ]]; then
-				RET=0
-			fi;
-		done;
-	fi;
-	echo $RET;
+    RET=0
+    if [ ! -d "/var/tmp/shared" ]; then
+        mkdir -p /var/tmp/shared
+        chown -R 65534:65534 /var/tmp/shared
+        chmod +t /var/tmp/shared
+    fi
+
+    if [ ! -d "/var/tmp/shared/input" ]; then
+        mkdir -p /var/tmp/shared/input
+        chown -R 65534:65534 /var/tmp/shared/input
+    fi
+
+    if [ ! -d "/var/tmp/shared/output" ]; then
+        mkdir -p /var/tmp/shared/output
+        chown -R 65534:65534 /var/tmp/shared/output
+    fi
+
+    if [ ! -d "/etc/user/config/services/" ]; then
+        mkdir /etc/user/config/services/
+    fi
+
+    if [ ! -d "/etc/user/config/services/tmp/" ]; then
+        mkdir /etc/user/config/services/tmp/
+
+        if [[ -f "/etc/user/config/system.json" && -f "/etc/user/config/user.json" ]]; then
+            RET=1
+        fi
+    fi
+
+    if [ ! -d "/etc/system" ]; then
+        mkdir "/etc/system"
+    fi
+
+    if [ ! -d "/etc/user/secret" ]; then
+        mkdir -p "/etc/user/secret"
+    fi
+
+    echo $RET
 }
 
-check_framework_scheduler_status(){
+check_subnets() {
 
-	ACTUAL_FRAMEWORK_SCHEDULER_NAME=$1;
+    RET=1
+    SUBNETS=$(for ALL in $(/usr/bin/docker network ls | grep bridge | awk '{print $1}'); do /usr/bin/docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}'; done)
+    RES=$(echo "$SUBNETS" | grep "172.19.")
+    if [ "$RES" != "" ]; then
+        for R in $RES; do
+            NUMBER=$(echo $R | cut -d '.' -f3)
+            if [[ $NUMBER -ge 0 && $NUMBER -le 254 ]]; then
+                RET=0
+            fi
+        done
+    fi
+    echo $RET
+}
 
-	RET=1;
-	if [ "$ACTUAL_FRAMEWORK_SCHEDULER_NAME" != "$FRAMEWORK_SCHEDULER_NAME" ]; then
-		RET=0;
-	else
-		desired_subnet=$FRAMEWORK_SCHEDULER_NETWORK_SUBNET
-		existing_subnets=$(/usr/bin/docker network inspect $(/usr/bin/docker network ls -q) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
+check_framework_scheduler_status() {
 
-		# Check if the desired subnet is in the list of existing subnets
-		if echo "$existing_subnets" | grep -q "$desired_subnet"; then
-			if [ "$(/usr/bin/docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" != "$FRAMEWORK_NETWORK_SUBNET" ]; then
-				RET=0;
-			fi
-		else
-			RET=0;
-		fi
-	fi
+    ACTUAL_FRAMEWORK_SCHEDULER_NAME=$1
+
+    RET=1
+    if [ "$ACTUAL_FRAMEWORK_SCHEDULER_NAME" != "$FRAMEWORK_SCHEDULER_NAME" ]; then
+        RET=0
+    else
+        desired_subnet=$FRAMEWORK_SCHEDULER_NETWORK_SUBNET
+        existing_subnets=$(/usr/bin/docker network inspect $(/usr/bin/docker network ls -q) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
+
+        # Check if the desired subnet is in the list of existing subnets
+        if echo "$existing_subnets" | grep -q "$desired_subnet"; then
+            if [ "$(/usr/bin/docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" != "$FRAMEWORK_NETWORK_SUBNET" ]; then
+                RET=0
+            fi
+        else
+            RET=0
+        fi
+    fi
 
 }
 
 add_repository() {
-	NEW_REPO="$1";
+    NEW_REPO="$1"
 
-	if [ ! -f "/etc/user/config/repositories.json" ]; then
-		create_repositories_json;
-	fi
-	UPDATED_REPOS=$(cat /etc/user/config/repositories.json | jq '.repositories += ["'$NEW_REPO'"]')
-	echo "$UPDATED_REPOS" | jq -r . > /etc/user/config/repositories.json
+    if [ ! -f "/etc/user/config/repositories.json" ]; then
+        create_repositories_json
+    fi
+    UPDATED_REPOS=$(cat /etc/user/config/repositories.json | jq '.repositories += ["'$NEW_REPO'"]')
+    echo "$UPDATED_REPOS" | jq -r . >/etc/user/config/repositories.json
 }
 
 create_repositories_json() {
-		{
-			echo '
+    {
+        echo '
 {
 	"repositories": [ "git@git.format.hu:format/default-applications-tree.git" ]
 }
-';
-		} | jq -r . > /etc/user/config/repositories.json
+'
+    } | jq -r . >/etc/user/config/repositories.json
 }
 
 create_system_json() {
-		{
-			echo '
+    {
+        echo '
 {
 	"NETWORK": {
 		"IP_POOL_START": "172.19.0.0",
@@ -322,19 +344,25 @@ create_system_json() {
 		"IP_SUBNET": "24"
 	}
 }
-';
-		} > /etc/user/config/system.json
+'
+    } >/etc/user/config/system.json
 }
 
 create_user_json() {
-	touch /etc/user/config/user.json
+    touch /etc/user/config/user.json
 }
 
 create_framework_json() {
 
+    if [ "$DEBUG_MODE" == "TRUE"]; then
+        ENTRYPOINT='"ENTRYPOINT": "sh",'
+    else
+        ENTRYPOINT=""
+    fi
+
     ADDITIONAL=""
     ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart=always", "PRE_START": [], "DEPEND": [], "CMD": ""'
-
+    ENVS='"ENVS": [{"RUN_FORCE": "'$RUN_FORCE'"}, {"WEBSERVER_PORT": "'$WEBSERVER_PORT'"}],'
     echo '{
   "main": {
     "SERVICE_NAME": "framework"
@@ -362,6 +390,42 @@ create_framework_json() {
       "MEMORY": "256M",
       "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
       '$ADDITIONAL',
+      '$ENVS'
+      '$ENTRYPOINT'
+      "VOLUMES":[
+        { "SOURCE": "'$SHARED_DIR'",
+          "DEST": "/var/tmp/shared",
+          "TYPE": "rw"
+        },
+        { "SOURCE": "SYSTEM_DATA",
+          "DEST": "/etc/system/data",
+          "TYPE": "rw"
+        },
+        { "SOURCE": "SYSTEM_CONFIG",
+          "DEST": "/etc/system/config",
+          "TYPE": "rw"
+        },
+        { "SOURCE": "SYSTEM_LOG",
+          "DEST": "/etc/system/log",
+          "TYPE": "rw"
+        },
+        { "SOURCE": "USER_DATA",
+          "DEST": "/etc/user/data",
+          "TYPE": "rw"
+        },
+        { "SOURCE": "USER_CONFIG",
+          "DEST": "/etc/user/config",
+          "TYPE": "rw"
+        },
+        { "SOURCE": "USER_SECRET",
+          "DEST": "/etc/user/secret",
+          "TYPE": "rw"
+        },
+        { "SOURCE": "/var/run/docker.sock",
+          "DEST": "/var/run/docker.sock",
+          "TYPE": "rw"
+        }
+            ],
       "POST_START": []
     },
 	{
@@ -377,6 +441,12 @@ create_framework_json() {
           "TYPE": "tcp"
         }
             ],
+      "VOLUMES":[
+        { "SOURCE": "'$SHARED_DIR'",
+          "DEST": "/var/tmp/shared",
+          "TYPE": "rw"
+        }
+            ],
       "POST_START": []
     }
   ]
@@ -384,412 +454,411 @@ create_framework_json() {
   ' | jq -r . >/etc/user/config/services/service-framework.json
 }
 
-
 check_update() {
 
-	local IMAGE="$1";
+    local IMAGE="$1"
 
-	debug "IMAGE: $IMAGE";
+    debug "IMAGE: $IMAGE"
 
-	REPOSITORY_URL=$(echo $IMAGE | cut -d '/' -f1);
+    REPOSITORY_URL=$(echo $IMAGE | cut -d '/' -f1)
 
-	# Check whether repository url is available
+    # Check whether repository url is available
 
-	CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/";
-	CURL_CHECK_CODE=$(eval $CURL_CHECK);
-	if [[ "$CURL_CHECK_CODE" == "200" ]] ; then 
-		debug "$REPOSITORY_URL accessed successful";
+    CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/"
+    CURL_CHECK_CODE=$(eval $CURL_CHECK)
+    if [[ "$CURL_CHECK_CODE" == "200" ]]; then
+        debug "$REPOSITORY_URL accessed successful"
 
-		# if repository url is not set
-		if [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]] ; then
-			REPOSITORY_URL="docker.io";
-			TEMP_PATH=$IMAGE;
-		else
-			# -f2- IMAGE can contain subdirectories
-			TEMP_PATH=$(echo $IMAGE | cut -d '/' -f2-);
-		fi;
+        # if repository url is not set
+        if [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]]; then
+            REPOSITORY_URL="docker.io"
+            TEMP_PATH=$IMAGE
+        else
+            # -f2- IMAGE can contain subdirectories
+            TEMP_PATH=$(echo $IMAGE | cut -d '/' -f2-)
+        fi
 
-		debug "TEMP PATH: $TEMP_PATH";
-		TEMP_IMAGE=$(echo $TEMP_PATH | cut -d ':' -f1);
-		TEMP_VERSION=$(echo $TEMP_PATH | cut -d ':' -f2);
-		if [ "$TEMP_VERSION" == "$TEMP_IMAGE" ]; then # version is not set
-			TEMP_VERSION="latest";
-		fi;
+        debug "TEMP PATH: $TEMP_PATH"
+        TEMP_IMAGE=$(echo $TEMP_PATH | cut -d ':' -f1)
+        TEMP_VERSION=$(echo $TEMP_PATH | cut -d ':' -f2)
+        if [ "$TEMP_VERSION" == "$TEMP_IMAGE" ]; then # version is not set
+            TEMP_VERSION="latest"
+        fi
 
-		REMOTE_URL="https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION";
-		debug "$REMOTE_URL";
-		#digest=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "$REMOTE_URL" | jq -r '.config.digest');
-		# Digest for the whole manifest, which includes all architectures.
-		digest=$(curl -s -I -H "Accept: application/vnd.oci.image.index.v1+json" "$REMOTE_URL" | grep Docker-Content-Digest | cut -d ' ' -f2 | tr -d '\r\n');
+        REMOTE_URL="https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION"
+        debug "$REMOTE_URL"
+        #digest=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "$REMOTE_URL" | jq -r '.config.digest');
+        # Digest for the whole manifest, which includes all architectures.
+        digest=$(curl -s -I -H "Accept: application/vnd.oci.image.index.v1+json" "$REMOTE_URL" | grep Docker-Content-Digest | cut -d ' ' -f2 | tr -d '\r\n')
 
-		#debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
-		#local_digest=$(docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION)
-		debug "docker image inspect $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION --format '{{index .RepoDigests 0}}' | cut -d '@' -f2";
-		# Digest for the whole manifest, which includes all architectures.
-		local_digest=$(docker image inspect $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION --format '{{index .RepoDigests 0}}' | cut -d '@' -f2)
+        #debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
+        #local_digest=$(docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION)
+        debug "docker image inspect $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION --format '{{index .RepoDigests 0}}' | cut -d '@' -f2"
+        # Digest for the whole manifest, which includes all architectures.
+        local_digest=$(docker image inspect $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION --format '{{index .RepoDigests 0}}' | cut -d '@' -f2)
 
-		debug "REMOTE DIGEST: $digest";
-		debug "LOCAL DIGEST: $local_digest";
+        debug "REMOTE DIGEST: $digest"
+        debug "LOCAL DIGEST: $local_digest"
 
-		if [ "$digest" != "$local_digest" ] ; then
-			echo "Update available. Executing update command..."
-			UPDATE="1";
-			#DOCKER_PULL="docker pull $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION"
-			#eval $DOCKER_PULL
-			#STATUS=$? 	
-			#debug "PULL STATUS: $STATUS"
-			#if [ $STATUS != 0 ] ; then # Exit status of last task
-			#	echo "PULL ERROR: $DOCKER_PULL no any new image accessible in registry $REPOSITORY_URL";
-			#else
-			#	UPDATE="1";
-			#fi
-		else
-			echo "Already up to date. Nothing to do."
-		fi
-	else 
-		debug "$REPOSITORY_URL not accessible, http error code: $CURL_CHECK_CODE";
+        if [ "$digest" != "$local_digest" ]; then
+            echo "Update available. Executing update command..."
+            UPDATE="1"
+            #DOCKER_PULL="docker pull $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION"
+            #eval $DOCKER_PULL
+            #STATUS=$?
+            #debug "PULL STATUS: $STATUS"
+            #if [ $STATUS != 0 ] ; then # Exit status of last task
+            #	echo "PULL ERROR: $DOCKER_PULL no any new image accessible in registry $REPOSITORY_URL";
+            #else
+            #	UPDATE="1";
+            #fi
+        else
+            echo "Already up to date. Nothing to do."
+        fi
+    else
+        debug "$REPOSITORY_URL not accessible, http error code: $CURL_CHECK_CODE"
 
-		echo "Force image pull has started without digest check...";
-		DOCKER_PULL="docker pull $IMAGE"
-		eval $DOCKER_PULL
-		STATUS=$?
-		debug "PULL STATUS: $STATUS"
-		if [ $STATUS != 0 ] ; then # Exit status of last task
-			echo "PULL ERROR: $DOCKER_PULL no any new image accessible in registry $REPOSITORY_URL";
-		else
-			UPDATE="1";
-		fi
-	fi
+        echo "Force image pull has started without digest check..."
+        DOCKER_PULL="docker pull $IMAGE"
+        eval $DOCKER_PULL
+        STATUS=$?
+        debug "PULL STATUS: $STATUS"
+        if [ $STATUS != 0 ]; then # Exit status of last task
+            echo "PULL ERROR: $DOCKER_PULL no any new image accessible in registry $REPOSITORY_URL"
+        else
+            UPDATE="1"
+        fi
+    fi
 }
 
 execute_task() {
-      TASK="$1"
-      B64_JSON="$2"
-      DATE=$( date +"%Y%m%d%H%M")
+    TASK="$1"
+    B64_JSON="$2"
+    DATE=$(date +"%Y%m%d%H%M")
 
-      # Executing task
-      debug "TASK: $(echo $TASK | cut -d ':' -f1)"
-      TASK_NAME=$(echo $TASK | cut -d ':' -f1);
+    # Executing task
+    debug "TASK: $(echo $TASK | cut -d ':' -f1)"
+    TASK_NAME=$(echo $TASK | cut -d ':' -f1)
 
     # checking sytem status
-    SYSTEM_STATUS=$(ls /etc/user/config/services/*.json |grep -v service-framework.json)
+    SYSTEM_STATUS=$(ls /etc/user/config/services/*.json | grep -v service-framework.json)
     if [ "$SYSTEM_STATUS" != "" ]; then
-	    INSTALL_STATUS="1"; # has previous install
+        INSTALL_STATUS="1" # has previous install
     else
-	    INSTALL_STATUS="2"; # new install
+        INSTALL_STATUS="2" # new install
     fi
 
-      if [ "$TASK_NAME" == "install" ]; then
-            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0); # install has started
-      	    redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"; # web_in
+    if [ "$TASK_NAME" == "install" ]; then
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0) # install has started
+        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"                        # web_in
 
-    	    #if [ "$INSTALL_STATUS" == "2" ]; then 
-	    # force install?
-	    	# TODO - start install.sh
-            	sh /scripts/install.sh "$B64_JSON" "$service_exec" "true" "$INSTALL_KEY" "$GLOBAL_VERSION"
-	    #fi;
-            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0);
+        #if [ "$INSTALL_STATUS" == "2" ]; then
+        # force install?
+        # TODO - start install.sh
+        sh /scripts/install.sh "$B64_JSON" "$service_exec" "true" "$INSTALL_KEY" "$GLOBAL_VERSION"
+        #fi;
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0)
 
-      elif [ "$TASK_NAME" == "system" ]; then
-	#SYSTEM_LIST="core-dns.json cron.json domain-local-backend.json firewall-letsencrypt.json firewall-local-backend.json firewall-localloadbalancer-dns.json firewall-localloadbalancer-to-smarthostbackend.json firewall-smarthost-backend-dns.json firewall-smarthost-loadbalancer-dns.json firewall-smarthost-to-backend.json firewall-smarthostloadbalancer-from-publicbackend.json letsencrypt.json local-backend.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
-	SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json";
-	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
-	SERVICES="";
-	for SERVICE in $(echo $INSTALLED_SERVICES); do
-		X=$(echo $SYSTEM_LIST | grep -w "$(basename $SERVICE)");
-		if [ "$X" != "" ]; then # is is a system file
-			CONTENT=$(cat $SERVICE | base64 -w0);
-			if [ "$SERVICES" != "" ]; then
-				SEP=",";
-			else
-				SEP="";
-			fi;
+    elif [ "$TASK_NAME" == "system" ]; then
+        #SYSTEM_LIST="core-dns.json cron.json domain-local-backend.json firewall-letsencrypt.json firewall-local-backend.json firewall-localloadbalancer-dns.json firewall-localloadbalancer-to-smarthostbackend.json firewall-smarthost-backend-dns.json firewall-smarthost-loadbalancer-dns.json firewall-smarthost-to-backend.json firewall-smarthostloadbalancer-from-publicbackend.json letsencrypt.json local-backend.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
+        SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
+        INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json)
+        SERVICES=""
+        for SERVICE in $(echo $INSTALLED_SERVICES); do
+            X=$(echo $SYSTEM_LIST | grep -w "$(basename $SERVICE)")
+            if [ "$X" != "" ]; then # is is a system file
+                CONTENT=$(cat $SERVICE | base64 -w0)
+                if [ "$SERVICES" != "" ]; then
+                    SEP=","
+                else
+                    SEP=""
+                fi
 
-			SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
-			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
+                SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME)
+                CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME)
 
-			CON_IDS="";
-			for CONTAINER_NAME in $CONTAINER_NAMES; do
-				CON_ID=$(docker ps -a --format '{{.ID}} {{.Names}}' | grep -E " $CONTAINER_NAME(-|$)" | awk '{print $1}');
-				CON_IDS=$CON_IDS" "$CON_ID;
+                CON_IDS=""
+                for CONTAINER_NAME in $CONTAINER_NAMES; do
+                    CON_ID=$(docker ps -a --format '{{.ID}} {{.Names}}' | grep -E " $CONTAINER_NAME(-|$)" | awk '{print $1}')
+                    CON_IDS=$CON_IDS" "$CON_ID
 
-			done;
-			CON_IDS=$(echo "$CON_IDS" | tr ' ' '\n' | sort -u | tr '\n' ' ');
+                done
+                CON_IDS=$(echo "$CON_IDS" | tr ' ' '\n' | sort -u | tr '\n' ' ')
 
-			CONTAINERS="";
-			for CON_ID in $CON_IDS; do
-				if [ "$CONTAINERS" != "" ]; then
-					CONTAINERS=$CONTAINERS"|";
-				fi;
-				CONTAINERS="$CONTAINERS"$(docker ps -a --format "{{.Names}}#{{.Image}}#{{.Status}}" --filter "id=$CON_ID");
-			done;
+                CONTAINERS=""
+                for CON_ID in $CON_IDS; do
+                    if [ "$CONTAINERS" != "" ]; then
+                        CONTAINERS=$CONTAINERS"|"
+                    fi
+                    CONTAINERS="$CONTAINERS"$(docker ps -a --format "{{.Names}}#{{.Image}}#{{.Status}}" --filter "id=$CON_ID")
+                done
 
-			#RESULT=$(echo "$CONTAINERS" | base64 -w0);
-			SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"content": "'$CONTENT'", "running": "'$CONTAINERS'"}';
-		fi;
-	done
+                #RESULT=$(echo "$CONTAINERS" | base64 -w0);
+                SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"content": "'$CONTENT'", "running": "'$CONTAINERS'"}'
+            fi
+        done
 
-	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0)
 
-      elif [ "$TASK_NAME" == "services" ]; then
-	SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json";
-	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
-	SERVICES="";
-	for SERVICE in $(echo $INSTALLED_SERVICES); do
-		X=$(echo $SYSTEM_LIST | grep -w "$(basename $SERVICE)");
+    elif [ "$TASK_NAME" == "services" ]; then
+        SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
+        INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json)
+        SERVICES=""
+        for SERVICE in $(echo $INSTALLED_SERVICES); do
+            X=$(echo $SYSTEM_LIST | grep -w "$(basename $SERVICE)")
 
-		if [ "$X" == "" ]; then # not a system file
-			CONTENT=$(cat $SERVICE | base64 -w0);
-			if [ "$SERVICES" != "" ]; then
-				SEP=",";
-			else
-				SEP="";
-			fi;
+            if [ "$X" == "" ]; then # not a system file
+                CONTENT=$(cat $SERVICE | base64 -w0)
+                if [ "$SERVICES" != "" ]; then
+                    SEP=","
+                else
+                    SEP=""
+                fi
 
-			SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
-			if [ "$SERVICE_NAME" != "firewalls" ]; then
-				CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
+                SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME)
+                if [ "$SERVICE_NAME" != "firewalls" ]; then
+                    CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME)
 
-                                CON_IDS="";
-                                for CONTAINER_NAME in $CONTAINER_NAMES; do
-                                        CON_ID=$(docker ps -a --format '{{.ID}} {{.Names}}' | grep -E " $CONTAINER_NAME(-|$)" | awk '{print $1}');
-                                        CON_IDS=$CON_IDS" "$CON_ID;
+                    CON_IDS=""
+                    for CONTAINER_NAME in $CONTAINER_NAMES; do
+                        CON_ID=$(docker ps -a --format '{{.ID}} {{.Names}}' | grep -E " $CONTAINER_NAME(-|$)" | awk '{print $1}')
+                        CON_IDS=$CON_IDS" "$CON_ID
 
-                                done;
-                                CON_IDS=$(echo "$CON_IDS" | tr ' ' '\n' | sort -u | tr '\n' ' ');
+                    done
+                    CON_IDS=$(echo "$CON_IDS" | tr ' ' '\n' | sort -u | tr '\n' ' ')
 
-                                CONTAINERS="";
-                                for CON_ID in $CON_IDS; do
-					if [ "$CONTAINERS" != "" ]; then
-						CONTAINERS=$CONTAINERS"|";
-					fi;
-					CONTAINERS="$CONTAINERS"$(docker ps -a --format "{{.Names}}#{{.Image}}#{{.Status}}" --filter "id=$CON_ID");
-                                done;
+                    CONTAINERS=""
+                    for CON_ID in $CON_IDS; do
+                        if [ "$CONTAINERS" != "" ]; then
+                            CONTAINERS=$CONTAINERS"|"
+                        fi
+                        CONTAINERS="$CONTAINERS"$(docker ps -a --format "{{.Names}}#{{.Image}}#{{.Status}}" --filter "id=$CON_ID")
+                    done
 
-				#RESULT=$(echo "$CONTAINERS" | base64 -w0);
-				SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"content": "'$CONTENT'", "running": "'$CONTAINERS'"}';
-			fi;
-		fi;
-	done
+                    #RESULT=$(echo "$CONTAINERS" | base64 -w0);
+                    SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"content": "'$CONTENT'", "running": "'$CONTAINERS'"}'
+                fi
+            fi
+        done
 
-	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0)
 
-      elif [ "$TASK_NAME" == "updates" ]; then
-	INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json );
-	SERVICES="";
-	for SERVICE in $(echo $INSTALLED_SERVICES); do
-		if [ "$SERVICES" != "" ]; then
-			SEP=",";
-		else
-			SEP="";
-		fi;
-
-		SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME);
-		if [ "$SERVICE_NAME" != "firewalls" ]; then
-			CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME);
-			UPDATE_CONTAINERS="";
-			UPTODATE_CONTAINERS="";
-			for CONTAINER_NAME in $CONTAINER_NAMES; do 
-				#IMAGE=$(cat $SERVICE | jq -rc '.containers[] | select(.NAME=="'$CONTAINER_NAME'") | .IMAGE');
-				IMAGE=$(cat $SERVICE | jq -rc --arg NAME "$CONTAINER_NAME" '.containers[] | select(.NAME==$NAME) | .IMAGE');
-				if [ "$IMAGE" != "" ]; then 
-					UPDATE="";
-					check_update "$IMAGE"
-					if [ "$UPDATE" == "1" ]; then
-						UPDATE_CONTAINERS="$UPDATE_CONTAINERS $CONTAINER_NAME";
-					else
-						UPTODATE_CONTAINERS="$UPTODATE_CONTAINERS $CONTAINER_NAME";
-					fi;
-				fi;
-			done;
-			#RESULT=$(echo "$CONTAINERS" | base64 -w0);
-			SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"uptodate": "'$UPTODATE_CONTAINERS'", "update": "'$UPDATE_CONTAINERS'"}';
-		fi;
-	done
-
-	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
-
-      elif [ "$TASK_NAME" == "deployments" ]; then
-	        DEPLOYMENTS=""
-		TREES=$(get_repositories);
-		for TREE in $TREES; do
-			APPS=$(jq -rc '.apps[]' $TREE);
-			for APP in $APPS ; do
-				APP_NAME=$(echo "$APP" | jq -r '.name')
-				APP_VERSION=$(echo "$APP" | jq -r '.version')
-				  if [ "$DEPLOYMENTS" != "" ]; then
-					  SEP=",";
-				  else
-					  SEP="";
-				  fi;
-				  DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": "'$APP_VERSION'"';
-			done;
-		done;
-		  if [ "$DEPLOYMENTS" == "" ]; then
-			  DEPLOYMENTS='"deployments": "NONE"';
-	          fi;
-
-                  INSTALLED_SERVICES=$(ls /etc/user/config/services/service-*.json );
-		  SERVICES="";
-                  for SERVICE in $(echo $INSTALLED_SERVICES); do
-			  if [ "$(basename $SERVICE)" != "service-framework.json" ]; then # NOT system file
-				  CONTENT=$(cat $SERVICE | base64 -w0);
-				  if [ "$SERVICES" != "" ]; then
-					  SEP=",";
-				  else
-					  SEP="";
-				  fi;
-				  SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"';
-			  fi;
-                  done
-		  if [ "$SERVICES" == "" ]; then
-			  SERVICES='"services": "NONE"';
-	          fi;
-
-            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "DEPLOYMENTS": {'$DEPLOYMENTS'}, "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0);
-
-      elif [ "$TASK_NAME" == "deployment" ]; then
-		JSON="$(echo $B64_JSON | base64 -d)"
-		DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME)
-		DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
-	        TREES=$(get_repositories);
-		debug "$JSON"
-
-		for TREE in $TREES; do
-			APPS=$(jq -rc '.apps[]' $TREE);
-			for APP in $APPS ; do
-				APP_NAME=$(echo "$APP" | jq -r '.name')
-				APP_VERSION=$(echo "$APP" | jq -r '.version')
-				APP_DIR=$(dirname $TREE)"/"$APP_NAME
-				debug "$APP_TEMPLATE"
-				if [ "$APP_NAME" == "$DEPLOY_NAME" ]; then
-					if [ "$DEPLOY_ACTION" == "ask" ]; then
-						APP_TEMPLATE=$APP_DIR"/template.json"
-						TEMPLATE=$(cat $APP_TEMPLATE | base64 -w0)
-						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0);
-					elif [ "$DEPLOY_ACTION" == "reinstall" ]; then
-						APP_TEMPLATE=$APP_DIR"/template.json"
-						TEMPLATE=$(cat $APP_TEMPLATE)
-						for LINE in $(cat $SERVICE_DIR/service-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]'); do
-							KEY=$(echo $LINE | jq -r .key);
-							VALUE=$(echo $LINE | jq -r .value);
-							debug "$KEY: $VALUE"
-							TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "SMTP_MSG_SIZE" then .value = "'$VALUE'" else . end)');
-							#echo $TEMPLATE;
-						done;
-
-						TEMPLATE=$(echo "$TEMPLATE" | base64 -w0)
-						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0);
-					elif [ "$DEPLOY_ACTION" == "deploy" ]; then
-						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0); # deployment has started
-					        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"; # web_in
-
-						DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
-						deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
-						JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "2" }' | jq -r . | base64 -w0);
-					fi;
-				fi;
-			done;
-		done;
-
-      elif [ "$TASK_NAME" == "repositories" ]; then
-		if [ ! -f "/etc/user/config/repositories.json" ]; then
-			create_repositories_json;
-		fi
-            REPOS=$(cat /etc/user/config/repositories.json);
-	    if [ "$REPOS" != "" ]; then
-		    EXISTS="1";
-	    	    REPOS=$(echo "$REPOS" | base64 -w0);
+    elif [ "$TASK_NAME" == "updates" ]; then
+        INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json)
+        SERVICES=""
+        for SERVICE in $(echo $INSTALLED_SERVICES); do
+            if [ "$SERVICES" != "" ]; then
+                SEP=","
             else
-		    EXISTS="0";
-		    REPOS="";
-	    fi;
-            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "EXISTS": "'$EXISTS'", "REPOSITORIES": "'$REPOS'" }' | jq -r . | base64 -w0);
+                SEP=""
+            fi
 
-      elif [ "$TASK_NAME" == "add_repository" ]; then
-		JSON="$(echo $B64_JSON | base64 -d)"
-		NEW_REPO=$(echo "$JSON" | jq -r .NEW_REPO)
-		add_repository "$NEW_REPO"
-            	JSON_TARGET=""
+            SERVICE_NAME=$(cat $SERVICE | jq -r .main.SERVICE_NAME)
+            if [ "$SERVICE_NAME" != "firewalls" ]; then
+                CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME)
+                UPDATE_CONTAINERS=""
+                UPTODATE_CONTAINERS=""
+                for CONTAINER_NAME in $CONTAINER_NAMES; do
+                    #IMAGE=$(cat $SERVICE | jq -rc '.containers[] | select(.NAME=="'$CONTAINER_NAME'") | .IMAGE');
+                    IMAGE=$(cat $SERVICE | jq -rc --arg NAME "$CONTAINER_NAME" '.containers[] | select(.NAME==$NAME) | .IMAGE')
+                    if [ "$IMAGE" != "" ]; then
+                        UPDATE=""
+                        check_update "$IMAGE"
+                        if [ "$UPDATE" == "1" ]; then
+                            UPDATE_CONTAINERS="$UPDATE_CONTAINERS $CONTAINER_NAME"
+                        else
+                            UPTODATE_CONTAINERS="$UPTODATE_CONTAINERS $CONTAINER_NAME"
+                        fi
+                    fi
+                done
+                #RESULT=$(echo "$CONTAINERS" | base64 -w0);
+                SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"uptodate": "'$UPTODATE_CONTAINERS'", "update": "'$UPDATE_CONTAINERS'"}'
+            fi
+        done
 
-      elif [ "$TASK_NAME" == "containers" ]; then # not in use
-	    CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler);
-	    RESULT=$(echo "$CONTAINERS" | base64 -w0);
-            JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0);
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0)
 
-      fi 
+    elif [ "$TASK_NAME" == "deployments" ]; then
+        DEPLOYMENTS=""
+        TREES=$(get_repositories)
+        for TREE in $TREES; do
+            APPS=$(jq -rc '.apps[]' $TREE)
+            for APP in $APPS; do
+                APP_NAME=$(echo "$APP" | jq -r '.name')
+                APP_VERSION=$(echo "$APP" | jq -r '.version')
+                if [ "$DEPLOYMENTS" != "" ]; then
+                    SEP=","
+                else
+                    SEP=""
+                fi
+                DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": "'$APP_VERSION'"'
+            done
+        done
+        if [ "$DEPLOYMENTS" == "" ]; then
+            DEPLOYMENTS='"deployments": "NONE"'
+        fi
 
-	debug "JSON_TARGET: $JSON_TARGET";
+        INSTALLED_SERVICES=$(ls /etc/user/config/services/service-*.json)
+        SERVICES=""
+        for SERVICE in $(echo $INSTALLED_SERVICES); do
+            if [ "$(basename $SERVICE)" != "service-framework.json" ]; then # NOT system file
+                CONTENT=$(cat $SERVICE | base64 -w0)
+                if [ "$SERVICES" != "" ]; then
+                    SEP=","
+                else
+                    SEP=""
+                fi
+                SERVICES=$SERVICES$SEP'"'$(cat $SERVICE | jq -r .main.SERVICE_NAME)'": "'$CONTENT'"'
+            fi
+        done
+        if [ "$SERVICES" == "" ]; then
+            SERVICES='"services": "NONE"'
+        fi
 
-      if [ "$JSON_TARGET" != "" ]; then
-		redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
-      fi 
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "DEPLOYMENTS": {'$DEPLOYMENTS'}, "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0)
+
+    elif [ "$TASK_NAME" == "deployment" ]; then
+        JSON="$(echo $B64_JSON | base64 -d)"
+        DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME)
+        DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
+        TREES=$(get_repositories)
+        debug "$JSON"
+
+        for TREE in $TREES; do
+            APPS=$(jq -rc '.apps[]' $TREE)
+            for APP in $APPS; do
+                APP_NAME=$(echo "$APP" | jq -r '.name')
+                APP_VERSION=$(echo "$APP" | jq -r '.version')
+                APP_DIR=$(dirname $TREE)"/"$APP_NAME
+                debug "$APP_TEMPLATE"
+                if [ "$APP_NAME" == "$DEPLOY_NAME" ]; then
+                    if [ "$DEPLOY_ACTION" == "ask" ]; then
+                        APP_TEMPLATE=$APP_DIR"/template.json"
+                        TEMPLATE=$(cat $APP_TEMPLATE | base64 -w0)
+                        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0)
+                    elif [ "$DEPLOY_ACTION" == "reinstall" ]; then
+                        APP_TEMPLATE=$APP_DIR"/template.json"
+                        TEMPLATE=$(cat $APP_TEMPLATE)
+                        for LINE in $(cat $SERVICE_DIR/service-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]'); do
+                            KEY=$(echo $LINE | jq -r .key)
+                            VALUE=$(echo $LINE | jq -r .value)
+                            debug "$KEY: $VALUE"
+                            TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "SMTP_MSG_SIZE" then .value = "'$VALUE'" else . end)')
+                            #echo $TEMPLATE;
+                        done
+
+                        TEMPLATE=$(echo "$TEMPLATE" | base64 -w0)
+                        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0)
+                    elif [ "$DEPLOY_ACTION" == "deploy" ]; then
+                        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0) # deployment has started
+                        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"                # web_in
+
+                        DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
+                        deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
+                        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "2" }' | jq -r . | base64 -w0)
+                    fi
+                fi
+            done
+        done
+
+    elif [ "$TASK_NAME" == "repositories" ]; then
+        if [ ! -f "/etc/user/config/repositories.json" ]; then
+            create_repositories_json
+        fi
+        REPOS=$(cat /etc/user/config/repositories.json)
+        if [ "$REPOS" != "" ]; then
+            EXISTS="1"
+            REPOS=$(echo "$REPOS" | base64 -w0)
+        else
+            EXISTS="0"
+            REPOS=""
+        fi
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "EXISTS": "'$EXISTS'", "REPOSITORIES": "'$REPOS'" }' | jq -r . | base64 -w0)
+
+    elif [ "$TASK_NAME" == "add_repository" ]; then
+        JSON="$(echo $B64_JSON | base64 -d)"
+        NEW_REPO=$(echo "$JSON" | jq -r .NEW_REPO)
+        add_repository "$NEW_REPO"
+        JSON_TARGET=""
+
+    elif [ "$TASK_NAME" == "containers" ]; then # not in use
+        CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler)
+        RESULT=$(echo "$CONTAINERS" | base64 -w0)
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
+
+    fi
+
+    debug "JSON_TARGET: $JSON_TARGET"
+
+    if [ "$JSON_TARGET" != "" ]; then
+        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+    fi
 
 }
 
 check_running() {
 
-	DOCKERD_STATUS="0";
+    DOCKERD_STATUS="0"
 
-	### From Redis
-	# bridge check
-	BRIDGE_NUM=$($SUDO_CMD docker network ls | grep bridge | awk '{print $2":"$3}' | sort | uniq | wc -l);
+    ### From Redis
+    # bridge check
+    BRIDGE_NUM=$($SUDO_CMD docker network ls | grep bridge | awk '{print $2":"$3}' | sort | uniq | wc -l)
 
-	CONTAINER_NUM=$($SUDO_CMD docker ps -a | wc -l);
+    CONTAINER_NUM=$($SUDO_CMD docker ps -a | wc -l)
 
-	if [ "$BRIDGE_NUM" != "1" ] && [ "$CONTAINER_NUM" != "1" ]; then
+    if [ "$BRIDGE_NUM" != "1" ] && [ "$CONTAINER_NUM" != "1" ]; then
 
-		echo "There are existing containers and/or networks.";
-		echo "Please select from the following options (1/2/3):";
+        echo "There are existing containers and/or networks."
+        echo "Please select from the following options (1/2/3):"
 
-		echo "1 - Delete all existing containers and networks before installation";
-		echo "2 - Stop the installation process";
-		echo "3 - Just continue on my own risk";
-		
-		read -r ANSWER;
+        echo "1 - Delete all existing containers and networks before installation"
+        echo "2 - Stop the installation process"
+        echo "3 - Just continue on my own risk"
 
-		if [ "$ANSWER" == "1" ]; then
-			echo "1 - Removing exising containers and networks";
-			# delete and continue
-			$SUDO_CMD docker stop $($SUDO_CMD docker ps |grep Up | awk '{print $1}')
-			$SUDO_CMD docker system prune -a
+        read -r ANSWER
 
-		elif [ "$ANSWER" == "3" ]; then
-			echo "3 - You have chosen to continue installation process."
+        if [ "$ANSWER" == "1" ]; then
+            echo "1 - Removing exising containers and networks"
+            # delete and continue
+            $SUDO_CMD docker stop $($SUDO_CMD docker ps | grep Up | awk '{print $1}')
+            $SUDO_CMD docker system prune -a
 
-		else # default: 2 - stop installastion
-			echo "2 - Installation process was stopped";
-			exit;
-		fi;
+        elif [ "$ANSWER" == "3" ]; then
+            echo "3 - You have chosen to continue installation process."
 
-	fi;
-	# visszairni redis - ha redisbol minden 1, akkor manager mode
+        else # default: 2 - stop installastion
+            echo "2 - Installation process was stopped"
+            exit
+        fi
+
+    fi
+    # visszairni redis - ha redisbol minden 1, akkor manager mode
 }
 
 check_redis_availability() {
-      REDIS_SERVER="$1"
-      REDIS_PORT="$2"
-      CURL_RETRIES="$3"
-      CURL_SLEEP_SHORT="$4"
+    REDIS_SERVER="$1"
+    REDIS_PORT="$2"
+    CURL_RETRIES="$3"
+    CURL_SLEEP_SHORT="$4"
 
-      for retries in $(seq 0 "$((CURL_RETRIES + 1))"); do
-            if [ "$retries" -le "$CURL_RETRIES" ]; then
-                  CHECK_REDIS_SERVER="redis-cli -h '$REDIS_SERVER' -p '$REDIS_PORT' PING"
-                  REDIS_RESPONSE="$(eval "$CHECK_REDIS_SERVER")"
+    for retries in $(seq 0 "$((CURL_RETRIES + 1))"); do
+        if [ "$retries" -le "$CURL_RETRIES" ]; then
+            CHECK_REDIS_SERVER="redis-cli -h '$REDIS_SERVER' -p '$REDIS_PORT' PING"
+            REDIS_RESPONSE="$(eval "$CHECK_REDIS_SERVER")"
 
-                  # echo "$REDIS_SERVER server's reply to PING: $REDIS_RESPONSE"
+            # echo "$REDIS_SERVER server's reply to PING: $REDIS_RESPONSE"
 
-                  if [ "$REDIS_RESPONSE" = "PONG" ]; then
-                        echo "Connected to $REDIS_SERVER:$REDIS_PORT"
-                        break
-                  else
-                        sleep "$CURL_SLEEP_SHORT"
-                  fi
+            if [ "$REDIS_RESPONSE" = "PONG" ]; then
+                echo "Connected to $REDIS_SERVER:$REDIS_PORT"
+                break
             else
-                  echo "Couldn't reach server at $REDIS_SERVER:$REDIS_PORT after [$CURL_RETRIES] retries, exiting."
-                  exit 1
+                sleep "$CURL_SLEEP_SHORT"
             fi
-      done
+        else
+            echo "Couldn't reach server at $REDIS_SERVER:$REDIS_PORT after [$CURL_RETRIES] retries, exiting."
+            exit 1
+        fi
+    done
 }
 
 ### SYSTEM INITIALIZATION ###
@@ -801,92 +870,72 @@ check_redis_availability() {
 
 SN=$(check_subnets)
 if [ "$SN" != "1" ]; then
-	echo "Desired network subnet not available running ahead is your own risk";
-	if [ "$RUN_FORCE" != "true" ]; then
-		echo "Desired network subnet not available, exiting";
-		exit;
-	fi;
-fi;
+    echo "Desired network subnet not available running ahead is your own risk"
+    if [ "$RUN_FORCE" != "true" ]; then
+        echo "Desired network subnet not available, exiting"
+        exit
+    fi
+fi
 STATUS=$(check_framework_scheduler_status $HOSTNAME)
 if [ "$STATUS" != "1" ]; then
-	/usr/bin/docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_SCHEDULER_NETWORK_SUBNET;
-fi;
+    /usr/bin/docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_SCHEDULER_NETWORK_SUBNET
+fi
+
+DF=$(check_dirs_and_files)
+if [ "$DF" != "1" ]; then
+    create_system_json
+    create_user_json
+    create_framework_json
+fi
+
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
-	  if [ "$DEBUG_MODE" == "true" ]; then
-	  	DOCKER_START="--entrypoint=sh $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c 'sleep 86400'"
-	  else
-	  	DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
-	  fi
-      DOCKER_RUN="/usr/bin/docker run -d \
-	  	-v /var/run/docker.sock:/var/run/docker.sock \
-		-v SYSTEM_DATA:/etc/system/data \
-		-v SYSTEM_CONFIG:/etc/system/config \
-		-v SYSTEM_LOG:/etc/system/log \
-		-v USER_DATA:/etc/user/data \
-		-v USER_CONFIG:/etc/user/config \
-		-v USER_SECRET:/etc/user/secret \
-		--restart=always \
-		--name $FRAMEWORK_SCHEDULER_NAME \
-	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
-	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
-		--env RUN_FORCE=$RUN_FORCE \
-	  $DOCKER_START";
-      eval "$DOCKER_RUN";
-      /usr/bin/docker rm -f $HOSTNAME;
-fi;
+    $service_exec service-framework.containers.$FRAMEWORK_SCHEDULER_NAME start
+    /usr/bin/docker rm -f $HOSTNAME
+fi
 
-
-DF=$(check_dirs_and_files);
-if [ "$DF" != "1" ]; then
-	create_system_json;
-	create_user_json;
-	create_framework_json;
-fi;
-
-RS=$(docker ps |grep redis-server);
-WS=$(docker ps |grep webserver);
+RS=$(docker ps | grep redis-server)
+WS=$(docker ps | grep webserver)
 
 if [[ "$WS" == "" && "$RS" == "" ]]; then
 
-	# START SERVICES
-	$service_exec service-framework.containers.redis-server start &
-	$service_exec service-framework.containers.webserver start &
-	sleep 5;
+    # START SERVICES
+    $service_exec service-framework.containers.redis-server start &
+    $service_exec service-framework.containers.webserver start &
+    sleep 5
 
 fi
 
-
 # poll redis infinitely for scheduler jobs
 check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHORT
-echo `date`" Scheduler initialized, starting listening for events"
+echo $(date)" Scheduler initialized, starting listening for events"
 
 # STARTING SCHEDULER PROCESSES
 while true; do
 
-      TASKS=""
+    TASKS=""
 
-      # GET DEPLOYMENT IDs FROM generate key
-      TASKS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
-      if [[ "$TASKS" != "0" && "$TASKS" != "" ]]; then
+    # GET DEPLOYMENT IDs FROM generate key
+    TASKS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
+    if [[ "$TASKS" != "0" && "$TASKS" != "" ]]; then
 
-            # PROCESSING TASK
-            for TASK in $(echo $TASKS); do
+        # PROCESSING TASK
+        for TASK in $(echo $TASKS); do
 
-                  ### READ TASKS FROM REDIS
-                  B64_JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK)
+            ### READ TASKS FROM REDIS
+            B64_JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK)
 
-                  JSON_TARGET=$(echo $B64_JSON | base64 -d | jq -rc .'STATUS="0"' | base64 -w0);
-                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET";
+            JSON_TARGET=$(echo $B64_JSON | base64 -d | jq -rc .'STATUS="0"' | base64 -w0)
+            redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
 
-                  execute_task "$TASK" "$B64_JSON"
-                  
-                  # MOVE TASK from web_in into web_out
-                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
-                  redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
+            execute_task "$TASK" "$B64_JSON"
 
-            done
-      fi
+            # MOVE TASK from web_in into web_out
+            redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
+            redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
 
-      sleep 1
+        done
+    fi
+
+    sleep 1
 done
