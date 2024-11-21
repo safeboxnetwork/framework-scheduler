@@ -239,19 +239,19 @@ check_dirs_and_files() {
     if [ ! -d "/var/tmp/shared" ]; then
         mkdir -p /var/tmp/shared
         chown -R 65534:65534 /var/tmp/shared
-        chmod g+rwxs /var/tmp/shared
+        chmod -R g+rwxs /var/tmp/shared
     fi
 
     if [ ! -d "/var/tmp/shared/input" ]; then
         mkdir -p /var/tmp/shared/input
         chown -R 65534:65534 /var/tmp/shared/input
-        chmod g+rwxs /var/tmp/shared/input
+        chmod -R g+rwxs /var/tmp/shared/input
     fi
 
     if [ ! -d "/var/tmp/shared/output" ]; then
         mkdir -p /var/tmp/shared/output
         chown -R 65534:65534 /var/tmp/shared/output
-        chmod g+rwxs /var/tmp/shared/output
+        chmod -R g+rwxs /var/tmp/shared/output
     fi
 
     if [ ! -d "/etc/user/config/services/" ]; then
