@@ -9,7 +9,7 @@ GLOBAL_VERSION=${GLOBAL_VERSION:-latest}
 SERVICE_DIR=${SERVICE_DIR:-/etc/user/config/services}
 SECRET_DIR=${SECRET_DIR:-/etc/user/secret}
 
-SHARED_DIR=${SHARED_DIR:-/var/tmp/shared}
+SHARED=${SHARED:-/var/tmp/shared}
 
 FRAMEWORK_SCHEDULER_IMAGE=${FRAMEWORK_SCHEDULER_IMAGE:-framework-scheduler}
 FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
@@ -393,8 +393,8 @@ create_framework_json() {
       '$ENVS'
       '$ENTRYPOINT'
       "VOLUMES":[
-        { "SOURCE": "'$SHARED_DIR'",
-          "DEST": "/var/tmp/shared",
+        { "SOURCE": "SHARED",
+          "DEST": "'$SHARED'",
           "TYPE": "rw"
         },
         { "SOURCE": "SYSTEM_DATA",
@@ -442,8 +442,8 @@ create_framework_json() {
         }
             ],
       "VOLUMES":[
-        { "SOURCE": "'$SHARED_DIR'",
-          "DEST": "/var/tmp/shared",
+        { "SOURCE": "SHARED",
+          "DEST": "'$SHARED'",
           "TYPE": "rw"
         }
             ],
@@ -869,7 +869,7 @@ start_framework_scheduler() {
         DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
     fi
     DOCKER_RUN="/usr/bin/docker run -d \
-        -v $SHARED_DIR:/var/tmp/shared \
+        -v SHARED:/var/tmp/shared \
 	  	-v /var/run/docker.sock:/var/run/docker.sock \
 		-v SYSTEM_DATA:/etc/system/data \
 		-v SYSTEM_CONFIG:/etc/system/config \
