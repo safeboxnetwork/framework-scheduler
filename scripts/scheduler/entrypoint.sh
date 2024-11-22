@@ -359,7 +359,7 @@ create_user_json() {
 
 create_framework_json() {
 
-    if [ "$DEBUG_MODE" == "TRUE"]; then
+    if [ "$DEBUG_MODE" == "TRUE" ]; then
         ENTRYPOINT='"ENTRYPOINT": "sh",'
     else
         ENTRYPOINT=""
