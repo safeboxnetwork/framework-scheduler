@@ -554,8 +554,8 @@ execute_task() {
     fi
 
     if [ "$TASK_NAME" == "install" ]; then
-        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0) # install has started
-        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"                        # web_in
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r .) | base64 -w0) # install has started
+        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"  
 
         #if [ "$INSTALL_STATUS" == "2" ]; then
         # force install?
@@ -964,6 +964,8 @@ while true; do
             # MOVE TASK from web_in into web_out
             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
+            echo $JSON_TARGET | base64 -d > $SHARED/output/$TASK.json
+
 
         done
     fi
