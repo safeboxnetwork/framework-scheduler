@@ -240,21 +240,21 @@ check_dirs_and_files() {
         mkdir -p /var/tmp/shared
         chown -R 65534:65534 /var/tmp/shared
         chmod -R g+s /var/tmp/shared
-        setfacl -d -m g:nobody:rw /var/tmp/shared
+        setfacl -d -m g:65534:rw /var/tmp/shared
     fi
 
     if [ ! -d "/var/tmp/shared/input" ]; then
         mkdir -p /var/tmp/shared/input
         chown -R 65534:65534 /var/tmp/shared/input
         chmod -R g+s /var/tmp/shared/input
-        setfacl -d -m g:nobody:rw /var/tmp/shared/input
+        setfacl -d -m g:65534:rw /var/tmp/shared/input
     fi
 
     if [ ! -d "/var/tmp/shared/output" ]; then
         mkdir -p /var/tmp/shared/output
         chown -R 65534:65534 /var/tmp/shared/output
         chmod -R g+s /var/tmp/shared/output
-        setfacl -d -m g:nobody:rw /var/tmp/shared/output
+        setfacl -d -m g:65534:rw /var/tmp/shared/output
     fi
 
     if [ ! -d "/etc/user/config/services/" ]; then
