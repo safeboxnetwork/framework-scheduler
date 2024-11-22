@@ -360,7 +360,7 @@ create_user_json() {
 create_framework_json() {
 
     if [ "$DEBUG_MODE" == "TRUE" ]; then
-        ENTRYPOINT='"ENTRYPOINT": "sh",'
+        ENTRYPOINT='"ENTRYPOINT": "sh","CMD": "sleep 86400",'
     else
         ENTRYPOINT=""
     fi
