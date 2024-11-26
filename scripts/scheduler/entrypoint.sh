@@ -554,7 +554,7 @@ execute_task() {
     fi
 
     if [ "$TASK_NAME" == "install" ]; then
-        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r .) | base64 -w0) # install has started
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0) # install has started
         redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"  
 
         #if [ "$INSTALL_STATUS" == "2" ]; then
