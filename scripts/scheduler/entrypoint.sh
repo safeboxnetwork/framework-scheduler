@@ -247,10 +247,10 @@ check_dirs_and_files() {
     if [ ! -d "/var/tmp/shared/output" ]; then
         mkdir -p /var/tmp/shared/output
     fi
-    # Setting file and directory permssion 
-        chown -R 65534:65534 /var/tmp/shared
-        chmod -R g+rws /var/tmp/shared
-        setfacl -d -m g:65534:rw /var/tmp/shared
+    # Setting file and directory permssion
+    chown -R 65534:65534 /var/tmp/shared
+    chmod -R g+rws /var/tmp/shared
+    setfacl -d -m g:65534:rw /var/tmp/shared
 
     if [ ! -d "/etc/user/config/services/" ]; then
         mkdir /etc/user/config/services/
@@ -933,28 +933,6 @@ if [[ "$WS" == "" && "$RS" == "" ]]; then
     sleep 5
 
 fi
-
-# poll redis infinitely for scheduler jobs
-#check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHORT
-#echo $(date)" Scheduler initialized, starting listening for events"
-
-# STARTING SCHEDULER PROCESSES
-# Initial parameters
-DATE=$(date +%F-%H-%M-%S)
-
-# Set env variables
-DIR=$SHARED/input
-
-# Triggers by certificate or domain config changes
-
-unset IFS
-
-inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r $DIR |
-    while read dir op file; do
-        if [ "${op}" == "CLOSE_WRITE,CLOSE" ]; then
-            echo "new file created: $file"
-        fi
-    done
 
 # STARTING SCHEDULER PROCESSES
 # Initial parameters
