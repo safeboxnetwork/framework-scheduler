@@ -950,7 +950,8 @@ inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r 
         if [ "${op}" == "CLOSE_WRITE,CLOSE" ]; then
             echo "new file created: $file"
             B64_JSON=$(cat $DIR/$file | base64 -w0)
-            execute_task "$file" "$B64_JSON"
+            TASK=$(echo $file | cut -d '.' -f1)
+            execute_task "$TASK" "$B64_JSON"
             rm -f $dir/$file
         fi
     done
