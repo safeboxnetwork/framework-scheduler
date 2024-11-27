@@ -550,7 +550,8 @@ execute_task() {
 
     if [ "$TASK_NAME" == "install" ]; then
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0) # install has started
-        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"  
+        #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+        echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 
         #if [ "$INSTALL_STATUS" == "2" ]; then
         # force install?
@@ -791,7 +792,8 @@ execute_task() {
     debug "JSON_TARGET: $JSON_TARGET"
 
     if [ "$JSON_TARGET" != "" ]; then
-        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+        #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+        echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
     fi
 
 }
@@ -933,37 +935,75 @@ if [[ "$WS" == "" && "$RS" == "" ]]; then
 fi
 
 # poll redis infinitely for scheduler jobs
-check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHORT
-echo $(date)" Scheduler initialized, starting listening for events"
+#check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHORT
+#echo $(date)" Scheduler initialized, starting listening for events"
 
 # STARTING SCHEDULER PROCESSES
-while true; do
+# Initial parameters
+DATE=$(date +%F-%H-%M-%S)
 
-    TASKS=""
+# Set env variables
+DIR=$SHARED/input
 
-    # GET DEPLOYMENT IDs FROM generate key
-    TASKS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
-    if [[ "$TASKS" != "0" && "$TASKS" != "" ]]; then
+# Triggers by certificate or domain config changes
 
-        # PROCESSING TASK
-        for TASK in $(echo $TASKS); do
+unset IFS
 
-            ### READ TASKS FROM REDIS
-            B64_JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK)
+inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r $DIR |
+    while read dir op file; do
+        if [ "${op}" == "CLOSE_WRITE,CLOSE" ]; then
+            echo "new file created: $file"
+        fi
+    done
 
-            JSON_TARGET=$(echo $B64_JSON | base64 -d | jq -rc .'STATUS="0"' | base64 -w0)
-            redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+# STARTING SCHEDULER PROCESSES
+# Initial parameters
+DATE=$(date +%F-%H-%M-%S)
 
-            execute_task "$TASK" "$B64_JSON"
+# Set env variables
+DIR=$SHARED/input
 
-            # MOVE TASK from web_in into web_out
-            redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
-            redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
-            echo $JSON_TARGET | base64 -d > $SHARED/output/$TASK.json
+# Triggers by certificate or domain config changes
 
+unset IFS
 
-        done
-    fi
+inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r $DIR |
+    while read dir op file; do
+        if [ "${op}" == "CLOSE_WRITE,CLOSE" ]; then
+            echo "new file created: $file"
+            B64_JSON=$(cat $file | base64 -w0)
+            execute_task "$file" "$B64_JSON"
+            rm -f $file
+        fi
+    done
 
-    sleep 1
-done
+# while true; do
+
+#     TASKS=""
+
+#     # GET DEPLOYMENT IDs FROM generate key
+#     #TASKS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
+#     TASK=$(read $SHARED/output/*)
+#     if [[ "$TASKS" != "0" && "$TASKS" != "" ]]; then
+
+#         # PROCESSING TASK
+#         for TASK in $(echo $TASKS); do
+
+#             ### READ TASKS FROM REDIS
+#             B64_JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK)
+
+#             JSON_TARGET=$(echo $B64_JSON | base64 -d | jq -rc .'STATUS="0"' | base64 -w0)
+#             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+
+#             execute_task "$TASK" "$B64_JSON"
+
+#             # MOVE TASK from web_in into web_out
+#             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
+#             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
+#             echo $JSON_TARGET | base64 -d > $SHARED/output/$TASK.json
+
+#         done
+#     fi
+
+#     sleep 1
+# done
