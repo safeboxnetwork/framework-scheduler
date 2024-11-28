@@ -369,21 +369,6 @@ create_framework_json() {
   },
   "containers": [
     {
-      "IMAGE": "redis:'$REDIS_VERSION'",
-      "NAME": "'$REDIS_SERVER'",
-      "UPDATE": "true",
-      "MEMORY": "64M",
-      "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
-      '$ADDITIONAL',
-      "PORTS":[
-        { "SOURCE": "null",
-          "DEST": "6379",
-          "TYPE": "tcp"
-        }
-            ],
-      "POST_START": []
-    },
-    {
       "IMAGE": "'$DOCKER_REGISTRY_URL'/'$FRAMEWORK_SCHEDULER_IMAGE':'$FRAMEWORK_SCHEDULER_VERSION'",
       "NAME": "'$FRAMEWORK_SCHEDULER_NAME'",
       "UPDATE": "true",
@@ -921,13 +906,14 @@ if [ "$VOL" != "1" ]; then
     fi
 fi
 
-RS=$(docker ps | grep redis-server)
+#RS=$(docker ps | grep redis-server)
 WS=$(docker ps | grep webserver)
 
-if [[ "$WS" == "" && "$RS" == "" ]]; then
+#if [[ "$WS" == "" && "$RS" == "" ]]; then
+if [ "$WS" == "" ]; then
 
     # START SERVICES
-    $service_exec service-framework.containers.redis-server start &
+    #$service_exec service-framework.containers.redis-server start &
     $service_exec service-framework.containers.webserver start &
     sleep 5
 
