@@ -253,11 +253,11 @@ check_dirs_and_files() {
     setfacl -d -m g:65534:rw /var/tmp/shared
 
     if [ ! -d "/etc/user/config/services/" ]; then
-        mkdir /etc/user/config/services/
+        mkdir -p /etc/user/config/services/
     fi
 
     if [ ! -d "/etc/user/config/services/tmp/" ]; then
-        mkdir /etc/user/config/services/tmp/
+        mkdir -p /etc/user/config/services/tmp/
 
         if [[ -f "/etc/user/config/system.json" && -f "/etc/user/config/user.json" ]]; then
             RET=1
@@ -265,7 +265,7 @@ check_dirs_and_files() {
     fi
 
     if [ ! -d "/etc/system" ]; then
-        mkdir "/etc/system"
+        mkdir -p"/etc/system"
     fi
 
     if [ ! -d "/etc/user/secret" ]; then
@@ -909,17 +909,16 @@ if [ "$STATUS" != "1" ]; then
     /usr/bin/docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_SCHEDULER_NETWORK_SUBNET
 fi
 
-DF=$(check_dirs_and_files)
-if [ "$DF" != "1" ]; then
-    create_system_json
-    create_user_json
-    create_framework_json
-fi
-
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
-    start_framework_scheduler
-    /usr/bin/docker rm -f $HOSTNAME
+    DF=$(check_dirs_and_files)
+    if [ "$DF" != "1" ]; then
+        create_system_json
+        create_user_json
+        create_framework_json
+        start_framework_scheduler
+        /usr/bin/docker rm -f $HOSTNAME
+    fi
 fi
 
 RS=$(docker ps | grep redis-server)
