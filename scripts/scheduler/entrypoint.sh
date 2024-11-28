@@ -534,6 +534,7 @@ execute_task() {
     if [ "$TASK_NAME" == "install" ]; then
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0) # install has started
         #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 
         #if [ "$INSTALL_STATUS" == "2" ]; then
@@ -776,6 +777,7 @@ execute_task() {
 
     if [ "$JSON_TARGET" != "" ]; then
         #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
     fi
 
