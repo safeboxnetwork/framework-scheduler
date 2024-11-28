@@ -229,7 +229,6 @@ check_volumes() {
         /usr/bin/docker volume create USER_SECRET
         RET=0
     fi
-
     echo $RET
 }
 
@@ -271,7 +270,6 @@ check_dirs_and_files() {
     if [ ! -d "/etc/user/secret" ]; then
         mkdir -p "/etc/user/secret"
     fi
-
     echo $RET
 }
 
@@ -896,14 +894,15 @@ fi
 
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
-    DF=$(check_dirs_and_files)
-    if [ "$DF" != "1" ]; then
-        create_system_json
-        create_user_json
-        create_framework_json
-        start_framework_scheduler
-        /usr/bin/docker rm -f $HOSTNAME
-    fi
+    start_framework_scheduler
+    /usr/bin/docker rm -f $HOSTNAME
+fi
+
+DF=$(check_dirs_and_files)
+if [ "$DF" != "1" ]; then
+    create_system_json
+    create_user_json
+    create_framework_json
 fi
 
 #RS=$(docker ps | grep redis-server)
