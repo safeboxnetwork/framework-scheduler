@@ -157,7 +157,8 @@ deploy_additionals() {
 
     # start service
     debug "$service_exec service-$NAME.json start info"
-    $service_exec service-$NAME.json start info
+    $service_exec service-$NAME.json start info &
+    PID=$!
 }
 
 remove_additionals() {
@@ -760,7 +761,7 @@ execute_task() {
 
                         DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
                         deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
-                        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "2" }' | jq -r . | base64 -w0)
+        		sh /scripts/check_pid.sh "$PID" "$TASK" "$DATE" "$REDIS_SERVER" "$REDIS_PORT" &
                     fi
                 fi
             done
