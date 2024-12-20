@@ -8,7 +8,7 @@ REDIS_PORT="$5"
 
 if [ "$PID" != "" ]; then
 
-	debug "JSON_TARGET: $JSON_TARGET"
+	debug "BACKGROUND PID: $PID"
 
 	wait $PID
 
