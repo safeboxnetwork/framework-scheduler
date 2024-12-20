@@ -18,7 +18,7 @@ if [ "$PID" != "" ]; then
 	debug "BACKGROUND PID: $PID"
 
 	#wait $PID
-	while pwdx $PID > /dev/null; do
+	while pwdx $PID | grep -vE 'No such process' > /dev/null; do
 		debug "RUNNING PROCESS: $TASK - PID: $PID"
 		sleep 2
 	done
