@@ -17,7 +17,11 @@ if [ "$PID" != "" ]; then
 
 	debug "BACKGROUND PID: $PID"
 
-	wait $PID
+	#wait $PID
+	while pwdx $PID > /dev/null; do
+		debug "RUNNING PROCESS: $TASK - PID: $PID"
+		sleep 2
+	done
 
 	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "2" }' | jq -r . | base64 -w0)
 	debug "JSON_TARGET: $JSON_TARGET"
