@@ -230,7 +230,6 @@ check_volumes() {
         /usr/bin/docker volume create USER_SECRET
         RET=0
     fi
-
     echo $RET
 }
 
@@ -239,31 +238,26 @@ check_dirs_and_files() {
     RET=0
     if [ ! -d "/var/tmp/shared" ]; then
         mkdir -p /var/tmp/shared
-        chown -R 65534:65534 /var/tmp/shared
-        chmod -R g+rws /var/tmp/shared
-        setfacl -d -m g:65534:rw /var/tmp/shared
     fi
 
     if [ ! -d "/var/tmp/shared/input" ]; then
         mkdir -p /var/tmp/shared/input
-        chown -R 65534:65534 /var/tmp/shared/input
-        chmod -R g+rws /var/tmp/shared/input
-        setfacl -d -m g:65534:rw /var/tmp/shared/input
     fi
 
     if [ ! -d "/var/tmp/shared/output" ]; then
         mkdir -p /var/tmp/shared/output
-        chown -R 65534:65534 /var/tmp/shared/output
-        chmod -R g+rws /var/tmp/shared/output
-        setfacl -d -m g:65534:rw /var/tmp/shared/output
     fi
+    # Setting file and directory permssion
+    chown -R 65534:65534 /var/tmp/shared
+    chmod -R g+rws /var/tmp/shared
+    setfacl -d -m g:65534:rw /var/tmp/shared
 
     if [ ! -d "/etc/user/config/services/" ]; then
-        mkdir /etc/user/config/services/
+        mkdir -p /etc/user/config/services/
     fi
 
     if [ ! -d "/etc/user/config/services/tmp/" ]; then
-        mkdir /etc/user/config/services/tmp/
+        mkdir -p /etc/user/config/services/tmp/
 
         if [[ -f "/etc/user/config/system.json" && -f "/etc/user/config/user.json" ]]; then
             RET=1
@@ -271,13 +265,12 @@ check_dirs_and_files() {
     fi
 
     if [ ! -d "/etc/system" ]; then
-        mkdir "/etc/system"
+        mkdir -p"/etc/system"
     fi
 
     if [ ! -d "/etc/user/secret" ]; then
         mkdir -p "/etc/user/secret"
     fi
-
     echo $RET
 }
 
@@ -374,21 +367,6 @@ create_framework_json() {
     "SERVICE_NAME": "framework"
   },
   "containers": [
-    {
-      "IMAGE": "redis:'$REDIS_VERSION'",
-      "NAME": "'$REDIS_SERVER'",
-      "UPDATE": "true",
-      "MEMORY": "64M",
-      "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
-      '$ADDITIONAL',
-      "PORTS":[
-        { "SOURCE": "null",
-          "DEST": "6379",
-          "TYPE": "tcp"
-        }
-            ],
-      "POST_START": []
-    },
     {
       "IMAGE": "'$DOCKER_REGISTRY_URL'/'$FRAMEWORK_SCHEDULER_IMAGE':'$FRAMEWORK_SCHEDULER_VERSION'",
       "NAME": "'$FRAMEWORK_SCHEDULER_NAME'",
@@ -556,7 +534,9 @@ execute_task() {
 
     if [ "$TASK_NAME" == "install" ]; then
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0) # install has started
-        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"  
+        #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
+        echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 
         #if [ "$INSTALL_STATUS" == "2" ]; then
         # force install?
@@ -757,7 +737,7 @@ execute_task() {
                         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0)
                     elif [ "$DEPLOY_ACTION" == "deploy" ]; then
                         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0) # deployment has started
-                        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"                # web_in
+                        #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"                # web_in
 
                         DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
                         deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
@@ -797,7 +777,9 @@ execute_task() {
     debug "JSON_TARGET: $JSON_TARGET"
 
     if [ "$JSON_TARGET" != "" ]; then
-        redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+        #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
+        echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
     fi
 
 }
@@ -913,6 +895,12 @@ if [ "$STATUS" != "1" ]; then
     /usr/bin/docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_SCHEDULER_NETWORK_SUBNET
 fi
 
+VOL=$(check_volumes)
+if [ "$VOL" != "1" ]; then
+    start_framework_scheduler
+    /usr/bin/docker rm -f $HOSTNAME
+fi
+
 DF=$(check_dirs_and_files)
 if [ "$DF" != "1" ]; then
     create_system_json
@@ -920,56 +908,68 @@ if [ "$DF" != "1" ]; then
     create_framework_json
 fi
 
-VOL=$(check_volumes)
-if [ "$VOL" != "1" ]; then
-    start_framework_scheduler
-    /usr/bin/docker rm -f $HOSTNAME
-fi
-
-RS=$(docker ps | grep redis-server)
+#RS=$(docker ps | grep redis-server)
 WS=$(docker ps | grep webserver)
 
-if [[ "$WS" == "" && "$RS" == "" ]]; then
+#if [[ "$WS" == "" && "$RS" == "" ]]; then
+if [ "$WS" == "" ]; then
 
     # START SERVICES
-    $service_exec service-framework.containers.redis-server start &
+    #$service_exec service-framework.containers.redis-server start &
     $service_exec service-framework.containers.webserver start &
     sleep 5
 
 fi
 
-# poll redis infinitely for scheduler jobs
-check_redis_availability $REDIS_SERVER $REDIS_PORT $CURL_RETRIES $CURL_SLEEP_SHORT
-echo $(date)" Scheduler initialized, starting listening for events"
-
 # STARTING SCHEDULER PROCESSES
-while true; do
+# Initial parameters
+DATE=$(date +%F-%H-%M-%S)
 
-    TASKS=""
+# Set env variables
+DIR=$SHARED/input
 
-    # GET DEPLOYMENT IDs FROM generate key
-    TASKS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
-    if [[ "$TASKS" != "0" && "$TASKS" != "" ]]; then
+# Triggers by certificate or domain config changes
 
-        # PROCESSING TASK
-        for TASK in $(echo $TASKS); do
+unset IFS
 
-            ### READ TASKS FROM REDIS
-            B64_JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK)
-
-            JSON_TARGET=$(echo $B64_JSON | base64 -d | jq -rc .'STATUS="0"' | base64 -w0)
-            redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
-
+inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r $DIR |
+    while read dir op file; do
+        if [ "${op}" == "CLOSE_WRITE,CLOSE" ]; then
+            echo "new file created: $file"
+            B64_JSON=$(cat $DIR/$file | base64 -w0)
+            TASK=$(echo $file | cut -d '.' -f1)
             execute_task "$TASK" "$B64_JSON"
+            rm -f $dir/$file
+        fi
+    done
 
-            # MOVE TASK from web_in into web_out
-            redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
-            redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
-            echo $JSON_TARGET | base64 -d > $SHARED/output/$TASK.json
+# while true; do
 
+#     TASKS=""
 
-        done
-    fi
+#     # GET DEPLOYMENT IDs FROM generate key
+#     #TASKS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
+#     TASK=$(read $SHARED/output/*)
+#     if [[ "$TASKS" != "0" && "$TASKS" != "" ]]; then
 
-    sleep 1
-done
+#         # PROCESSING TASK
+#         for TASK in $(echo $TASKS); do
+
+#             ### READ TASKS FROM REDIS
+#             B64_JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK)
+
+#             JSON_TARGET=$(echo $B64_JSON | base64 -d | jq -rc .'STATUS="0"' | base64 -w0)
+#             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
+
+#             execute_task "$TASK" "$B64_JSON"
+
+#             # MOVE TASK from web_in into web_out
+#             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
+#             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
+#             echo $JSON_TARGET | base64 -d > $SHARED/output/$TASK.json
+
+#         done
+#     fi
+
+#     sleep 1
+# done
