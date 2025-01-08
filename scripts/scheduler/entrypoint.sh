@@ -705,7 +705,7 @@ execute_task() {
 
     elif [ "$TASK_NAME" == "deployment" ]; then
         JSON="$(echo $B64_JSON | base64 -d)"
-        DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME)
+	DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
         TREES=$(get_repositories)
         debug "$JSON"
@@ -713,7 +713,7 @@ execute_task() {
         for TREE in $TREES; do
             APPS=$(jq -rc '.apps[]' $TREE)
             for APP in $APPS; do
-                APP_NAME=$(echo "$APP" | jq -r '.name')
+		APP_NAME=$(echo "$APP" | jq -r '.name' | awk '{print tolower($0)}')
                 APP_VERSION=$(echo "$APP" | jq -r '.version')
                 APP_DIR=$(dirname $TREE)"/"$APP_NAME
                 debug "$APP_TEMPLATE"
