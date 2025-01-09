@@ -13,6 +13,11 @@ debug() {
     fi
 }
 
+JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0) # deployment has started
+debug "JSON_TARGET: $JSON_TARGET"
+
+echo $JSON_TARGET | base64 -d >$SHARED/output/$APPLICATION.json
+
 if [ "$PID" != "" ]; then
 
 	debug "BACKGROUND PID: $PID"
@@ -23,11 +28,14 @@ if [ "$PID" != "" ]; then
 		sleep 2
 	done
 
+	# deploy finished
 	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "2" }' | jq -r . | base64 -w0)
-	debug "JSON_TARGET: $JSON_TARGET"
 
-        echo $JSON_TARGET | base64 -d >$SHARED/output/$APPLICATION.json
-	#redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $APPLICATION "$JSON_TARGET"
-
+else	# error, no PID
+	JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0" }' | jq -r . | base64 -w0)
 fi;
+
+debug "JSON_TARGET: $JSON_TARGET"
+echo $JSON_TARGET | base64 -d >$SHARED/output/$APPLICATION.json
+#redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $APPLICATION "$JSON_TARGET"
 
