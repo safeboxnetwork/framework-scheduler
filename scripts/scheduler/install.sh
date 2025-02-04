@@ -8,7 +8,7 @@ GLOBAL_VERSION=$5
 get_vpn_key() {
 
     if [ "$VPN_PASS" != "" ]; then
-        dateFromServer=$(curl -v --silent https://demo.format.hu/ 2>&1 | grep -i '< date' | sed -e 's/< date: //gi')
+        dateFromServer=$(curl -v --silent $VPN_DOMAIN 2>&1 | grep -i '< date' | sed -e 's/< date: //gi')
         VPN_DATE=$(date +"%Y%m%d" -d "$dateFromServer")
         VPN_HASH=$(echo -n $(($VPN_PASS * $VPN_DATE)) | sha256sum | cut -d " " -f1)
         VPN_URL="$VPN_DOMAIN/$VPN_HASH/secret"
