@@ -2,8 +2,7 @@
 
 SERVICE_EXEC=$2
 FIRST_INSTALL=$3
-INSTALL_KEY=$4
-GLOBAL_VERSION=$5
+GLOBAL_VERSION=$4
 
 get_vpn_key() {
 
@@ -87,8 +86,6 @@ if [[ $FIRST_INSTALL == "true" ]]; then
     INIT="true"
 
     #discover_services;
-    echo "$INSTALL_KEY" | base64 -d >/etc/user/data/installer
-    chmod 0600 /etc/user/data/installer
 
     # base variables
 
@@ -160,7 +157,6 @@ if [[ $FIRST_INSTALL == "true" ]]; then
         --volume USER_DATA:/etc/user/data \
         --volume USER_CONFIG:/etc/user/config \
         --volume USER_SECRET:/etc/user/secret \
-        --mount src=USER_DATA,dst=/root/.ssh/id_rsa,volume-subpath=installer \
         --env LETSENCRYPT_MAIL=$LETSENCRYPT_MAIL \
         --env LETSENCRYPT_SERVERNAME=$LETSENCRYPT_SERVERNAME \
         --env GLOBAL_VERSION=$GLOBAL_VERSION \
