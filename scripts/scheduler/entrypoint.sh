@@ -304,7 +304,7 @@ create_repositories_json() {
     {
         echo '
 {
-	"repositories": [ "git@git.format.hu:format/default-applications-tree.git" ]
+	"repositories": [ "https://git.format.hu:format/default-applications-tree.git" ]
 }
 '
     } | jq -r . >/etc/user/config/repositories.json
