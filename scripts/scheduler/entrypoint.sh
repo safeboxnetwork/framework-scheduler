@@ -745,6 +745,13 @@ execute_task() {
         add_repository "$NEW_REPO"
         JSON_TARGET=""
 
+    elif [ "$TASK_NAME" == "save_vpn" ]; then
+
+        # install vpn only
+        sh /scripts/install.sh "$B64_JSON" "$service_exec" "vpn" "$GLOBAL_VERSION"
+
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$VPN_STATUS'", "RESULT": "'$VPN_RESULT'" }' | jq -r . | base64 -w0)
+
     elif [ "$TASK_NAME" == "containers" ]; then # not in use
         CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler)
         RESULT=$(echo "$CONTAINERS" | base64 -w0)

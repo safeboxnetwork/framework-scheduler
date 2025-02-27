@@ -162,11 +162,16 @@ if [[ $FIRST_INSTALL == "true" ]]; then
         --env GLOBAL_VERSION=$GLOBAL_VERSION \
         --rm \
         $DOCKER_REGISTRY_URL/installer-tool
-else
 
+elif [ "$FIRST_INSTALL" == "vpn" ]; then
+
+        get_vpn_key
+        $SERVICE_EXEC vpn-proxy start
+	exit;
+
+else
     $SUDO_CMD docker pull $DOCKER_REGISTRY_URL/installer-tool
     $SUDO_CMD docker pull $DOCKER_REGISTRY_URL/setup
-
 fi
 
 # # test - alias doesn't work inside a function
