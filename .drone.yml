@@ -7,7 +7,7 @@ node_selector:
 
 trigger:
   branch:
-    - master
+    - main
   event:
     - push
 workspace:
