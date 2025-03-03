@@ -31,7 +31,8 @@ steps:
         - linux/arm64
     
   - name: pull image to dockerhub
-    image: plugins/docker
+    image: docker.io/owncloudci/drone-docker-buildx:4
+    privileged: true
     settings:
       repo: safebox/framework-scheduler
       tags: latest
@@ -39,3 +40,6 @@ steps:
         from_secret: dockerhub-username
       password: 
         from_secret: dockerhub-password
+      platforms:
+        - linux/amd64
+        - linux/arm64
