@@ -29,3 +29,13 @@ steps:
       platforms:
         - linux/amd64
         - linux/arm64
+    
+  - name: pull image to dockerhub
+    image: plugins/docker
+    settings:
+      repo: safebox/framework-scheduler
+      tags: latest
+      username:
+        from_secret: dockerhub-username
+      password: 
+        from_secret: dockerhub-password
