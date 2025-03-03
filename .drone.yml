@@ -13,7 +13,7 @@ trigger:
 workspace:
   path: /drone/src
 
-steps:  
+steps:
   - name: build multiarch from dev
     image: docker.io/owncloudci/drone-docker-buildx:4
     privileged: true
