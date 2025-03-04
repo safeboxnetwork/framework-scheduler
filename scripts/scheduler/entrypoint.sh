@@ -749,7 +749,7 @@ execute_task() {
 
 	VPN_PROXY_REPO="wireguard-proxy-client";
         if [ ! -d "/tmp/$VPN_PROXY_REPO" ]; then
-            git clone $REPO /tmp/$VPN_PROXY_REPO >/dev/null
+            git clone https://git.format.hu/safebox/$VPN_PROXY_REPO.git /tmp/$VPN_PROXY_REPO >/dev/null
         else
             cd /tmp/$VPN_PROXY_REPO
             git pull >/dev/null
