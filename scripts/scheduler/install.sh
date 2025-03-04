@@ -165,8 +165,17 @@ if [[ $FIRST_INSTALL == "true" ]]; then
 
 elif [ "$FIRST_INSTALL" == "vpn" ]; then
 
+        INIT_SERVICE_PATH=/etc/user/config/services
+        AUTO_START_SERVICES="/etc/system/data/"
+
         get_vpn_key
+
         $SERVICE_EXEC vpn-proxy start
+        echo "$INIT_SERVICE_PATH/vpn-proxy.json" >>$AUTO_START_SERVICES/.init_services
+        echo "$INIT_SERVICE_PATH/firewall-vpn-smarthost-loadbalancer" >>$AUTO_START_SERVICES/.init_services
+        echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-postrouting" >>$AUTO_START_SERVICES/.init_services
+        echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-prerouting" >>$AUTO_START_SERVICES/.init_services
+
 	exit;
 
 else
