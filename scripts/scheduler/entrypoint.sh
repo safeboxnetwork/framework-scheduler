@@ -747,6 +747,20 @@ execute_task() {
 
     elif [ "$TASK_NAME" == "save_vpn" ]; then
 
+	VPN_PROXY_REPO="wireguard-proxy-client";
+        if [ ! -d "/tmp/$VPN_PROXY_REPO" ]; then
+            git clone $REPO /tmp/$VPN_PROXY_REPO >/dev/null
+        else
+            cd /tmp/$VPN_PROXY_REPO
+            git pull >/dev/null
+        fi
+
+	cp -av /tmp/$VPN_PROXY_REPO/*.json $SERVICE_DIR/
+
+	VPN_VOLUMES=$(jq -r .containers[0].VOLUMES[0].SOURCE $SERVICE_DIR/vpn-proxy.json)
+	VOLUME=$(dirname $VPN_VOLUMES);
+	mkdir -p $VOLUME;
+
         # install vpn only
         sh /scripts/install.sh "$B64_JSON" "$service_exec" "vpn" "$GLOBAL_VERSION"
 
