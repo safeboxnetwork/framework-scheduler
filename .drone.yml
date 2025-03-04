@@ -13,7 +13,24 @@ trigger:
 workspace:
   path: /drone/src
 
-steps:    
+steps:
+  - name: build multiarch from dev
+    image: docker.io/owncloudci/drone-docker-buildx:4
+    privileged: true
+    settings:
+      cache-from: [ "registry.dev.format.hu/framework-scheduler" ]
+      registry: registry.dev.format.hu
+      repo: registry.dev.format.hu/framework-scheduler
+      tags: latest
+      dockerfile: Dockerfile
+      username:
+        from_secret: dev-hu-registry-username
+      password: 
+        from_secret: dev-hu-registry-password
+      platforms:
+        - linux/amd64
+        - linux/arm64
+
   - name: pull image to dockerhub
     image: docker.io/owncloudci/drone-docker-buildx:4
     privileged: true
