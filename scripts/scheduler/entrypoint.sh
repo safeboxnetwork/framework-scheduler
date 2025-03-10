@@ -707,7 +707,9 @@ execute_task() {
                             KEY=$(echo $LINE | jq -r .key)
                             VALUE=$(echo $LINE | jq -r .value)
                             debug "$KEY: $VALUE"
-                            TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "SMTP_MSG_SIZE" then .value = "'$VALUE'" else . end)')
+			    # write ENV value from service files to template value by key name
+                            #TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(.value = "'$VALUE'")')
+                            TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "'$KEY'" then .value = "'$VALUE'" else . end)')
                             #echo $TEMPLATE;
                         done
 
