@@ -710,8 +710,22 @@ execute_task() {
 			    # write ENV value from service files to template value by key name
                             #TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(.value = "'$VALUE'")')
                             TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "'$KEY'" then .value = "'$VALUE'" else . end)')
-                            #echo $TEMPLATE;
                         done
+                        # write ENV value from domain file to template value by key name
+                        for LINE in $(cat $SERVICE_DIR/domain-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]'); do
+                            KEY=$(echo $LINE | jq -r .key)
+                            VALUE=$(echo $LINE | jq -r .value)
+                            debug "$KEY: $VALUE"
+                            TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "'$KEY'" then .value = "'$VALUE'" else . end)')
+                        done
+                        # write ENV value from secret file to template value by key name
+                        for LINE in $(cat $SECRET_DIR/$DEPLOY_NAME/$DEPLOY_NAME.json | jq -rc '.[] | to_entries[]'); do
+                            KEY=$(echo $LINE | jq -r .key)
+                            VALUE=$(echo $LINE | jq -r .value)
+                            debug "$KEY: $VALUE"
+                            TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "'$KEY'" then .value = "'$VALUE'" else . end)')
+                        done
+                        #echo $TEMPLATE;
 
                         TEMPLATE=$(echo "$TEMPLATE" | base64 -w0)
                         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0)
