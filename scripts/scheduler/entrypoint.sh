@@ -141,13 +141,21 @@ deploy_additionals() {
 }
 
 remove_additionals() {
-    NAME="$1"
+    local DIR="$1"
+    local NAME="$2"
 
     debug "UNINSTALL: $NAME"
 
     # stop service
     debug "$service_exec service-$NAME.json stop force dns-remove &"
     $service_exec service-$NAME.json stop force dns-remove &
+
+    # remove service files
+    rm $SERVICE_DIR/*"-"$NAME.json # service, domain, etc.
+    rm $SECRET_DIR/$NAME/$NAME.json
+
+    # remove stopped container
+
 }
 
 get_repositories() {
@@ -737,7 +745,14 @@ execute_task() {
                         DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
                         deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
         		sh /scripts/check_pid.sh "$PID" "$SHARED" "$DEPLOY_ACTION-$DEPLOY_NAME" "$DATE" "$DEBUG" &
-                    fi
+                    elif [ "$DEPLOY_ACTION" == "redeploy" ]; then
+                        JSON_TARGET=""
+                        remove_additionals "$APP_DIR" "$DEPLOY_NAME"
+
+                        DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
+                        deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
+                        sh /scripts/check_pid.sh "$PID" "$SHARED" "deploy-$DEPLOY_NAME" "$DATE" "$DEBUG" &
+		    fi
                 fi
             done
         done
