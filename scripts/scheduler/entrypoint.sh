@@ -147,15 +147,13 @@ remove_additionals() {
     debug "UNINSTALL: $NAME"
 
     # stop service
+    # force - remove stopped container, docker rm
     debug "$service_exec service-$NAME.json stop force dns-remove &"
     $service_exec service-$NAME.json stop force dns-remove &
 
     # remove service files
     rm $SERVICE_DIR/*"-"$NAME.json # service, domain, etc.
     rm $SECRET_DIR/$NAME/$NAME.json
-
-    # remove stopped container
-
 }
 
 get_repositories() {
