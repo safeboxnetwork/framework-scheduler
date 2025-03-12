@@ -113,6 +113,10 @@ if [[ $FIRST_INSTALL == "true" ]]; then
         VAR_CRON="--env CRON=$CRON"
     fi
 
+    if [ "$LOCAL_BACKEND" != "" ]; then
+        VAR_LOCAL_BACKEND="--env LOCAL_BACKEND=$LOCAL_BACKEND"
+    fi
+
     if [ "$VPN_PROXY" == "yes" ]; then
         if [ "$LETSENCRYPT_SERVERNAME" = "" ]; then
             LETSENCRYPT_SERVERNAME="letsencrypt"
@@ -146,6 +150,7 @@ if [[ $FIRST_INSTALL == "true" ]]; then
         $VAR_VPN_PROXY \
         $VAR_DOMAIN \
         $VAR_CRON \
+        $VAR_LOCAL_BACKEND \
         $VAR_DISCOVERY \
         $VAR_DISCOVERY_DIR \
         $VAR_DISCOVERY_DIRECTORY \
@@ -165,18 +170,18 @@ if [[ $FIRST_INSTALL == "true" ]]; then
 
 elif [ "$FIRST_INSTALL" == "vpn" ]; then
 
-        INIT_SERVICE_PATH=/etc/user/config/services
-        AUTO_START_SERVICES="/etc/system/data/"
+    INIT_SERVICE_PATH=/etc/user/config/services
+    AUTO_START_SERVICES="/etc/system/data/"
 
-        get_vpn_key
+    get_vpn_key
 
-        $SERVICE_EXEC vpn-proxy start
-        echo "$INIT_SERVICE_PATH/vpn-proxy.json" >>$AUTO_START_SERVICES/.init_services
-        echo "$INIT_SERVICE_PATH/firewall-vpn-smarthost-loadbalancer" >>$AUTO_START_SERVICES/.init_services
-        echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-postrouting" >>$AUTO_START_SERVICES/.init_services
-        echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-prerouting" >>$AUTO_START_SERVICES/.init_services
+    $SERVICE_EXEC vpn-proxy start
+    echo "$INIT_SERVICE_PATH/vpn-proxy.json" >>$AUTO_START_SERVICES/.init_services
+    echo "$INIT_SERVICE_PATH/firewall-vpn-smarthost-loadbalancer" >>$AUTO_START_SERVICES/.init_services
+    echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-postrouting" >>$AUTO_START_SERVICES/.init_services
+    echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-prerouting" >>$AUTO_START_SERVICES/.init_services
 
-	exit;
+    exit
 
 else
     $SUDO_CMD docker pull $DOCKER_REGISTRY_URL/installer-tool
