@@ -148,8 +148,8 @@ remove_additionals() {
 
     # stop service
     # force - remove stopped container, docker rm
-    debug "$service_exec service-$NAME.json stop force dns-remove &"
-    $service_exec service-$NAME.json stop force dns-remove &
+    debug "$service_exec service-$NAME.json stop force dns-remove"
+    $service_exec service-$NAME.json stop force dns-remove
 
     # remove service files
     rm $SERVICE_DIR/*"-"$NAME.json # service, domain, etc.
@@ -750,6 +750,13 @@ execute_task() {
                         DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
                         deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
                         sh /scripts/check_pid.sh "$PID" "$SHARED" "deploy-$DEPLOY_NAME" "$DATE" "$DEBUG" &
+                    elif [ "$DEPLOY_ACTION" == "uninstall" ]; then
+                        #remove_additionals "$APP_DIR" "$DEPLOY_NAME"
+                        # uninstall has finished
+                        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "2" }' | jq -r . | base64 -w0)
+                        debug "JSON_TARGET: $JSON_TARGET"
+                        echo $JSON_TARGET | base64 -d >$SHARED/output/"uninstall-"$DEPLOY_NAME.json
+                        JSON_TARGET=""
 		    fi
                 fi
             done
