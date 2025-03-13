@@ -751,7 +751,7 @@ execute_task() {
                         deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
                         sh /scripts/check_pid.sh "$PID" "$SHARED" "deploy-$DEPLOY_NAME" "$DATE" "$DEBUG" &
                     elif [ "$DEPLOY_ACTION" == "uninstall" ]; then
-                        #remove_additionals "$APP_DIR" "$DEPLOY_NAME"
+                        remove_additionals "$APP_DIR" "$DEPLOY_NAME"
                         # uninstall has finished
                         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "2" }' | jq -r . | base64 -w0)
                         debug "JSON_TARGET: $JSON_TARGET"
