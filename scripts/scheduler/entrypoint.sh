@@ -782,6 +782,22 @@ execute_task() {
         add_repository "$NEW_REPO"
         JSON_TARGET=""
 
+    elif [ "$TASK_NAME" == "check_vpn" ]; then
+
+        VPN_STATUS="0";
+        VPN_RESULT="";
+        CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -w wireguardproxy)
+        if [ "$CONTAINERS" != "" ]; then
+                UP=$(echo $CONTAINERS | grep -w 'Up')
+                if [ "$UP" != "" ]; then
+                        VPN_STATUS="2";
+                else
+                        VPN_STATUS="1";
+                fi;
+                VPN_RESULT=$(echo "$CONTAINERS" | base64 -w0)
+        fi;
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$VPN_STATUS'", "RESULT": "'$VPN_RESULT'" }' | jq -r . | base64 -w0)
+
     elif [ "$TASK_NAME" == "save_vpn" ]; then
 
         VPN_PROXY_REPO="wireguard-proxy-client"
