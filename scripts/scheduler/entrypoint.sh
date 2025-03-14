@@ -163,7 +163,6 @@ get_repositories() {
     local TREES=""
     local REPO
 
-
     REPOS=$(jq -r .repositories[] /etc/user/config/repositories.json) # list of repos, delimiter by space
     for REPO in $REPOS; do
 
@@ -434,12 +433,13 @@ check_update() {
 
     CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/"
     CURL_CHECK_CODE=$(eval $CURL_CHECK)
-    if [[ "$CURL_CHECK_CODE" == "200" ]]; then
+
+    if [[ "$CURL_CHECK_CODE" == "200" ]] || [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]]; then
         debug "$REPOSITORY_URL accessed successful"
 
         # if repository url is not set
         if [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]]; then
-            REPOSITORY_URL="docker.io"
+            REPOSITORY_URL="hub.docker.com"
             TEMP_PATH=$IMAGE
         else
             # -f2- IMAGE can contain subdirectories
@@ -689,7 +689,7 @@ execute_task() {
 
     elif [ "$TASK_NAME" == "deployment" ]; then
         JSON="$(echo $B64_JSON | base64 -d)"
-	DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
+        DEPLOY_NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         DEPLOY_ACTION=$(echo "$JSON" | jq -r .ACTION)
         TREES=$(get_repositories)
         debug "$JSON"
@@ -697,7 +697,7 @@ execute_task() {
         for TREE in $TREES; do
             APPS=$(jq -rc '.apps[]' $TREE)
             for APP in $APPS; do
-		APP_NAME=$(echo "$APP" | jq -r '.name' | awk '{print tolower($0)}')
+                APP_NAME=$(echo "$APP" | jq -r '.name' | awk '{print tolower($0)}')
                 APP_VERSION=$(echo "$APP" | jq -r '.version')
                 APP_DIR=$(dirname $TREE)"/"$APP_NAME
                 debug "$APP_TEMPLATE"
@@ -713,7 +713,7 @@ execute_task() {
                             KEY=$(echo $LINE | jq -r .key)
                             VALUE=$(echo $LINE | jq -r .value)
                             debug "$KEY: $VALUE"
-			    # write ENV value from service files to template value by key name
+                            # write ENV value from service files to template value by key name
                             #TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(.value = "'$VALUE'")')
                             TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "'$KEY'" then .value = "'$VALUE'" else . end)')
                         done
@@ -736,13 +736,13 @@ execute_task() {
                         TEMPLATE=$(echo "$TEMPLATE" | base64 -w0)
                         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0)
                     elif [ "$DEPLOY_ACTION" == "deploy" ]; then
-			JSON_TARGET=""
-			#JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0) # deployment has started
+                        JSON_TARGET=""
+                        #JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0) # deployment has started
                         #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET "$DEPLOY_ACTION-$DEPLOY_NAME" "$JSON_TARGET"                # web_in
 
                         DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
                         deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
-        		sh /scripts/check_pid.sh "$PID" "$SHARED" "$DEPLOY_ACTION-$DEPLOY_NAME" "$DATE" "$DEBUG" &
+                        sh /scripts/check_pid.sh "$PID" "$SHARED" "$DEPLOY_ACTION-$DEPLOY_NAME" "$DATE" "$DEBUG" &
                     elif [ "$DEPLOY_ACTION" == "redeploy" ]; then
                         JSON_TARGET=""
                         remove_additionals "$APP_DIR" "$DEPLOY_NAME"
@@ -757,7 +757,7 @@ execute_task() {
                         debug "JSON_TARGET: $JSON_TARGET"
                         echo $JSON_TARGET | base64 -d >$SHARED/output/"uninstall-"$DEPLOY_NAME.json
                         JSON_TARGET=""
-		    fi
+                    fi
                 fi
             done
         done
@@ -784,7 +784,7 @@ execute_task() {
 
     elif [ "$TASK_NAME" == "save_vpn" ]; then
 
-	VPN_PROXY_REPO="wireguard-proxy-client";
+        VPN_PROXY_REPO="wireguard-proxy-client"
         if [ ! -d "/tmp/$VPN_PROXY_REPO" ]; then
             git clone https://git.format.hu/safebox/$VPN_PROXY_REPO.git /tmp/$VPN_PROXY_REPO >/dev/null
         else
@@ -792,11 +792,11 @@ execute_task() {
             git pull >/dev/null
         fi
 
-	cp -av /tmp/$VPN_PROXY_REPO/*.json $SERVICE_DIR/
+        cp -av /tmp/$VPN_PROXY_REPO/*.json $SERVICE_DIR/
 
-	VPN_VOLUMES=$(jq -r .containers[0].VOLUMES[0].SOURCE $SERVICE_DIR/vpn-proxy.json)
-	VOLUME=$(dirname $VPN_VOLUMES);
-	mkdir -p $VOLUME;
+        VPN_VOLUMES=$(jq -r .containers[0].VOLUMES[0].SOURCE $SERVICE_DIR/vpn-proxy.json)
+        VOLUME=$(dirname $VPN_VOLUMES)
+        mkdir -p $VOLUME
 
         # install vpn only
         sh /scripts/install.sh "$B64_JSON" "$service_exec" "vpn" "$GLOBAL_VERSION"
@@ -807,7 +807,12 @@ execute_task() {
         CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler)
         RESULT=$(echo "$CONTAINERS" | base64 -w0)
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
-
+    elif [ "$TASK_NAME" == "upgrade" ]; then
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "UPGRADE_STATUS": "0" }' | jq -r . | base64 -w0) # install has started
+        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
+        echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
+        sh /scripts/upgrade.sh "$B64_JSON" "$service_exec" "true" "$GLOBAL_VERSION"
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "UPGRADE_STATUS": "'$UPGRADE_STATUS'" }' | jq -r . | base64 -w0)
     fi
 
     debug "JSON_TARGET: $JSON_TARGET"
