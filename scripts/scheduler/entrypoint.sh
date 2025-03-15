@@ -499,6 +499,28 @@ check_update() {
     fi
 }
 
+upgrade_scheduler() {
+
+    DOCKER_START="--entrypoint=sh $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c '/scripts/upgrade.sh'"
+
+    DOCKER_RUN="/usr/bin/docker run -d \
+        -v SHARED:/var/tmp/shared \
+	  	-v /var/run/docker.sock:/var/run/docker.sock \
+		-v SYSTEM_DATA:/etc/system/data \
+		-v SYSTEM_CONFIG:/etc/system/config \
+		-v SYSTEM_LOG:/etc/system/log \
+		-v USER_DATA:/etc/user/data \
+		-v USER_CONFIG:/etc/user/config \
+		-v USER_SECRET:/etc/user/secret \
+		--restart=always \
+		--name $FRAMEWORK_SCHEDULER_NAME \
+	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
+	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
+		--env RUN_FORCE=$RUN_FORCE \
+	  $DOCKER_START"
+    eval "$DOCKER_RUN"
+}
+
 execute_task() {
     TASK="$1"
     B64_JSON="$2"
@@ -784,18 +806,18 @@ execute_task() {
 
     elif [ "$TASK_NAME" == "check_vpn" ]; then
 
-        VPN_STATUS="0";
-        VPN_RESULT="";
+        VPN_STATUS="0"
+        VPN_RESULT=""
         CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -w wireguardproxy)
         if [ "$CONTAINERS" != "" ]; then
-                UP=$(echo $CONTAINERS | grep -w 'Up')
-                if [ "$UP" != "" ]; then
-                        VPN_STATUS="2";
-                else
-                        VPN_STATUS="1";
-                fi;
-                VPN_RESULT=$(echo "$CONTAINERS" | base64 -w0)
-        fi;
+            UP=$(echo $CONTAINERS | grep -w 'Up')
+            if [ "$UP" != "" ]; then
+                VPN_STATUS="2"
+            else
+                VPN_STATUS="1"
+            fi
+            VPN_RESULT=$(echo "$CONTAINERS" | base64 -w0)
+        fi
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$VPN_STATUS'", "RESULT": "'$VPN_RESULT'" }' | jq -r . | base64 -w0)
 
     elif [ "$TASK_NAME" == "save_vpn" ]; then
@@ -824,11 +846,7 @@ execute_task() {
         RESULT=$(echo "$CONTAINERS" | base64 -w0)
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
     elif [ "$TASK_NAME" == "upgrade" ]; then
-        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "UPGRADE_STATUS": "0" }' | jq -r . | base64 -w0) # install has started
-        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
-        echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
-        sh /scripts/upgrade.sh "$B64_JSON" "$service_exec" "true" "$GLOBAL_VERSION"
-        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "UPGRADE_STATUS": "'$UPGRADE_STATUS'" }' | jq -r . | base64 -w0)
+        upgrade_scheduler &
     fi
 
     debug "JSON_TARGET: $JSON_TARGET"
