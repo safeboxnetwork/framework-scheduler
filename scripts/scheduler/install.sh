@@ -4,6 +4,31 @@ SERVICE_EXEC=$2
 FIRST_INSTALL=$3
 GLOBAL_VERSION=$4
 
+edit_user_user_json() {
+
+    if [ ! -f /etc/user/config/user.json ]; then
+        install -m 664 -g 65534 /dev/null /etc/user/config/user.json
+        echo '{}' >/etc/user/config/user.json
+
+    else
+        if [ -z $(cat /etc/user/config/user.json) ]; then
+            echo '{}' >/etc/user/config/user.json
+        fi
+    fi
+
+    TMP_FILE=$(mktemp)
+    jq '
+      if . == null or . == [] then 
+        {"letsencrypt": { "EMAIL": "'$LETSENCRYPT_MAIL'", "LETSENCRYPT_SERVER": "'$LETSENCRYPT_SERVERNAME'" }}
+      else 
+        . + {"letsencrypt": { "EMAIL": "'$LETSENCRYPT_MAIL'", "LETSENCRYPT_SERVER": "'$LETSENCRYPT_SERVERNAME'" }}
+      end
+    ' /etc/user/config/user.json >$TMP_FILE
+    cat $TMP_FILE >/etc/user/config/user.json
+    rm $TMP_FILE
+
+}
+
 get_vpn_key() {
 
     if [ "$VPN_PASS" != "" ]; then
@@ -174,6 +199,8 @@ elif [ "$FIRST_INSTALL" == "vpn" ]; then
     AUTO_START_SERVICES="/etc/system/data/"
 
     get_vpn_key
+
+    edit_user_json $LETSENCRYPT_MAIL $LETSENCRYPT_SERVERNAME
 
     $SERVICE_EXEC vpn-proxy start
     echo "$INIT_SERVICE_PATH/vpn-proxy.json" >>$AUTO_START_SERVICES/.init_services
