@@ -4,7 +4,7 @@ SERVICE_EXEC=$2
 FIRST_INSTALL=$3
 GLOBAL_VERSION=$4
 
-edit_user_user_json() {
+edit_user_json() {
 
     if [ ! -f /etc/user/config/user.json ]; then
         install -m 664 -g 65534 /dev/null /etc/user/config/user.json
