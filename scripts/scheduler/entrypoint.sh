@@ -513,7 +513,6 @@ upgrade_scheduler() {
 		-v USER_CONFIG:/etc/user/config \
 		-v USER_SECRET:/etc/user/secret \
 		--restart=always \
-		--name $FRAMEWORK_SCHEDULER_NAME \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 		--env RUN_FORCE=$RUN_FORCE \
