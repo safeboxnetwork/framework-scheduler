@@ -434,16 +434,20 @@ check_update() {
     CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/"
     CURL_CHECK_CODE=$(eval $CURL_CHECK)
 
-    if [[ "$CURL_CHECK_CODE" == "200" ]] || [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]]; then
-        debug "$REPOSITORY_URL accessed successful"
+    # if valid accessible url OR a repository name without dot (safebox)
+    if [[ "$CURL_CHECK_CODE" == "200" ]] ; then
+        debug "$REPOSITORY_URL repository accessed successfully"
 
         # if repository url is not set
         if [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]]; then
-            REPOSITORY_URL="hub.docker.com"
+            REPOSITORY_URL="registry.hub.docker.com"
             TEMP_PATH=$IMAGE
+	    TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{$IMAGE}:pull" | jq -r .token)
+	    TOKEN_HEADER='-H "Authorization: Bearer '$TOKEN'"'
         else
             # -f2- IMAGE can contain subdirectories
             TEMP_PATH=$(echo $IMAGE | cut -d '/' -f2-)
+	    TOKEN_HEADER=""
         fi
 
         debug "TEMP PATH: $TEMP_PATH"
@@ -455,9 +459,10 @@ check_update() {
 
         REMOTE_URL="https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION"
         debug "$REMOTE_URL"
+
         #digest=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "$REMOTE_URL" | jq -r '.config.digest');
         # Digest for the whole manifest, which includes all architectures.
-        digest=$(curl -s -I -H "Accept: application/vnd.oci.image.index.v1+json" "$REMOTE_URL" | grep Docker-Content-Digest | cut -d ' ' -f2 | tr -d '\r\n')
+        digest=$(curl -s -I "$TOKEN_HEADER" -H "Accept: application/vnd.oci.image.index.v1+json" "$REMOTE_URL" | grep -i Docker-Content-Digest | cut -d ' ' -f2 | tr -d '\r\n')
 
         #debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
         #local_digest=$(docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION)
