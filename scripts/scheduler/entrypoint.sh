@@ -344,7 +344,7 @@ create_framework_json() {
 
     ADDITIONAL=""
     ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart=always", "PRE_START": [], "DEPEND": [], "CMD": ""'
-    ENVS='"ENVS": [{"RUN_FORCE": "'$RUN_FORCE'"}, {"WEBSERVER_PORT": "'$WEBSERVER_PORT'"}],'
+    ENVS='"ENVS": [{"RUN_FORCE": "'$RUN_FORCE'"}, {"DOCKER_REGISTRY_URL": "'$DOCKER_REGISTRY_URL'"}, {"WEBSERVER_PORT": "'$WEBSERVER_PORT'"}],'
     echo '{
   "main": {
     "SERVICE_NAME": "framework"
