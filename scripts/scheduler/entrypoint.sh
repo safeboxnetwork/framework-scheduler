@@ -525,6 +525,24 @@ upgrade_scheduler() {
     eval "$DOCKER_RUN"
 }
 
+upgrade() {
+	local NAME=$1
+	
+	if [ "$NAME" == "web-installer" ]; then
+		
+		debug "$service_exec service-framework-scheduler.containers.webserver start info"
+		$service_exec service-framework-scheduler.containers.webserver stop force
+		$service_exec service-framework-scheduler.containers.webserver start info &
+	
+	else	
+
+		debug "$service_exec service-$NAME.json start info"
+		$service_exec service-$NAME.json stop force
+		$service_exec service-$NAME.json start info &
+	fi
+}
+
+
 execute_task() {
     TASK="$1"
     B64_JSON="$2"
@@ -850,7 +868,14 @@ execute_task() {
         RESULT=$(echo "$CONTAINERS" | base64 -w0)
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
     elif [ "$TASK_NAME" == "upgrade" ]; then
-        upgrade_scheduler &
+        JSON="$(echo $B64_JSON | base64 -d)"
+        NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
+        if [ "$NAME" == "framework" ]; then
+		upgrade_scheduler
+		upgrade "web-installer"
+	else
+		upgrade "$NAME"
+	if
     fi
 
     debug "JSON_TARGET: $JSON_TARGET"
