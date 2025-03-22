@@ -875,7 +875,7 @@ execute_task() {
 		upgrade "web-installer"
 	else
 		upgrade "$NAME"
-	if
+	fi
     fi
 
     debug "JSON_TARGET: $JSON_TARGET"
