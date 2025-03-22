@@ -975,6 +975,7 @@ start_framework_scheduler() {
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 		--env RUN_FORCE=$RUN_FORCE \
+		--env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
 	  $DOCKER_START"
     eval "$DOCKER_RUN"
 
