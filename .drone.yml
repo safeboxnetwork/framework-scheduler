@@ -10,6 +10,8 @@ trigger:
     - main
   event:
     - push
+    - tag
+
 workspace:
   path: /drone/src
 
@@ -30,6 +32,8 @@ steps:
       platforms:
         - linux/amd64
         - linux/arm64
+    event:
+      - push
 
   - name: pull image to dockerhub
     image: docker.io/owncloudci/drone-docker-buildx:4
@@ -45,3 +49,5 @@ steps:
       platforms:
         - linux/amd64
         - linux/arm64
+    event:
+      - tag
