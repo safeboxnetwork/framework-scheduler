@@ -542,9 +542,9 @@ upgrade() {
 	
 	else	
 
-		debug "$service_exec service-$NAME.json start info"
-		$service_exec service-$NAME.json stop force
-		$service_exec service-$NAME.json start info &
+		debug "$service_exec $NAME.json start info"
+		$service_exec $NAME.json stop force
+		$service_exec $NAME.json start info &
 	fi
 }
 
