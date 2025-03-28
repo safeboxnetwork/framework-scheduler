@@ -434,7 +434,6 @@ check_update() {
             REMOTE_URL="registry.hub.docker.com"
             TEMP_PATH=$IMAGE
 	    TEMP_IMAGE=$(echo $TEMP_PATH | cut -d ':' -f1)
-	    echo 'curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{'$TEMP_IMAGE'}:pull"'
 	    TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{$TEMP_IMAGE}:pull" | jq -r .token)
 	    TOKEN_HEADER='-H "Authorization: Bearer '$TOKEN'"'
         else
@@ -453,7 +452,7 @@ check_update() {
         fi
 
         REMOTE_URL="https://$REMOTE_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION"
-        debug "$REMOTE_URL"
+        debug "REMOTE_URL: $REMOTE_URL"
 
     # Check whether repository url is available
     #CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/"
