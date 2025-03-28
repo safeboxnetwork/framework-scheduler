@@ -673,6 +673,7 @@ execute_task() {
                 CONTAINER_NAMES=$(cat $SERVICE | jq -r .containers[].NAME)
                 UPDATE_CONTAINERS=""
                 UPTODATE_CONTAINERS=""
+                ERROR_CONTAINERS=""
                 for CONTAINER_NAME in $CONTAINER_NAMES; do
                     #IMAGE=$(cat $SERVICE | jq -rc '.containers[] | select(.NAME=="'$CONTAINER_NAME'") | .IMAGE');
                     IMAGE=$(cat $SERVICE | jq -rc --arg NAME "$CONTAINER_NAME" '.containers[] | select(.NAME==$NAME) | .IMAGE')
@@ -681,13 +682,15 @@ execute_task() {
                         check_update "$IMAGE"
                         if [ "$UPDATE" == "1" ]; then
                             UPDATE_CONTAINERS="$UPDATE_CONTAINERS $CONTAINER_NAME"
-                        else
+                        elif [ "$UPDATE" == "0" ]; then
                             UPTODATE_CONTAINERS="$UPTODATE_CONTAINERS $CONTAINER_NAME"
+                        else
+                            ERROR_CONTAINERS="$UPTODATE_CONTAINERS $CONTAINER_NAME"
                         fi
                     fi
                 done
                 #RESULT=$(echo "$CONTAINERS" | base64 -w0);
-                SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"uptodate": "'$UPTODATE_CONTAINERS'", "update": "'$UPDATE_CONTAINERS'"}'
+                SERVICES=$SERVICES$SEP'"'$SERVICE_NAME'": {"uptodate": "'$UPTODATE_CONTAINERS'", "update": "'$UPDATE_CONTAINERS'", "error": "'$ERROR_CONTAINERS'"}'
             fi
         done
 
