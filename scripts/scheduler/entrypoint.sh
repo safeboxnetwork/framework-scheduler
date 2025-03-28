@@ -434,6 +434,7 @@ check_update() {
             REMOTE_URL="registry.hub.docker.com"
             TEMP_PATH=$IMAGE
 	    TEMP_IMAGE=$(echo $TEMP_PATH | cut -d ':' -f1)
+	    echo 'curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{'$TEMP_IMAGE'}:pull"'
 	    TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{$TEMP_IMAGE}:pull" | jq -r .token)
 	    TOKEN_HEADER='-H "Authorization: Bearer '$TOKEN'"'
         else
@@ -470,7 +471,7 @@ check_update() {
 
         #debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
         #local_digest=$(docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION)
-        debug "docker image inspect $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION --format '{{index .RepoDigests 0}}' | cut -d '@' -f2"
+        debug "docker image inspect $IMAGE --format '{{index .RepoDigests 0}}' | cut -d '@' -f2"
         # Digest for the whole manifest, which includes all architectures.
         local_digest=$(docker image inspect $IMAGE --format '{{index .RepoDigests 0}}' | cut -d '@' -f2)
 
