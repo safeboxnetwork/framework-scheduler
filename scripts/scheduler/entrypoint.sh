@@ -456,7 +456,7 @@ check_update() {
 
     # Check whether repository url is available
     #CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/"
-    CURL_CHECK='curl -m 5 -s -o /dev/null -w "%{http_code}" '"$REMOTE_URL"
+    CURL_CHECK='curl -m 5 -s -o /dev/null -I "'$TOKEN_HEADER'" -w "%{http_code}" '"$REMOTE_URL"
     CURL_CHECK_CODE=$(eval $CURL_CHECK)
 
     # if valid accessible url
