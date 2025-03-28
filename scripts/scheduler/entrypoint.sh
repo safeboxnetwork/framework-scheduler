@@ -465,7 +465,7 @@ check_update() {
 
         #digest=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "$REMOTE_URL" | jq -r '.config.digest');
         # Digest for the whole manifest, which includes all architectures.
-    	CURL_DIGEST=$(echo 'curl -s -I '"$TOKEN_HEADER"' -H "Accept: application/vnd.oci.image.index.v1+json" "'$REMOTE_URL'" | grep -i Docker-Content-Digest' | cut -d ' ' -f2 | tr -d '\r\n')
+	CURL_DIGEST='curl -s -I '"$TOKEN_HEADER"' -H "Accept: application/vnd.oci.image.index.v1+json" '"$REMOTE_URL"' | grep -i Docker-Content-Digest | cut -d " " -f2 | tr -d "\r\n"'
         digest=$(eval $CURL_DIGEST)
 
         #debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
