@@ -451,7 +451,7 @@ check_update() {
             TEMP_VERSION="latest"
         fi
 
-        REMOTE_URL="https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION"
+        REMOTE_URL="https://$REMOTE_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION"
         debug "$REMOTE_URL"
 
     # Check whether repository url is available
