@@ -429,24 +429,18 @@ check_update() {
 
     REPOSITORY_URL=$(echo $IMAGE | cut -d '/' -f1)
 
-    # Check whether repository url is available
-
-    CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/"
-    CURL_CHECK_CODE=$(eval $CURL_CHECK)
-
-    # if valid accessible url OR a repository name without dot (safebox)
-    if [[ "$CURL_CHECK_CODE" == "200" ]] ; then
-        debug "$REPOSITORY_URL repository accessed successfully"
-
-        # if repository url is not set
+        # if image repository url doesn't contain dot (safebox)
         if [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]]; then
-            REPOSITORY_URL="registry.hub.docker.com"
+            REMOTE_URL="registry.hub.docker.com"
             TEMP_PATH=$IMAGE
-	    TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{$IMAGE}:pull" | jq -r .token)
+	    TEMP_IMAGE=$(echo $TEMP_PATH | cut -d ':' -f1)
+	    TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{$TEMP_IMAGE}:pull" | jq -r .token)
 	    TOKEN_HEADER='-H "Authorization: Bearer '$TOKEN'"'
         else
+            REMOTE_URL=""
             # -f2- IMAGE can contain subdirectories
             TEMP_PATH=$(echo $IMAGE | cut -d '/' -f2-)
+	    TOKEN=""
 	    TOKEN_HEADER=""
         fi
 
@@ -460,21 +454,31 @@ check_update() {
         REMOTE_URL="https://$REPOSITORY_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION"
         debug "$REMOTE_URL"
 
+    # Check whether repository url is available
+    #CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/"
+    CURL_CHECK='curl -m 5 -s -o /dev/null -w "%{http_code}" '"$REMOTE_URL"
+    CURL_CHECK_CODE=$(eval $CURL_CHECK)
+
+    # if valid accessible url
+    if [[ "$CURL_CHECK_CODE" == "200" ]] ; then
+        debug "$REMOTE_URL repository accessed successfully"
+
         #digest=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "$REMOTE_URL" | jq -r '.config.digest');
         # Digest for the whole manifest, which includes all architectures.
-        digest=$(curl -s -I "$TOKEN_HEADER" -H "Accept: application/vnd.oci.image.index.v1+json" "$REMOTE_URL" | grep -i Docker-Content-Digest | cut -d ' ' -f2 | tr -d '\r\n')
+    	CURL_DIGEST=$(echo 'curl -s -I "'$TOKEN_HEADER'" -H "Accept: application/vnd.oci.image.index.v1+json" "'$REMOTE_URL'" | grep -i Docker-Content-Digest' | cut -d ' ' -f2 | tr -d '\r\n')
+        digest=$(eval $CURL_DIGEST)
 
         #debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
         #local_digest=$(docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION)
         debug "docker image inspect $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION --format '{{index .RepoDigests 0}}' | cut -d '@' -f2"
         # Digest for the whole manifest, which includes all architectures.
-        local_digest=$(docker image inspect $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION --format '{{index .RepoDigests 0}}' | cut -d '@' -f2)
+        local_digest=$(docker image inspect $IMAGE --format '{{index .RepoDigests 0}}' | cut -d '@' -f2)
 
         debug "REMOTE DIGEST: $digest"
         debug "LOCAL DIGEST: $local_digest"
 
         if [ "$digest" != "$local_digest" ]; then
-            echo "Update available. Executing update command..."
+            echo "Update available. You can execute update command..."
             UPDATE="1"
             #DOCKER_PULL="docker pull $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION"
             #eval $DOCKER_PULL
@@ -486,10 +490,11 @@ check_update() {
             #	UPDATE="1";
             #fi
         else
+            UPDATE="0"
             echo "Already up to date. Nothing to do."
         fi
     else
-        debug "$REPOSITORY_URL not accessible, http error code: $CURL_CHECK_CODE"
+        debug "$REMOTE_URL not accessible, http error code: $CURL_CHECK_CODE"
 
         echo "Force image pull has started without digest check..."
         DOCKER_PULL="docker pull $IMAGE"
