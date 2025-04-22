@@ -14,7 +14,7 @@ FROM alpine:latest
 # COPY --from=redis-source /usr/src/redis/src/redis-cli /usr/bin/redis-cli
 # RUN chmod +x /usr/bin/redis-cli
 
-RUN apk add --update --no-cache docker-cli wget curl dos2unix jq openssl git coreutils inotify-tools acl
+RUN apk add --update --no-cache docker-cli wget curl dos2unix jq openssl git coreutils inotify-tools acl apache2-utils
 
 COPY scripts/scheduler/*.sh /scripts/
 RUN find ./scripts -name "*.sh" | xargs dos2unix

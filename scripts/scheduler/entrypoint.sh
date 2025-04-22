@@ -30,6 +30,7 @@ REDIS_VERSION=${REDIS_VERSION:-latest}
 
 SOURCE=${SOURCE:-user-config}
 SMARTHOST_PROXY_PATH=$SMARTHOST_PROXY_PATH
+HTPASSWD_FILE=${HTPASSWD_FILE:-/etc/system/config/smarthost-proxy/nginx/htpasswd}
 
 GIT_URL=${GIT_URL:-git.format.hu}
 REPO=$REPO
@@ -98,6 +99,19 @@ if [ -d /etc/user/config/services ]; then
         $service_exec $FIREWALL start &
     done
 fi
+
+create_htpasswd_file() {
+
+    local USER="$1"
+    local PASSWD="$2"
+
+    if [ ! -f "$HTPASSWD_FILE" ]; then
+        install -m 664 -g 65534 /dev/null $HTPASSWD_FILE
+        htpasswd -cb $HTPASSWD_FILE $USER $PASSWD
+    fi
+}
+
+install -m 664 -g 65534 /dev/null
 
 deploy_additionals() {
 
@@ -429,30 +443,30 @@ check_update() {
 
     REPOSITORY_URL=$(echo $IMAGE | cut -d '/' -f1)
 
-        # if image repository url doesn't contain dot (safebox)
-        if [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]]; then
-            REMOTE_URL="registry.hub.docker.com"
-            TEMP_PATH=$IMAGE
-	    TEMP_IMAGE=$(echo $TEMP_PATH | cut -d ':' -f1)
-	    TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{$TEMP_IMAGE}:pull" | jq -r .token)
-	    TOKEN_HEADER='-H "Authorization: Bearer '$TOKEN'"'
-        else
-            REMOTE_URL=""
-            # -f2- IMAGE can contain subdirectories
-            TEMP_PATH=$(echo $IMAGE | cut -d '/' -f2-)
-	    TOKEN=""
-	    TOKEN_HEADER=""
-        fi
-
-        debug "TEMP PATH: $TEMP_PATH"
+    # if image repository url doesn't contain dot (safebox)
+    if [[ "$(echo "$REPOSITORY_URL" | grep '\.')" == "" ]]; then
+        REMOTE_URL="registry.hub.docker.com"
+        TEMP_PATH=$IMAGE
         TEMP_IMAGE=$(echo $TEMP_PATH | cut -d ':' -f1)
-        TEMP_VERSION=$(echo $TEMP_PATH | cut -d ':' -f2)
-        if [ "$TEMP_VERSION" == "$TEMP_IMAGE" ]; then # version is not set
-            TEMP_VERSION="latest"
-        fi
+        TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:{$TEMP_IMAGE}:pull" | jq -r .token)
+        TOKEN_HEADER='-H "Authorization: Bearer '$TOKEN'"'
+    else
+        REMOTE_URL=""
+        # -f2- IMAGE can contain subdirectories
+        TEMP_PATH=$(echo $IMAGE | cut -d '/' -f2-)
+        TOKEN=""
+        TOKEN_HEADER=""
+    fi
 
-        REMOTE_URL="https://$REMOTE_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION"
-        debug "REMOTE_URL: $REMOTE_URL"
+    debug "TEMP PATH: $TEMP_PATH"
+    TEMP_IMAGE=$(echo $TEMP_PATH | cut -d ':' -f1)
+    TEMP_VERSION=$(echo $TEMP_PATH | cut -d ':' -f2)
+    if [ "$TEMP_VERSION" == "$TEMP_IMAGE" ]; then # version is not set
+        TEMP_VERSION="latest"
+    fi
+
+    REMOTE_URL="https://$REMOTE_URL/v2/$TEMP_IMAGE/manifests/$TEMP_VERSION"
+    debug "REMOTE_URL: $REMOTE_URL"
 
     # Check whether repository url is available
     #CURL_CHECK="curl -m 5 -s -o /dev/null -w "%{http_code}" https://$REPOSITORY_URL/v2/"
@@ -460,12 +474,12 @@ check_update() {
     CURL_CHECK_CODE=$(eval $CURL_CHECK)
 
     # if valid accessible url
-    if [[ "$CURL_CHECK_CODE" == "200" ]] ; then
+    if [[ "$CURL_CHECK_CODE" == "200" ]]; then
         debug "$REMOTE_URL repository accessed successfully"
 
         #digest=$(curl --silent -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "$REMOTE_URL" | jq -r '.config.digest');
         # Digest for the whole manifest, which includes all architectures.
-	CURL_DIGEST='curl -s -I '"$TOKEN_HEADER"' -H "Accept: application/vnd.oci.image.index.v1+json" '"$REMOTE_URL"' | grep -i Docker-Content-Digest | cut -d " " -f2 | tr -d "\r\n"'
+        CURL_DIGEST='curl -s -I '"$TOKEN_HEADER"' -H "Accept: application/vnd.oci.image.index.v1+json" '"$REMOTE_URL"' | grep -i Docker-Content-Digest | cut -d " " -f2 | tr -d "\r\n"'
         digest=$(eval $CURL_DIGEST)
 
         #debug "docker images -q --no-trunc $REPOSITORY_URL/$TEMP_IMAGE:$TEMP_VERSION";
@@ -532,22 +546,21 @@ upgrade_scheduler() {
 }
 
 upgrade() {
-	local NAME=$1
-	
-	if [ "$NAME" == "web-installer" ]; then
-		
-		debug "$service_exec service-framework-scheduler.containers.webserver start info"
-		$service_exec service-framework-scheduler.containers.webserver stop force
-		$service_exec service-framework-scheduler.containers.webserver start info &
-	
-	else	
+    local NAME=$1
 
-		debug "$service_exec $NAME.json start info"
-		$service_exec $NAME.json stop force
-		$service_exec $NAME.json start info &
-	fi
+    if [ "$NAME" == "web-installer" ]; then
+
+        debug "$service_exec service-framework-scheduler.containers.webserver start info"
+        $service_exec service-framework-scheduler.containers.webserver stop force
+        $service_exec service-framework-scheduler.containers.webserver start info &
+
+    else
+
+        debug "$service_exec $NAME.json start info"
+        $service_exec $NAME.json stop force
+        $service_exec $NAME.json start info &
+    fi
 }
-
 
 execute_task() {
     TASK="$1"
@@ -880,11 +893,11 @@ execute_task() {
         JSON="$(echo $B64_JSON | base64 -d)"
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
-		upgrade_scheduler
-		upgrade "web-installer"
-	else
-		upgrade "$NAME"
-	fi
+            upgrade_scheduler
+            upgrade "web-installer"
+        else
+            upgrade "$NAME"
+        fi
     fi
 
     debug "JSON_TARGET: $JSON_TARGET"
