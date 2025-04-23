@@ -3,7 +3,7 @@ type: kubernetes
 name: default
 
 node_selector:
-  physical-node: dev2
+  physical-node: dev1
 
 trigger:
   event:
