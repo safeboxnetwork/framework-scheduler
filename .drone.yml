@@ -14,6 +14,25 @@ workspace:
   path: /drone/src
 
 steps:
+
+  - name: pull image to dockerhub
+    image: docker.io/owncloudci/drone-docker-buildx:4
+    privileged: true
+    settings:
+      cache-from: [ "safebox/framework-scheduler" ]
+      repo: safebox/framework-scheduler
+      tags: latest
+      username:
+        from_secret: dockerhub-username
+      password: 
+        from_secret: dockerhub-password
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    when:  
+      event:
+        - tag
+        
   - name: build multiarch from dev
     image: docker.io/owncloudci/drone-docker-buildx:4
     privileged: true
@@ -35,21 +54,3 @@ steps:
     when:  
       event:
         - push
-
-  - name: pull image to dockerhub
-    image: docker.io/owncloudci/drone-docker-buildx:4
-    privileged: true
-    settings:
-      cache-from: [ "safebox/framework-scheduler" ]
-      repo: safebox/framework-scheduler
-      tags: latest
-      username:
-        from_secret: dockerhub-username
-      password: 
-        from_secret: dockerhub-password
-      platforms:
-        - linux/amd64
-        - linux/arm64
-    when:  
-      event:
-        - tag
