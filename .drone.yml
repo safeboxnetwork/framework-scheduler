@@ -36,6 +36,8 @@ steps:
   - name: build multiarch from dev
     image: docker.io/owncloudci/drone-docker-buildx:4
     privileged: true
+    environment:
+      DOCKER_PLUGIN_MIRROR: "https://mirror.dev.format.hu"
     settings:
       cache-from: [ "registry.dev.format.hu/framework-scheduler" ]
       registry: registry.dev.format.hu
@@ -46,8 +48,6 @@ steps:
         from_secret: dev-hu-registry-username
       password: 
         from_secret: dev-hu-registry-password
-      daemon.mirror:
-        from_secret: hub_docker_mirror
       platforms:
         - linux/amd64
         - linux/arm64
