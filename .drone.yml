@@ -14,7 +14,6 @@ workspace:
   path: /drone/src
 
 steps:
-
   - name: pull image to dockerhub
     image: docker.io/owncloudci/drone-docker-buildx:4
     privileged: true
