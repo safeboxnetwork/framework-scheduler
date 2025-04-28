@@ -32,7 +32,7 @@ steps:
     when:  
       event:
         - tag
-        
+
   - name: build multiarch from dev
     image: docker.io/owncloudci/drone-docker-buildx:4
     privileged: true
@@ -46,7 +46,7 @@ steps:
         from_secret: dev-hu-registry-username
       password: 
         from_secret: dev-hu-registry-password
-      mirror:
+      daemon.mirror:
         from_secret: hub_docker_mirror
       platforms:
         - linux/amd64
