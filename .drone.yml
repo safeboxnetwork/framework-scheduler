@@ -27,6 +27,8 @@ steps:
         from_secret: dev-hu-registry-username
       password: 
         from_secret: dev-hu-registry-password
+      mirror:
+        from_secret: hub_docker_mirror
       platforms:
         - linux/amd64
         - linux/arm64
