@@ -570,7 +570,7 @@ execute_task() {
     # Executing task
     TASK_NAME=$(echo $TASK | cut -d ':' -f1)
     if [ "$TASK_NAME" != "check_vpn" ]; then
-    	debug "TASK: $(echo $TASK_NAME | cut -d ':' -f1)"
+        debug "TASK: $(echo $TASK_NAME | cut -d ':' -f1)"
     fi
 
     # checking sytem status
@@ -803,6 +803,18 @@ execute_task() {
 
                         TEMPLATE=$(echo "$TEMPLATE" | base64 -w0)
                         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0)
+
+                    elif [ "$TASK_NAME" == "letsencrypt" ]; then
+                        DOMAINS=$(echo $B64_JSON | base64 -d | jq -r 'keys[]')
+                        for DOMAIN in $(echo $DOMAINS); do
+                            REQUEST=$(echo $B64_JSON | base64 -d | jq -r ".[\"$DOMAIN\"].status")
+
+                            if [ "$REQUEST" == "requested" ]; then
+                                echo "New certificate for $DOMAIN is requested."
+                                touch /etc/system/data/ssl/keys/$DOMAIN/new_certificate
+                            fi
+                        done
+
                     elif [ "$DEPLOY_ACTION" == "deploy" ]; then
                         JSON_TARGET=""
                         #JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0) # deployment has started
@@ -903,7 +915,7 @@ execute_task() {
     fi
 
     if [ "$TASK_NAME" != "check_vpn" ]; then
-    	debug "JSON_TARGET: $JSON_TARGET"
+        debug "JSON_TARGET: $JSON_TARGET"
     fi
 
     if [ "$JSON_TARGET" != "" ]; then
@@ -1066,9 +1078,9 @@ unset IFS
 inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r $DIR |
     while read dir op file; do
         if [ "${op}" == "CLOSE_WRITE,CLOSE" ]; then
-	    if [ "$file" != "check_vpn.json" ]; then
-		echo "new file created: $file"
-	    fi;
+            if [ "$file" != "check_vpn.json" ]; then
+                echo "new file created: $file"
+            fi
             B64_JSON=$(cat $DIR/$file | base64 -w0)
             TASK=$(echo $file | cut -d '.' -f1)
             execute_task "$TASK" "$B64_JSON"
