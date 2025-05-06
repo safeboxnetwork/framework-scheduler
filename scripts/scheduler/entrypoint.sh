@@ -1066,7 +1066,9 @@ unset IFS
 inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r $DIR |
     while read dir op file; do
         if [ "${op}" == "CLOSE_WRITE,CLOSE" ]; then
-            echo "new file created: $file"
+	    if [ "$file" != "check_vpn.json" ]; then
+		echo "new file created: $file"
+	    fi;
             B64_JSON=$(cat $DIR/$file | base64 -w0)
             TASK=$(echo $file | cut -d '.' -f1)
             execute_task "$TASK" "$B64_JSON"
