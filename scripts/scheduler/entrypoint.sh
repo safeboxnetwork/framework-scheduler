@@ -568,8 +568,10 @@ execute_task() {
     DATE=$(date +"%Y%m%d%H%M")
 
     # Executing task
-    debug "TASK: $(echo $TASK | cut -d ':' -f1)"
     TASK_NAME=$(echo $TASK | cut -d ':' -f1)
+    if [ "$TASK_NAME" != "check_vpn" ]; then
+    	debug "TASK: $(echo $TASK_NAME | cut -d ':' -f1)"
+    fi
 
     # checking sytem status
     SYSTEM_STATUS=$(ls /etc/user/config/services/*.json | grep -v service-framework.json)
@@ -900,7 +902,9 @@ execute_task() {
         fi
     fi
 
-    debug "JSON_TARGET: $JSON_TARGET"
+    if [ "$TASK_NAME" != "check_vpn" ]; then
+    	debug "JSON_TARGET: $JSON_TARGET"
+    fi
 
     if [ "$JSON_TARGET" != "" ]; then
         #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
