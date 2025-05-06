@@ -594,6 +594,17 @@ execute_task() {
         #fi;
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0)
 
+    elif [ "$TASK_NAME" == "letsencrypt" ]; then
+        DOMAINS=$(echo $B64_JSON | base64 -d | jq -r 'keys[]')
+        for DOMAIN in $(echo $DOMAINS); do
+            REQUEST=$(echo $B64_JSON | base64 -d | jq -r ".[\"$DOMAIN\"].status")
+
+            if [ "$REQUEST" == "requested" ]; then
+                echo "New certificate for $DOMAIN is requested."
+                touch /etc/system/data/ssl/keys/$DOMAIN/new_certificate
+            fi
+        done
+
     elif [ "$TASK_NAME" == "system" ]; then
         #SYSTEM_LIST="core-dns.json cron.json domain-local-backend.json firewall-letsencrypt.json firewall-local-backend.json firewall-localloadbalancer-dns.json firewall-localloadbalancer-to-smarthostbackend.json firewall-smarthost-backend-dns.json firewall-smarthost-loadbalancer-dns.json firewall-smarthost-to-backend.json firewall-smarthostloadbalancer-from-publicbackend.json letsencrypt.json local-backend.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
         SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
@@ -803,17 +814,6 @@ execute_task() {
 
                         TEMPLATE=$(echo "$TEMPLATE" | base64 -w0)
                         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0)
-
-                    elif [ "$TASK_NAME" == "letsencrypt" ]; then
-                        DOMAINS=$(echo $B64_JSON | base64 -d | jq -r 'keys[]')
-                        for DOMAIN in $(echo $DOMAINS); do
-                            REQUEST=$(echo $B64_JSON | base64 -d | jq -r ".[\"$DOMAIN\"].status")
-
-                            if [ "$REQUEST" == "requested" ]; then
-                                echo "New certificate for $DOMAIN is requested."
-                                touch /etc/system/data/ssl/keys/$DOMAIN/new_certificate
-                            fi
-                        done
 
                     elif [ "$DEPLOY_ACTION" == "deploy" ]; then
                         JSON_TARGET=""
