@@ -550,9 +550,9 @@ upgrade() {
 
     if [ "$NAME" == "web-installer" ]; then
 
-        debug "$service_exec service-framework-scheduler.containers.webserver start info"
-        $service_exec service-framework-scheduler.containers.webserver stop force
-        $service_exec service-framework-scheduler.containers.webserver start info &
+        debug "$service_exec service-framework.containers.webserver start info"
+        $service_exec service-framework.containers.webserver stop force
+        $service_exec service-framework.containers.webserver start info &
 
     else
 
