@@ -182,10 +182,10 @@ get_repositories() {
 
         BASE=$(basename $REPO | cut -d '.' -f1)
         if [ ! -d "/tmp/$BASE" ]; then
-            git clone $REPO /tmp/$BASE >/dev/null
+            GIT_HTTP_CONNECT_TIMEOUT=10 GIT_HTTP_TIMEOUT=30 git clone $REPO /tmp/$BASE >/dev/null
         else
             cd /tmp/$BASE
-            git pull >/dev/null
+            GIT_HTTP_CONNECT_TIMEOUT=10 GIT_HTTP_TIMEOUT=30 git pull >/dev/null
         fi
         if [ -f "/tmp/$BASE/applications-tree.json" ]; then
             TREES=$TREES" /tmp/$BASE/applications-tree.json"
@@ -601,11 +601,10 @@ execute_task() {
 
             if [ "$REQUEST" == "requested" ]; then
                 echo "New certificate for $DOMAIN is requested."
-                mkdir -p /etc/system/data/ssl/keys/$DOMAIN
                 touch /etc/system/data/ssl/keys/$DOMAIN/new_certificate
             fi
         done
-	JSON_TARGET=$B64_JSON;
+        JSON_TARGET=$B64_JSON
 
     elif [ "$TASK_NAME" == "system" ]; then
         #SYSTEM_LIST="core-dns.json cron.json domain-local-backend.json firewall-letsencrypt.json firewall-local-backend.json firewall-localloadbalancer-dns.json firewall-localloadbalancer-to-smarthostbackend.json firewall-smarthost-backend-dns.json firewall-smarthost-loadbalancer-dns.json firewall-smarthost-to-backend.json firewall-smarthostloadbalancer-from-publicbackend.json letsencrypt.json local-backend.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
@@ -905,6 +904,7 @@ execute_task() {
         CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler)
         RESULT=$(echo "$CONTAINERS" | base64 -w0)
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
+
     elif [ "$TASK_NAME" == "upgrade" ]; then
         JSON="$(echo $B64_JSON | base64 -d)"
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
@@ -914,6 +914,9 @@ execute_task() {
         else
             upgrade "$NAME"
         fi
+        CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E 'framework-scheduler|webserver')
+        RESULT=$(echo "$CONTAINERS" | base64 -w0)
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
     fi
 
     if [ "$TASK_NAME" != "check_vpn" ]; then
