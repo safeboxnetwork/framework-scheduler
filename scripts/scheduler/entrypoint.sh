@@ -180,8 +180,8 @@ remove_additionals() {
     # get volume destinations
     DESTINATIONS=""
     VOLUMES=""
-    DESTINATIONS=$(cat $SERVICE_DIR/service-$NAME.json | jq -r '[.containers[] | select(has("VOLUMES")) | .VOLUMES[] | select(.SHARED != "true") | .DEST] | unique[]')
-    for DESTINATION in $(echo $DESTINATIONS | grep $NAME); do
+    DESTINATIONS=$(cat $SERVICE_DIR/service-$NAME.json | jq -r '[.containers[] | select(has("VOLUMES")) | .VOLUMES[] | select(.SHARED != "true") | .SOURCE] | unique[]' | grep $NAME)
+    for DESTINATION in $(echo $DESTINATIONS); do
         if [ -d "$DESTINATION" ] || [ -f "$DESTINATION" ]; then
             rm -rf $DESTINATION
             debug "deleted directory or file: $DESTINATION"
