@@ -179,11 +179,21 @@ remove_additionals() {
 
     # get volume destinations
     DESTINATIONS=""
+    VOLUMES=""
     DESTINATIONS=$(cat $SERVICE_DIR/service-$NAME.json | jq -r '[.containers[] | select(has("VOLUMES")) | .VOLUMES[] | select(.SHARED != "true") | .DEST] | unique[]')
     for DESTINATION in $(echo $DESTINATIONS); do
         if [ -d "$DESTINATION" ] || [ -f "$DESTINATION" ]; then
             rm -rf $DESTINATION
-            debug "deleted volume destination: $DESTINATION"
+            debug "deleted directory or file: $DESTINATION"
+        fi
+    done
+
+    VOLUMES=$(cat $SERVICE_DIR/service-$NAME.json | jq -r '[.containers[] | select(has("VOLUMES")) | .VOLUMES[] | select(.SHARED != "true") | .SOURCE] | unique[]' | grep -vE 'USER|SYSTEM')
+    for VOLUME in $(echo $VOLUMES); do
+        if [ "$(echo $VOLUME | cut -d '/' -f1)" ]; then
+            docker volume rm $VOLUME
+            debug "deleted volume: $VOLUME"
+
         fi
     done
 
