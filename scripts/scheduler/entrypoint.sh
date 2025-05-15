@@ -165,9 +165,67 @@ remove_additionals() {
     debug "$service_exec service-$NAME.json stop force dns-remove"
     $service_exec service-$NAME.json stop force dns-remove
 
+    # remove related directories and files
+    # get env files path
+    ENVIRONMENT_FILES=""
+    ENVIRONMENT_FILES=$(cat $SERVICE_DIR/$NAME.json | jq -r '[.containers[] | select(has("ENV_FILES")) | .ENV_FILES[]] | unique []')
+
+    for ENV_FILE in $(echo $ENVIRONMENT_FILES); do
+        if [ -f "$ENV_FILE" ]; then
+            rm $ENV_FILE
+            debug "deleted env file: $ENV_FILE"
+        fi
+    done
+
+    # get volume destinations
+    DESTINATIONS=""
+    DESTINATIONS=$(cat $SERVICE_DIR/$NAME.json | jq -r '[.containers[] | select(has("VOLUMES")) | .VOLUMES[] | select(.SHARED != "true") | .DEST] | unique[]')
+    for DESTINATION in $(echo $DESTINATIONS); do
+        if [ -d "$DESTINATION" ] || [ -f "$DESTINATION" ]; then
+            rm -rf $DESTINATION
+            debug "deleted volume destination: $DESTINATION"
+        fi
+    done
+
+    # delete firewall rules
+    FIREWALLS=""
+    FIREWALLS="$(ls $SERVICE_DIR/firewall-*.json | grep -v $NAME)"
+    for FIREWALL in $(echo $FIREWALLS); do
+        cat $FIREWALL | jq '.containers[] |= (
+        if (.ENVS | map(has("OPERATION")) | any) then
+            # If any entry has OPERATION key, update it
+            .ENVS = [.ENVS[] | if has("OPERATION") then {"OPERATION": "DELETE"} else . end]
+        else
+            # If no entry has OPERATION key, add new entry
+            .ENVS += [{"OPERATION": "DELETE"}]
+        end
+        )' >$FIREWALL.tmp
+        debug "$service_exec $FIREWALL.tmp start info"
+        $service_exec $FIREWALL.tmp start info
+        rm $FIREWALL.tmp
+    done
+
+    # delete domains
+    DOMMAINS=""
+    DOMAINS="$(ls $SERVICE_DIR/domain-*.json | grep -v $NAME)"
+    for DOMAIN in $(echo $DOMAINS); do
+        cat $DOMAIN | jq '.containers[] |= (
+        if (.ENVS | map(has("OPERATION")) | any) then
+            # If any entry has OPERATION key, update it
+            .ENVS = [.ENVS[] | if has("OPERATION") then {"OPERATION": "DELETE"} else . end]
+        else
+            # If no entry has OPERATION key, add new entry
+            .ENVS += [{"OPERATION": "DELETE"}]
+        end
+        )' >$DOMAIN.tmp
+        debug "$service_exec $DOMAIN.tmp start info"
+        $service_exec $DOMAIN.tmp start info
+        rm $DOMAIN.tmp
+    done
+
     # remove service files
     rm $SERVICE_DIR/*"-"$NAME.json # service, domain, etc.
-    rm $SECRET_DIR/$NAME/$NAME.json
+
 }
 
 get_repositories() {
