@@ -168,7 +168,7 @@ remove_additionals() {
     # remove related directories and files
     # get env files path
     ENVIRONMENT_FILES=""
-    ENVIRONMENT_FILES=$(cat $SERVICE_DIR/$NAME.json | jq -r '[.containers[] | select(has("ENV_FILES")) | .ENV_FILES[]] | unique []')
+    ENVIRONMENT_FILES=$(cat $SERVICE_DIR/service-$NAME.json | jq -r '[.containers[] | select(has("ENV_FILES")) | .ENV_FILES[]] | unique []')
 
     for ENV_FILE in $(echo $ENVIRONMENT_FILES); do
         if [ -f "$ENV_FILE" ]; then
@@ -179,7 +179,7 @@ remove_additionals() {
 
     # get volume destinations
     DESTINATIONS=""
-    DESTINATIONS=$(cat $SERVICE_DIR/$NAME.json | jq -r '[.containers[] | select(has("VOLUMES")) | .VOLUMES[] | select(.SHARED != "true") | .DEST] | unique[]')
+    DESTINATIONS=$(cat $SERVICE_DIR/service-$NAME.json | jq -r '[.containers[] | select(has("VOLUMES")) | .VOLUMES[] | select(.SHARED != "true") | .DEST] | unique[]')
     for DESTINATION in $(echo $DESTINATIONS); do
         if [ -d "$DESTINATION" ] || [ -f "$DESTINATION" ]; then
             rm -rf $DESTINATION
@@ -189,7 +189,7 @@ remove_additionals() {
 
     # delete firewall rules
     FIREWALLS=""
-    FIREWALLS="$(ls $SERVICE_DIR/firewall-*.json | grep -v $NAME)"
+    FIREWALLS="$(ls $SERVICE_DIR/firewall-*.json | grep $NAME)"
     for FIREWALL in $(echo $FIREWALLS); do
         cat $FIREWALL | jq '.containers[] |= (
         if (.ENVS | map(has("OPERATION")) | any) then
@@ -207,7 +207,7 @@ remove_additionals() {
 
     # delete domains
     DOMMAINS=""
-    DOMAINS="$(ls $SERVICE_DIR/domain-*.json | grep -v $NAME)"
+    DOMAINS="$(ls $SERVICE_DIR/domain-*.json | grep $NAME)"
     for DOMAIN in $(echo $DOMAINS); do
         cat $DOMAIN | jq '.containers[] |= (
         if (.ENVS | map(has("OPERATION")) | any) then
