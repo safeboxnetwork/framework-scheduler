@@ -203,6 +203,7 @@ remove_additionals() {
         debug "$service_exec $FIREWALL.tmp start info"
         $service_exec $FIREWALL.tmp start info
         rm $FIREWALL.tmp
+        rm $FIREWALL
     done
 
     # delete domains
@@ -221,6 +222,7 @@ remove_additionals() {
         debug "$service_exec $DOMAIN.tmp start info"
         $service_exec $DOMAIN.tmp start info
         rm $DOMAIN.tmp
+        rm $DOMAIN
     done
 
     # remove service files
