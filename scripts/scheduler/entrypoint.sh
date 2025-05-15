@@ -607,14 +607,16 @@ upgrade() {
 
     if [ "$NAME" == "web-installer" ]; then
 
-        debug "$service_exec service-framework.containers.webserver start info"
+        debug "$service_exec service-framework.containers.webserver stop force"
         $service_exec service-framework.containers.webserver stop force
+        debug "$service_exec service-framework.containers.webserver start info"
         $service_exec service-framework.containers.webserver start info &
 
     else
 
-        debug "$service_exec $NAME.json start info"
+        debug "$service_exec $NAME.json stop force"
         $service_exec $NAME.json stop force
+        debug "$service_exec $NAME.json start info"
         $service_exec $NAME.json start info &
     fi
     PID=$!
