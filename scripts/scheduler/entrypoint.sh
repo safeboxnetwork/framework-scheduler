@@ -236,7 +236,7 @@ remove_additionals() {
     done
 
     # remove service files
-    rm $SERVICE_DIR/*"-"$NAME.json # service, domain, etc.
+    #rm $SERVICE_DIR/*"-"$NAME.json # service, domain, etc.
 
 }
 
