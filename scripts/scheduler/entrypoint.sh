@@ -911,12 +911,13 @@ execute_task() {
         if [ "$NAME" == "framework" ]; then
             upgrade_scheduler
             upgrade "web-installer"
+            #CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E 'framework-scheduler|webserver')
         else
             upgrade "$NAME"
+            #CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -w "$NAME")
         fi
-        CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E 'framework-scheduler|webserver')
-        RESULT=$(echo "$CONTAINERS" | base64 -w0)
-        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
+        #RESULT=$(echo "$CONTAINERS" | base64 -w0)
+        sh /scripts/check_pid.sh "$PID" "$SHARED" "$TASK_NAME-$NAME" "$DATE" "$DEBUG" &
     fi
 
     if [ "$TASK_NAME" != "check_vpn" ]; then
