@@ -196,11 +196,6 @@ remove_additionals() {
         rm $DOMAIN.tmp
     done
 
-    # stop service
-    # force - remove stopped container, docker rm
-    debug "$service_exec service-$NAME.json stop force dns-remove"
-    $service_exec service-$NAME.json stop force dns-remove
-
     # remove related directories and files
     # get volume destinations
     DESTINATIONS=""
@@ -221,6 +216,11 @@ remove_additionals() {
 
         fi
     done
+
+    # stop service
+    # force - remove stopped container, docker rm
+    debug "$service_exec service-$NAME.json stop force dns-remove"
+    $service_exec service-$NAME.json stop force dns-remove
 
     # remove service files
     rm $SERVICE_DIR/*"-"$NAME.json # service, domain, etc.
