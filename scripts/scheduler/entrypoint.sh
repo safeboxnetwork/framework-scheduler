@@ -560,6 +560,7 @@ upgrade() {
         $service_exec $NAME.json stop force
         $service_exec $NAME.json start info &
     fi
+    PID=$!
 }
 
 execute_task() {
