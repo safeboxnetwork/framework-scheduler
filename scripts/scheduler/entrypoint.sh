@@ -969,8 +969,8 @@ execute_task() {
         JSON="$(echo $B64_JSON | base64 -d)"
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
-            upgrade_scheduler
             upgrade "web-installer"
+            upgrade_scheduler
             #CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E 'framework-scheduler|webserver')
         else
             upgrade "$NAME"
