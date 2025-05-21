@@ -20,4 +20,4 @@ COPY scripts/scheduler/*.sh /scripts/
 RUN find ./scripts -name "*.sh" | xargs dos2unix
 RUN ["chmod", "+x", "-R", "/scripts/"]
 
-ENTRYPOINT ["/scripts/entrypoint.sh"]
+CMD /scripts/entrypoint.sh
