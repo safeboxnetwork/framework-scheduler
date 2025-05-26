@@ -208,7 +208,21 @@ remove_additionals() {
         fi
     done
 
+    ENV_FILES=$(cat $SERVICE_DIR/service-$NAME.json | jq -r '[.containers[] | select(has("ENV_FILES")) | .ENV_FILES[]] | unique[]')
+    for ENV_FILE in $(echo $ENV_FILES); do
+        if [ -f "$ENV_FILE" ]; then
+            rm -rf $ENV_FILE
+            debug "deleted enviroment file: $ENV_FILE"
+        fi
+    done
+
     VOLUMES=$(cat $SERVICE_DIR/service-$NAME.json | jq -r '[.containers[] | select(has("VOLUMES")) | .VOLUMES[] | select(.SHARED != "true") | .SOURCE] | unique[]' | grep -vE 'USER|SYSTEM')
+
+    # stop service
+    # force - remove stopped container, docker rm
+    debug "$service_exec service-$NAME.json stop force dns-remove"
+    $service_exec service-$NAME.json stop force dns-remove
+
     for VOLUME in $(echo $VOLUMES); do
         if [ "$(echo $VOLUME | cut -d '/' -f1)" ]; then
             docker volume rm $VOLUME
@@ -216,11 +230,6 @@ remove_additionals() {
 
         fi
     done
-
-    # stop service
-    # force - remove stopped container, docker rm
-    debug "$service_exec service-$NAME.json stop force dns-remove"
-    $service_exec service-$NAME.json stop force dns-remove
 
     # remove service files
     rm $SERVICE_DIR/*"-"$NAME.json # service, domain, etc.
