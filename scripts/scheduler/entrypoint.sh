@@ -223,7 +223,7 @@ remove_additionals() {
     debug "$service_exec service-$NAME.json stop force dns-remove"
     $service_exec service-$NAME.json stop force dns-remove
 
-    for VOLUME in $(echo $VOLUMES); do
+    for VOLUME in $(echo $VOLUMES | grep -vE 'USER|SYSTEM'); do
         if [ "$(echo $VOLUME | cut -d '/' -f1)" ]; then
             docker volume rm $VOLUME
             debug "deleted volume: $VOLUME"
