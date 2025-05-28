@@ -805,12 +805,13 @@ execute_task() {
             for APP in $APPS; do
                 APP_NAME=$(echo "$APP" | jq -r '.name')
                 APP_VERSION=$(echo "$APP" | jq -r '.version')
+                APP_ICON=$(echo "$APP" | jq -r '.icon')
                 if [ "$DEPLOYMENTS" != "" ]; then
                     SEP=","
                 else
                     SEP=""
                 fi
-                DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": "'$APP_VERSION'"'
+                DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": {"version": "'$APP_VERSION'", "icon": "'$APP_ICON'"}'
             done
         done
         if [ "$DEPLOYMENTS" == "" ]; then
