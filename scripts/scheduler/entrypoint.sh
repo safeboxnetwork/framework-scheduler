@@ -111,8 +111,6 @@ create_htpasswd_file() {
     fi
 }
 
-install -m 664 -g 65534 /dev/null
-
 deploy_additionals() {
 
     local DIR="$1"
@@ -805,13 +803,12 @@ execute_task() {
             for APP in $APPS; do
                 APP_NAME=$(echo "$APP" | jq -r '.name')
                 APP_VERSION=$(echo "$APP" | jq -r '.version')
-                APP_ICON=$(echo "$APP" | jq -r '.icon')
                 if [ "$DEPLOYMENTS" != "" ]; then
                     SEP=","
                 else
                     SEP=""
                 fi
-                DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": {"version": "'$APP_VERSION'", "icon": "'$APP_ICON'"}'
+                DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": "'$APP_VERSION'"'
             done
         done
         if [ "$DEPLOYMENTS" == "" ]; then
