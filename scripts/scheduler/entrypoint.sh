@@ -116,7 +116,6 @@ deploy_additionals() {
     local DIR="$1"
     local NAME="$2"
     local JSON="$(echo "$3" | base64 -d)"
-    local ACTION="$4"
 
     debug "DEPLOY: $NAME"
     debug "JSON: $JSON"
@@ -148,11 +147,6 @@ deploy_additionals() {
     done
 
     # start service
-    if [ "$ACTION" == "edit" ]; then
-        debug "$service_exec service-$NAME.json stop force"
-        $service_exec service-$NAME.json stop force
-    fi
-
     debug "$service_exec service-$NAME.json start info"
     $service_exec service-$NAME.json start info &
     PID=$!
@@ -909,6 +903,11 @@ execute_task() {
                     elif [ "$DEPLOY_ACTION" == "edit" ]; then
 
                         DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
+
+                        # stop service before edit
+                        debug "$service_exec service-$DEPLOY_NAME.json stop force"
+                        $service_exec service-$DEPLOY_NAME.json stop force
+
                         deploy_additionals "$APP_DIR" "$DEPLOY_NAME" "$DEPLOY_PAYLOAD"
                         sh /scripts/check_pid.sh "$PID" "$SHARED" "deploy-$DEPLOY_NAME" "$DATE" "$DEBUG" &
 
