@@ -901,7 +901,7 @@ execute_task() {
                         sh /scripts/check_pid.sh "$PID" "$SHARED" "deploy-$DEPLOY_NAME" "$DATE" "$DEBUG" &
 
                     elif [ "$DEPLOY_ACTION" == "edit" ]; then
-
+                        JSON_TARGET=""
                         DEPLOY_PAYLOAD=$(echo "$JSON" | jq -r .PAYLOAD) # base64 list of key-value pairs in JSON
 
                         # stop service before edit
