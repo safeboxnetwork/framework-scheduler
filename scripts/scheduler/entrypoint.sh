@@ -100,6 +100,116 @@ if [ -d /etc/user/config/services ]; then
     done
 fi
 
+backup_query_state() {
+
+}
+
+backup_set_service() {
+
+}
+
+backup_set_client() {
+
+    NAME="$1"
+    SIZE="$2"
+    VPN="$3"
+    SSH_PORT="$4"
+    SSH_USER="$5"
+    SSH_PASSWORD="$6"
+    OPERATION="$7"
+    VPN_KEY="$8"
+
+    if [ "$OPERATION" == "DELETE" ]; then
+        # delete service
+        if [ -f "/etc/user/config/services/service-backup-client-$NAME.json" ]; then
+
+            debug "service-backup-client-$NAME.json stop force dns-remove"
+            $service_exec service-backup-client-$NAME.json stop force dns-remove
+            rm -f /etc/user/config/services/service-backup-client-$NAME.json
+            debug "Service backup client $NAME deleted."
+
+        fi
+
+    else
+
+        if [ -z "$SSH_PORT" ] ; then
+            SSH_PORT=20022
+        fi
+
+        if [ "$VPN" == "true" ]; then
+            NETWORK=$NAME
+            PORT='"PORTS": [{"SOURCE":"null","DEST":"'$SSH_PORT'","TYPE":"tcp"}],'
+        else
+            NETWORK="host"
+            PORT='"PORTS": [{"SOURCE":"'$SSH_PORT'","DEST":"'$SSH_PORT'","TYPE":"tcp"}],'
+        fi
+
+        ADDITIONAL=""
+        ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart=always", "PRE_START": [], "DEPEND": [], "CMD": ""'
+        ENVS='"ENVS": [{"SSH_USER":"'$SSH_USER'"},{"SSH_PORT":"'$SSH_PORT'"},{"SSH_PASSWORD":"'$SSH_PASSWORD'"},{"VPN_CLIENT_KEY":"'$VPN_KEY'"}],'
+
+        echo '{
+        "main": {
+        "SERVICE_NAME": "'$NAME'"
+        },
+        "containers": [
+        {
+        "IMAGE": "alpine:latest",
+        "NAME": "'$NAME'-init",
+        "UPDATE": "true",
+        "MEMORY": "64M",
+        "EXTRA": "--rm",
+        "VOLUMES":[
+            {
+            "SOURCE": "USER_DATA",
+            "DEST": "/etc/user/data/",
+            "TYPE": "rw"
+            }
+                ],
+        "ENTRYPOINT": "sh -c",
+        "CMD": "mkdir -p /etc/user/data/backup/clients/'$NAME'/backup && /etc/user/data/backup/clients/'$NAME'/ssh",
+        "POST_START": []
+        },
+        {
+        "IMAGE": "safebox/backup-client:latest",
+        "NAME": "'$NAME'",
+        "UPDATE": "true",
+        "MEMORY": "64M",
+        "NETWORK": "'$NETWORK'",
+        '$ADDITIONAL',
+        '$ENVS'
+        '$PORT'
+        "VOLUMES":[
+            { 
+            "SOURCE": "/etc/user/data/backup/clients/'$NAME'/backup",
+            "DEST": "/backup",
+            "TYPE": "rw"
+            },
+            { 
+            "SOURCE": "/etc/user/data/backup/clients/'$NAME'/ssh",
+            "DEST": "/home/'$SSH_USER'/",
+            "TYPE": "rw"
+            }
+                ],
+        "POST_START": []
+        }
+      ]
+    }' | jq -r . >/etc/user/config/services/service-backup-client-$NAME.json
+
+    debug "service-backup-client-$NAME.json stop force dns-remove"
+    $service_exec service-backup-client-$NAME.json start &
+
+    fi
+
+}
+
+backup_challenge_clients() {
+}
+
+restore_from_backup() {
+
+}
+
 create_htpasswd_file() {
 
     local USER="$1"
@@ -982,6 +1092,48 @@ execute_task() {
 
     elif [ "$TASK_NAME" == "containers" ]; then # not in use
         CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler)
+        RESULT=$(echo "$CONTAINERS" | base64 -w0)
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
+
+    elif [ "$TASK_NAME" == "backup" ]; then
+
+        TASK_TYPE=$(echo $B64_JSON | base64 -d | jq -r '.TASK_TYPE)')
+
+        if [ "$TASK_TYPE" == "backup_query_state" ]; then
+            echo "task type is backup_query_state"
+
+        elif [ "$TASK_TYPE" == "backup_set_service" ]; then
+            echo "task type is backup_set_service"
+
+        elif [ "$TASK_TYPE" == "backup_set_client" ]; then
+            
+            NAME="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_NAME')"
+            SIZE="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_SIZE')"
+            VPN="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_VPN')"
+            SSH_PORT="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_SSH_PORT')"
+            SSH_USER="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_SSH_USER')"
+            SSH_PASSWORD="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_SSH_PASSWORD')"
+            OPERATION="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_OPERATION')"
+            debug "task type is backup_set_client for $NAME"
+            debug "   size: $SIZE"
+            debug "   vpn: $VPN"
+            debug "   ssh_port: $SSH_PORT"
+            debug "   ssh_user: $SSH_USER"
+            debug "   ssh_password: $SSH_PASSWORD"
+            debug "   operation: $OPERATION"
+
+            backup_set_client "$NAME" "$SIZE" "$VPN" "$SSH_PORT" "$SSH_USER" "$SSH_PASSWORD" "$OPERATION"
+
+        elif [ "$TASK_TYPE" == "backup_challenge_clients" ]; then
+            echo "task type is backup_challenge_clients"
+
+        elif [ "$TASK_TYPE" == "restore_from_backup" ]; then
+            echo "task type is restore_from_backup"
+
+        else
+            echo "Unknown task type: $TASK_TYPE"
+        fi
+
         RESULT=$(echo "$CONTAINERS" | base64 -w0)
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
 
