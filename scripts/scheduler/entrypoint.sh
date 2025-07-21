@@ -798,11 +798,12 @@ execute_task() {
     elif [ "$TASK_NAME" == "deployments" ]; then
         DEPLOYMENTS=""
         TREES=$(get_repositories)
-        for TREE in $TREES; do
+        for TREE in "$TREES"; do
             APPS=$(jq -rc '.apps[]' $TREE)
-            for APP in $APPS; do
+            #for APP in "$APPS"; do #space problem
+            while IFS= read -r APP; do
                 APP_NAME=$(echo "$APP" | jq -r '.name')
-                APP_SUBTITLE=$(echo "$APP" | jq -r '.subtitle')
+                APP_SUBTITLE="$(echo "$APP" | jq -r '.subtitle')"
                 APP_VERSION=$(echo "$APP" | jq -r '.version')
                 APP_ICON=$(echo "$APP" | jq -r '.icon')
                 if [ "$DEPLOYMENTS" != "" ]; then
@@ -810,8 +811,9 @@ execute_task() {
                 else
                     SEP=""
                 fi
-                DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": {"subtitle": "'$APP_SUBTITLE'", "version": "'$APP_VERSION'", "icon": "'$APP_ICON'"}'
-            done
+                DEPLOYMENTS="$DEPLOYMENTS"$SEP'"'$APP_NAME'": {"subtitle": "'"$APP_SUBTITLE"'", "version": "'"$APP_VERSION"'", "icon":
+ "'"$APP_ICON"'"}'
+            done < <(echo "$APPS") # preserve DEPLOYMENTS variable
         done
         if [ "$DEPLOYMENTS" == "" ]; then
             DEPLOYMENTS='"deployments": "NONE"'
