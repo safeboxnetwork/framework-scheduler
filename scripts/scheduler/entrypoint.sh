@@ -802,6 +802,7 @@ execute_task() {
             APPS=$(jq -rc '.apps[]' $TREE)
             for APP in $APPS; do
                 APP_NAME=$(echo "$APP" | jq -r '.name')
+                APP_SUBTITLE=$(echo "$APP" | jq -r '.subtitle')
                 APP_VERSION=$(echo "$APP" | jq -r '.version')
                 APP_ICON=$(echo "$APP" | jq -r '.icon')
                 if [ "$DEPLOYMENTS" != "" ]; then
@@ -809,7 +810,7 @@ execute_task() {
                 else
                     SEP=""
                 fi
-                DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": {"version": "'$APP_VERSION'", "icon": "'$APP_ICON'"}'
+                DEPLOYMENTS=$DEPLOYMENTS$SEP'"'$APP_NAME'": {"subtitle": "'$APP_SUBTITLE'", "version": "'$APP_VERSION'", "icon": "'$APP_ICON'"}'
             done
         done
         if [ "$DEPLOYMENTS" == "" ]; then
@@ -846,6 +847,7 @@ execute_task() {
             APPS=$(jq -rc '.apps[]' $TREE)
             for APP in $APPS; do
                 APP_NAME=$(echo "$APP" | jq -r '.name' | awk '{print tolower($0)}')
+                APP_SUBTITLE=$(echo "$APP" | jq -r '.subtitle')
                 APP_VERSION=$(echo "$APP" | jq -r '.version')
                 APP_DIR=$(dirname $TREE)"/"$APP_NAME
                 debug "$APP_TEMPLATE"
