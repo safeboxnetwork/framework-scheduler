@@ -91,17 +91,8 @@ debug() {
     fi
 }
 
-## Start prevously deployed firewall rules depend on framework scheduler startup at first time
-
-if [ -d /etc/user/config/services ]; then
-    cd /etc/user/config/services
-    for FIREWALL in $(ls firewall*.json); do
-        $service_exec $FIREWALL start &
-    done
-fi
-
 backup_query_state() {
-    
+
     echo "backup_query_state"
 
 }
@@ -976,16 +967,16 @@ execute_task() {
                 APP_SUBTITLE=$(echo "$APP" | jq -r '.subtitle')
                 APP_VERSION=$(echo "$APP" | jq -r '.version')
                 APP_DIR=$(dirname $TREE)"/"$APP_NAME
-                debug "$APP_TEMPLATE"
                 if [ "$APP_NAME" == "$DEPLOY_NAME" ]; then
                     if [ "$DEPLOY_ACTION" == "ask" ]; then
                         APP_TEMPLATE=$APP_DIR"/template.json"
                         TEMPLATE=$(cat $APP_TEMPLATE | base64 -w0)
-                        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "TEMPLATE": "'$TEMPLATE'" }' | jq -r . | base64 -w0)
+                        debug "$APP_TEMPLATE"
+                        JSON_TARGET=$(echo '{"DATE":"'$DATE'","STATUS": "0","TEMPLATE":"'$TEMPLATE'"}' | jq -r . | base64 -w0)
                     elif [ "$DEPLOY_ACTION" == "reinstall" ]; then
                         APP_TEMPLATE=$APP_DIR"/template.json"
                         TEMPLATE=$(cat $APP_TEMPLATE)
-                        for LINE in $(cat $SERVICE_DIR/service-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]'); do
+                        for LINE in $(cat $SERVICE_DIR/service-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]' 2>/dev/null); do
                             KEY=$(echo $LINE | jq -r .key)
                             VALUE=$(echo $LINE | jq -r .value)
                             debug "$KEY: $VALUE"
@@ -994,14 +985,14 @@ execute_task() {
                             TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "'$KEY'" then .value = "'$VALUE'" else . end)')
                         done
                         # write ENV value from domain file to template value by key name
-                        for LINE in $(cat $SERVICE_DIR/domain-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]'); do
+                        for LINE in $(cat $SERVICE_DIR/domain-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]' 2>/dev/null); do
                             KEY=$(echo $LINE | jq -r .key)
                             VALUE=$(echo $LINE | jq -r .value)
                             debug "$KEY: $VALUE"
                             TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "'$KEY'" then .value = "'$VALUE'" else . end)')
                         done
                         # write ENV value from secret file to template value by key name
-                        for LINE in $(cat $SECRET_DIR/$DEPLOY_NAME/$DEPLOY_NAME.json | jq -rc '.[] | to_entries[]'); do
+                        for LINE in $(cat $SECRET_DIR/$DEPLOY_NAME/$DEPLOY_NAME.json | jq -rc '.[] | to_entries[]' 2>/dev/null); do
                             KEY=$(echo $LINE | jq -r .key)
                             VALUE=$(echo $LINE | jq -r .value)
                             debug "$KEY: $VALUE"
@@ -1276,10 +1267,14 @@ start_framework_scheduler() {
 
 ### SYSTEM INITIALIZATION ###
 
-## DOCKER NETWORK VARIABLES
-## FILESYSTEM VARIABLES
-## PORTS VARIABLES
-### RESTART SCHEDULER IF NEEDED
+## Start prevously deployed firewall rules depend on framework scheduler startup at first time
+
+if [ -d /etc/user/config/services ]; then
+    cd /etc/user/config/services
+    for FIREWALL in $(ls firewall*.json); do
+        $service_exec $FIREWALL start &
+    done
+fi
 
 SN=$(check_subnets)
 if [ "$SN" != "1" ]; then
