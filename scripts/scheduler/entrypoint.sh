@@ -969,7 +969,8 @@ execute_task() {
 
         for TREE in $TREES; do
             APPS=$(jq -rc '.apps[]' $TREE)
-            for APP in $APPS; do
+            #for APP in $APPS; do
+            while IFS= read -r APP; do
                 APP_NAME=$(echo "$APP" | jq -r '.name' | awk '{print tolower($0)}')
                 APP_SUBTITLE=$(echo "$APP" | jq -r '.subtitle')
                 APP_VERSION=$(echo "$APP" | jq -r '.version')
@@ -1046,7 +1047,7 @@ execute_task() {
                         JSON_TARGET=""
                     fi
                 fi
-            done
+            done < <(echo "$APPS") # preserve variables
         done
 
     elif [ "$TASK_NAME" == "repositories" ]; then
