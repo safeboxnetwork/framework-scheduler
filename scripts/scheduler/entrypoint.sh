@@ -778,7 +778,11 @@ execute_task() {
 
             if [ "$REQUEST" == "requested" ]; then
                 echo "New certificate for $DOMAIN is requested."
-                touch /etc/system/data/ssl/keys/$DOMAIN/new_certificate
+                echo "Modifying $DOMAIN_FILE.json for $DOMAIN"
+                jq '.containers[0].ENVS |= map(if has("OPERATION") then .OPERATION = "MODIFY" else . end) | \
+                .containers[0].ENVS |= map(if has("DOMAIN") then .DOMAIN = "'$DOMAIN'" else . end)' \
+                /etc/user/config/services/$DOMAIN_FILE.json > /tmp/$DOMAIN_FILE.json && \
+                mv /tmp/$DOMAIN_FILE.json /etc/user/config/services/$DOMAIN_FILE.json
             fi
         done
         JSON_TARGET=$B64_JSON
@@ -921,8 +925,7 @@ execute_task() {
                 else
                     SEP=""
                 fi
-                DEPLOYMENTS="$DEPLOYMENTS"$SEP'"'$APP_NAME'": {"subtitle": "'"$APP_SUBTITLE"'", "version": "'"$APP_VERSION"'", "icon":
- "'"$APP_ICON"'"}'
+                DEPLOYMENTS="$DEPLOYMENTS"$SEP'"'$APP_NAME'":{"subtitle":"'"$APP_SUBTITLE"'","version":"'"$APP_VERSION"'","icon":"'"$APP_ICON"'"}'
             done < <(echo "$APPS") # preserve DEPLOYMENTS variable
         done
         if [ "$DEPLOYMENTS" == "" ]; then
