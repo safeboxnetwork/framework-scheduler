@@ -783,6 +783,8 @@ execute_task() {
                 .containers[0].ENVS |= map(if has("DOMAIN") then .DOMAIN = "'$DOMAIN'" else . end)' \
                 /etc/user/config/services/$DOMAIN_FILE.json > /tmp/$DOMAIN_FILE.json && \
                 mv /tmp/$DOMAIN_FILE.json /etc/user/config/services/$DOMAIN_FILE.json
+                debug "$service_exec $DOMAIN_FILE.json start info"
+                $service_exec $DOMAIN_FILE.json start info &
             fi
         done
         JSON_TARGET=$B64_JSON
