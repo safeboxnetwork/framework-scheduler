@@ -699,7 +699,7 @@ check_update() {
 
 upgrade_scheduler() {
 
-    DOCKER_START="--entrypoint=sh $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c '/scripts/upgrade.sh'"
+    DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
 
     DOCKER_RUN="/usr/bin/docker run -d \
         -v SHARED:/var/tmp/shared \
