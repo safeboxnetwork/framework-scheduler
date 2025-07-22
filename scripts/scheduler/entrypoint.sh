@@ -701,6 +701,12 @@ upgrade_scheduler() {
 
     DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
 
+    if [ "$DEBUG_MODE" == "true" ]; then
+        SET_DEBUG_MODE="--env DEBUG_MODE=true"
+    else
+        SET_DEBUG_MODE=""
+    fi
+
     DOCKER_RUN="/usr/bin/docker run -d \
         -v SHARED:/var/tmp/shared \
 	  	-v /var/run/docker.sock:/var/run/docker.sock \
@@ -711,6 +717,7 @@ upgrade_scheduler() {
 		-v USER_CONFIG:/etc/user/config \
 		-v USER_SECRET:/etc/user/secret \
 		--restart=always \
+        $SET_DEBUG_MODE \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 		--env RUN_FORCE=$RUN_FORCE \
