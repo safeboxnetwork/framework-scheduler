@@ -101,10 +101,14 @@ if [ -d /etc/user/config/services ]; then
 fi
 
 backup_query_state() {
+    
+    echo "backup_query_state"
 
 }
 
 backup_set_service() {
+
+    echo "backup_set_service"
 
 }
 
@@ -149,64 +153,69 @@ backup_set_client() {
         ENVS='"ENVS": [{"SSH_USER":"'$SSH_USER'"},{"SSH_PORT":"'$SSH_PORT'"},{"SSH_PASSWORD":"'$SSH_PASSWORD'"},{"VPN_CLIENT_KEY":"'$VPN_KEY'"}],'
 
         echo '{
-        "main": {
-        "SERVICE_NAME": "'$NAME'"
-        },
-        "containers": [
+    "main": {
+    "SERVICE_NAME": "'$NAME'"
+    },
+    "containers": [
+    {
+    "IMAGE": "alpine:latest",
+    "NAME": "'$NAME'-init",
+    "UPDATE": "true",
+    "MEMORY": "64M",
+    "EXTRA": "--rm",
+    "VOLUMES":[
         {
-        "IMAGE": "alpine:latest",
-        "NAME": "'$NAME'-init",
-        "UPDATE": "true",
-        "MEMORY": "64M",
-        "EXTRA": "--rm",
-        "VOLUMES":[
-            {
-            "SOURCE": "USER_DATA",
-            "DEST": "/etc/user/data/",
-            "TYPE": "rw"
-            }
-                ],
-        "ENTRYPOINT": "sh -c",
-        "CMD": "mkdir -p /etc/user/data/backup/clients/'$NAME'/backup && /etc/user/data/backup/clients/'$NAME'/ssh",
-        "POST_START": []
-        },
-        {
-        "IMAGE": "safebox/backup-client:latest",
-        "NAME": "'$NAME'",
-        "UPDATE": "true",
-        "MEMORY": "64M",
-        "NETWORK": "'$NETWORK'",
-        '$ADDITIONAL',
-        '$ENVS'
-        '$PORT'
-        "VOLUMES":[
-            { 
-            "SOURCE": "/etc/user/data/backup/clients/'$NAME'/backup",
-            "DEST": "/backup",
-            "TYPE": "rw"
-            },
-            { 
-            "SOURCE": "/etc/user/data/backup/clients/'$NAME'/ssh",
-            "DEST": "/home/'$SSH_USER'/",
-            "TYPE": "rw"
-            }
-                ],
-        "POST_START": []
+        "SOURCE": "USER_DATA",
+        "DEST": "/etc/user/data/",
+        "TYPE": "rw"
         }
-      ]
-    }' | jq -r . >/etc/user/config/services/service-backup-client-$NAME.json
+            ],
+    "ENTRYPOINT": "sh -c",
+    "CMD": "mkdir -p /etc/user/data/backup/clients/'$NAME'/backup && /etc/user/data/backup/clients/'$NAME'/ssh",
+    "POST_START": []
+    },
+    {
+    "IMAGE": "safebox/backup-client:latest",
+    "NAME": "'$NAME'",
+    "UPDATE": "true",
+    "MEMORY": "64M",
+    "NETWORK": "'$NETWORK'",
+    '$ADDITIONAL',
+    '$ENVS'
+    '$PORT'
+    "VOLUMES":[
+        { 
+        "SOURCE": "/etc/user/data/backup/clients/'$NAME'/backup",
+        "DEST": "/backup",
+        "TYPE": "rw"
+        },
+        { 
+        "SOURCE": "/etc/user/data/backup/clients/'$NAME'/ssh",
+        "DEST": "/home/'$SSH_USER'/",
+        "TYPE": "rw"
+        }
+            ],
+    "POST_START": []
+        }
+    ]
+ }' | jq -r . >/etc/user/config/services/service-backup-client-$NAME.json
 
-    debug "service-backup-client-$NAME.json stop force dns-remove"
-    $service_exec service-backup-client-$NAME.json start &
+        debug "service-backup-client-$NAME.json stop force dns-remove"
+        $service_exec service-backup-client-$NAME.json start &
 
     fi
 
 }
 
 backup_challenge_clients() {
+
+    echo "backup_challenge_clients"
+
 }
 
 restore_from_backup() {
+
+    echo "restore_from_backup"
 
 }
 
