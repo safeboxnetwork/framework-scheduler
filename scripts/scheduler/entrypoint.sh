@@ -92,6 +92,12 @@ debug() {
 }
 
 add_json_target(){
+
+        local TASK_NAME=$1
+
+        if [ -n "$TASK_NAME" ]; then
+            TASK="upgrade-$TASK_NAME"
+        fi
         
         install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
@@ -1172,7 +1178,7 @@ execute_task() {
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
             JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":0}' | jq -r . | base64 -w0)
-            add_json_target
+            add_json_target $NAME
             echo "Upgrading service: webserver"
             upgrade webserver
 
@@ -1185,7 +1191,7 @@ execute_task() {
             upgrade_scheduler
             echo "Removing old framework scheduler container..."
             JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":1}' | jq -r . | base64 -w0)
-            add_json_target
+            add_json_target $NAME
             sleep 1
             /usr/bin/docker rm -f $HOSTNAME
 
