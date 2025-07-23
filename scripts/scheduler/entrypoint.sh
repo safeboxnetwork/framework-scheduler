@@ -1156,12 +1156,15 @@ execute_task() {
         JSON="$(echo $B64_JSON | base64 -d)"
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
-
-            upgrade_scheduler 
+            echo "Upgrading framework scheduler..."
+            upgrade_scheduler
+            echo "Removing old framework scheduler container..."
+            sleep 5
             /usr/bin/docker rm -f $HOSTNAME
 
             #CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E 'framework-scheduler|webserver')
         else
+            echo "Upgrading service: $NAME"
             upgrade "$NAME"
             #CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -w "$NAME")
         fi
