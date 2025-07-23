@@ -13,7 +13,7 @@ SECRET_DIR=${SECRET_DIR:-/etc/user/secret}
 SHARED=${SHARED:-/var/tmp/shared}
 
 FRAMEWORK_SCHEDULER_IMAGE=${FRAMEWORK_SCHEDULER_IMAGE:-framework-scheduler}
-FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
+FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-frameworkscheduler}
 FRAMEWORK_SCHEDULER_NETWORK=${FRAMEWORK_SCHEDULER_NETWORK:-framework-network}
 FRAMEWORK_SCHEDULER_NETWORK_SUBNET=${FRAMEWORK_SCHEDULER_NETWORK_SUBNET:-"172.19.255.0/24"}
 FRAMEWORK_SCHEDULER_VERSION=${FRAMEWORK_SCHEDULER_VERSION:-latest}
@@ -717,6 +717,7 @@ upgrade_scheduler() {
 		-v USER_CONFIG:/etc/user/config \
 		-v USER_SECRET:/etc/user/secret \
 		--restart=always \
+        --name $FRAMEWORK_SCHEDULER_NAME \
         $SET_DEBUG_MODE \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
@@ -1159,7 +1160,9 @@ execute_task() {
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
             upgrade "web-installer"
-            upgrade_scheduler
+            upgrade_scheduler 
+            /usr/bin/docker rm -f $HOSTNAME
+
             #CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E 'framework-scheduler|webserver')
         else
             upgrade "$NAME"
@@ -1246,35 +1249,7 @@ check_redis_availability() {
     done
 }
 
-start_framework_scheduler() {
-
-    if [ "$DEBUG_MODE" == "true" ]; then
-        DOCKER_START="--entrypoint=sh $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c 'sleep 86400'"
-    else
-        DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
-    fi
-    DOCKER_RUN="/usr/bin/docker run -d \
-        -v SHARED:/var/tmp/shared \
-	  	-v /var/run/docker.sock:/var/run/docker.sock \
-		-v SYSTEM_DATA:/etc/system/data \
-		-v SYSTEM_CONFIG:/etc/system/config \
-		-v SYSTEM_LOG:/etc/system/log \
-		-v USER_DATA:/etc/user/data \
-		-v USER_CONFIG:/etc/user/config \
-		-v USER_SECRET:/etc/user/secret \
-		--restart=always \
-		--name $FRAMEWORK_SCHEDULER_NAME \
-	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
-	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
-		--env RUN_FORCE=$RUN_FORCE \
-		--env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
-	  $DOCKER_START"
-    eval "$DOCKER_RUN"
-
-}
-
 ### SYSTEM INITIALIZATION ###
-
 ## Start prevously deployed firewall rules depend on framework scheduler startup at first time
 
 if [ -d /etc/user/config/services ]; then
@@ -1299,7 +1274,7 @@ fi
 
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
-    start_framework_scheduler
+    upgrade_scheduler
     /usr/bin/docker rm -f $HOSTNAME
 fi
 
