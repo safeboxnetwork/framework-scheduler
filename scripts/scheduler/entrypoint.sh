@@ -685,7 +685,7 @@ check_update() {
         debug "$REMOTE_URL not accessible, http error code: $CURL_CHECK_CODE"
 
         echo "Force image pull has started without digest check..."
-        DOCKER_PULL="docker pull $IMAGE"
+        DOCKER_PULL="/usr/bin/docker pull $IMAGE"
         eval $DOCKER_PULL
         STATUS=$?
         debug "PULL STATUS: $STATUS"
@@ -698,6 +698,10 @@ check_update() {
 }
 
 upgrade_scheduler() {
+
+    # Upgrading framework scheduler
+    debug "Upgrading framework scheduler..."
+    /usr/bin/docker pull "$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
 
     DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
 
