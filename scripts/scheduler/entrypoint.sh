@@ -1156,10 +1156,16 @@ execute_task() {
         JSON="$(echo $B64_JSON | base64 -d)"
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
+            
             echo "Upgrading framework scheduler..."
+            echo "Cleaning temporary files..."
+            
+            rm -rf /var/tmp/shared/input/*
+            rm -rf /var/tmp/shared/output/*
+
             upgrade_scheduler
             echo "Removing old framework scheduler container..."
-            sleep 5
+            sleep 1
             /usr/bin/docker rm -f $HOSTNAME
 
             #CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E 'framework-scheduler|webserver')
