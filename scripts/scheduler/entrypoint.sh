@@ -732,20 +732,11 @@ upgrade_scheduler() {
 upgrade() {
     local NAME=$1
 
-    if [ "$NAME" == "web-installer" ]; then
+    debug "$service_exec $NAME.json stop force"
+    $service_exec $NAME.json stop force
+    debug "$service_exec $NAME.json start info"
+    $service_exec $NAME.json start info &
 
-        debug "$service_exec service-framework.containers.webserver stop force"
-        $service_exec service-framework.containers.webserver stop force
-        debug "$service_exec service-framework.containers.webserver start info"
-        $service_exec service-framework.containers.webserver start info &
-
-    else
-
-        debug "$service_exec $NAME.json stop force"
-        $service_exec $NAME.json stop force
-        debug "$service_exec $NAME.json start info"
-        $service_exec $NAME.json start info &
-    fi
     PID=$!
 }
 
@@ -1161,7 +1152,7 @@ execute_task() {
         JSON="$(echo $B64_JSON | base64 -d)"
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
-            upgrade "web-installer"
+
             upgrade_scheduler 
             /usr/bin/docker rm -f $HOSTNAME
 
@@ -1288,15 +1279,12 @@ if [ "$DF" != "1" ]; then
 fi
 
 #RS=$(docker ps | grep redis-server)
-WS=$(docker ps | grep webserver)
+WS=$(/usr/bin/docker ps | grep -o webserver)
 
-#if [[ "$WS" == "" && "$RS" == "" ]]; then
 if [ "$WS" == "" ]; then
-
     # START SERVICES
-    #$service_exec service-framework.containers.redis-server start &
+    echo "Starting webserver"
     $service_exec service-framework.containers.webserver start &
-    sleep 5
 
 fi
 
