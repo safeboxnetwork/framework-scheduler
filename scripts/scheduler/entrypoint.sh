@@ -736,10 +736,19 @@ upgrade_scheduler() {
 upgrade() {
     local NAME=$1
 
-    debug "$service_exec $NAME.json stop force"
-    $service_exec $NAME.json stop force
-    debug "$service_exec $NAME.json start info"
-    $service_exec $NAME.json start info &
+    if [ "$NAME" == "webserver" ]; then
+        debug "$service_exec service-framework.containers.$NAME stop force"
+        $service_exec service-framework.containers.$NAME stop force
+        debug "$service_exec service-framework.containers.$NAME start info"
+        $service_exec service-framework.containers.$NAME start info &
+    else
+
+        debug "$service_exec $NAME.json stop force"
+        $service_exec $NAME.json stop force
+        debug "$service_exec $NAME.json start info"
+        $service_exec $NAME.json start info &
+
+    fi
 
     PID=$!
 }
@@ -1156,7 +1165,10 @@ execute_task() {
         JSON="$(echo $B64_JSON | base64 -d)"
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
-            
+            JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":0}' | jq -r . | base64 -w0)
+            echo "Upgrading service: webserver"
+            upgrade webserver
+
             echo "Upgrading framework scheduler..."
             echo "Cleaning temporary files..."
             
@@ -1165,6 +1177,7 @@ execute_task() {
 
             upgrade_scheduler
             echo "Removing old framework scheduler container..."
+            JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":1}' | jq -r . | base64 -w0)
             sleep 1
             /usr/bin/docker rm -f $HOSTNAME
 
