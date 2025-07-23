@@ -91,6 +91,12 @@ debug() {
     fi
 }
 
+add_json_target(){
+        
+        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
+        echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
+}
+
 backup_query_state() {
 
     echo "backup_query_state"
@@ -1166,6 +1172,7 @@ execute_task() {
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
             JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":0}' | jq -r . | base64 -w0)
+            add_json_target
             echo "Upgrading service: webserver"
             upgrade webserver
 
@@ -1178,6 +1185,7 @@ execute_task() {
             upgrade_scheduler
             echo "Removing old framework scheduler container..."
             JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":1}' | jq -r . | base64 -w0)
+            add_json_target
             sleep 1
             /usr/bin/docker rm -f $HOSTNAME
 
@@ -1196,9 +1204,7 @@ execute_task() {
     fi
 
     if [ "$JSON_TARGET" != "" ]; then
-        #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
-        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
-        echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
+        add_json_target
     fi
 
 }
