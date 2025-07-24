@@ -717,8 +717,10 @@ upgrade_scheduler() {
 
     if [ "$DEBUG_MODE" == "true" ]; then
         DOCKER_START="--entrypoint=sh $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c 'sleep 86400'"
+        SET_DEBUG_MODE="--env DEBUG_MODE=true"
     else
         DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
+        SET_DEBUG_MODE=""
     fi
 
     FRAMEWORK_SCHEDULER_NAME="$FRAMEWORK_SCHEDULER_NAME-$(head /dev/urandom | tr -dc '0-9' | head -c 6)"
@@ -734,6 +736,7 @@ upgrade_scheduler() {
 		-v USER_SECRET:/etc/user/secret \
 		--restart=always \
         --name $FRAMEWORK_SCHEDULER_NAME \
+        $SET_DEBUG_MODE \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 		--env RUN_FORCE=$RUN_FORCE \
