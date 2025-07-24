@@ -200,14 +200,18 @@ elif [ "$FIRST_INSTALL" == "vpn" ]; then
 
     get_vpn_key
 
-    edit_user_json $LETSENCRYPT_MAIL $LETSENCRYPT_SERVERNAME
+    if [ "$VPN_PROXY" != "no" ]; then
 
-    $SERVICE_EXEC vpn-proxy stop force
-    $SERVICE_EXEC vpn-proxy start
-    echo "$INIT_SERVICE_PATH/vpn-proxy.json" >>$AUTO_START_SERVICES/.init_services
-    echo "$INIT_SERVICE_PATH/firewall-vpn-smarthost-loadbalancer" >>$AUTO_START_SERVICES/.init_services
-    echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-postrouting" >>$AUTO_START_SERVICES/.init_services
-    echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-prerouting" >>$AUTO_START_SERVICES/.init_services
+	    edit_user_json $LETSENCRYPT_MAIL $LETSENCRYPT_SERVERNAME
+
+	    $SERVICE_EXEC vpn-proxy stop force
+	    $SERVICE_EXEC vpn-proxy start
+	    echo "$INIT_SERVICE_PATH/vpn-proxy.json" >>$AUTO_START_SERVICES/.init_services
+	    echo "$INIT_SERVICE_PATH/firewall-vpn-smarthost-loadbalancer" >>$AUTO_START_SERVICES/.init_services
+	    echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-postrouting" >>$AUTO_START_SERVICES/.init_services
+	    echo "$INIT_SERVICE_PATH/firewall-vpn-proxy-prerouting" >>$AUTO_START_SERVICES/.init_services
+
+    fi;
 
     exit
 

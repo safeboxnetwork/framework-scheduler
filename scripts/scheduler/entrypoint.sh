@@ -1107,6 +1107,9 @@ execute_task() {
 
     elif [ "$TASK_NAME" == "save_vpn" ]; then
 
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "RESULT": "" }' | jq -r . | base64 -w0)
+        add_json_target
+
         VPN_PROXY_REPO="wireguard-proxy-client"
         if [ ! -d "/tmp/$VPN_PROXY_REPO" ]; then
             git clone https://git.format.hu/safebox/$VPN_PROXY_REPO.git /tmp/$VPN_PROXY_REPO >/dev/null
@@ -1124,7 +1127,7 @@ execute_task() {
         # install vpn only
         sh /scripts/install.sh "$B64_JSON" "$service_exec" "vpn" "$GLOBAL_VERSION"
 
-        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$VPN_STATUS'", "RESULT": "'$VPN_RESULT'" }' | jq -r . | base64 -w0)
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1", "RESULT": "'$VPN_RESULT'" }' | jq -r . | base64 -w0)
 
     elif [ "$TASK_NAME" == "containers" ]; then # not in use
         CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler)
