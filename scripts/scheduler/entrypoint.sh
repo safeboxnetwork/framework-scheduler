@@ -715,12 +715,10 @@ upgrade_scheduler() {
     debug "Upgrading framework scheduler..."
     /usr/bin/docker pull "$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
 
-    DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
-
     if [ "$DEBUG_MODE" == "true" ]; then
-        SET_DEBUG_MODE="--env DEBUG_MODE=true"
+        DOCKER_START="--entrypoint=sh $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c 'sleep 86400'"
     else
-        SET_DEBUG_MODE=""
+        DOCKER_START="$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
     fi
 
     FRAMEWORK_SCHEDULER_NAME="$FRAMEWORK_SCHEDULER_NAME-$(head /dev/urandom | tr -dc '0-9' | head -c 6)"
@@ -736,7 +734,6 @@ upgrade_scheduler() {
 		-v USER_SECRET:/etc/user/secret \
 		--restart=always \
         --name $FRAMEWORK_SCHEDULER_NAME \
-        $SET_DEBUG_MODE \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 		--env RUN_FORCE=$RUN_FORCE \
