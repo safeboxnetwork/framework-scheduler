@@ -2,6 +2,7 @@
 
 cd /scripts
 DEBUG_MODE=${DEBUG_MODE:-false}
+VERSION=1.1.0
 
 #DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
@@ -109,22 +110,165 @@ backup_query_state() {
 
 }
 
+generate_backup_server_secrets () {
+
+        echo '{ 
+            "backupserver":{
+                "SSH_USER":"'$SSH_USER'",
+                "SSH_PORT":"'$SSH_PORT'",
+                "SSH_PASSWORD":"'$SSH_PASSWORD'"
+                "PASSWORD":"'$PASSWORD'",
+                "PERIOD":"'$PERIOD'",
+                "COMPRESSION":"'$COMPRESSION'",
+                "DIRECTORIES":"'$DIRECTORIES'",
+                "SERVICES":"'$SERVICES'",
+                "BACKUP_LOCAL_CLIENTS":"'$BACKUP_LOCAL_CLIENTS'",
+                "BACKUP_VPN_CLIENTS":"'$BACKUP_VPN_CLIENTS'"
+            }
+        }' | jq -r . > /etc/user/secret/backup/server/backup.json
+}
+
+create_backup_service () {
+
+    ADDITIONAL=""
+        ADDITIONAL='"EXTRA":"--rm","PRE_START":[],"DEPEND": [],"CMD":""'
+
+        BACKUP_SERVER='{
+    "main": {
+    "SERVICE_NAME": "backup-server"
+    },
+    "containers": [
+    {
+    "IMAGE": "alpine:latest",
+    "NAME": "backup-init",
+    "NETWORK": "host",
+    "UPDATE": "true",
+    "MEMORY": "64M",
+    "EXTRA": "--rm",
+    "VOLUMES":[
+        {
+        "SOURCE": "USER_DATA",
+        "DEST": "/etc/user/data/",
+        "TYPE": "rw"
+        }
+            ],
+    "ENTRYPOINT": "sh -c",
+    "CMD": "mkdir -p /etc/user/data/backup/server/",
+    "POST_START": []
+    },
+    {
+    "IMAGE": "safebox/backup-server:latest",
+    "NAME": "backupserver",
+    "NETWORK": "'$NETWORK'",
+    "UPDATE": "true",
+    "MEMORY": "64M",
+    "VOLUMES":[
+        {
+        "SOURCE": "USER_DATA",
+        "DEST": "/etc/user/data/",
+        "TYPE": "ro"
+        },
+        {
+        "SOURCE": "USER_CONFIG",
+        "DEST": "/etc/user/config/",
+        "TYPE": "ro"
+        },
+        {
+        "SOURCE": "USER_SECRET",
+        "DEST": "/etc/user/secret/",
+        "TYPE": "ro"
+        },
+        "SOURCE": "/etc/user/data/backup/server/ssh",
+        "DEST": "/home/'$SSH_USER'/",
+        "TYPE": "rw"
+        }
+            ],
+    "ENV_FILES":["/etc/user/secret/backup/server/backup.json"],
+    '$ADDITIONAL'
+    "POST_START": []
+        },
+    ]
+ }' 
+    # create backup server secrets from variables
+    generate_backup_server_secrets
+}
+
 backup_set_service() {
 
-    echo "backup_set_service"
+
+    local PASSWORD="$1"
+    local PERIOD="$2"
+    local COMPRESSION="$3"
+
+    local PLANNED_TIME="$(echo "$4" | base64 -d)"
+    local DIRECTRIES="$5"
+    local SERVICES="$6"
+    local BACKUP_LOCAL_CLIENTS="$7"
+    local BACKUP_VPN_CLIENTS="$8"
+
+    local VPN="$9"
+    local SSH_PORT="${10}"
+    local SSH_USER="${11}"
+    local SSH_PASSWORD="${12}"
+    local OPERATION="${13}"
+
+    if [ "$OPERATION" == "DELETE" ]; then
+
+        sed -i '/service-backup/d' /etc/user/data/cron/crontab.txt
+        # delete service
+        rm -f /etc/user/config/services/service-backup-server*
+        rm -rf /etc/user/data/backup/server
+        rm -rf /etc/user/secret/backup/server
+        debug "Service backup server service deleted."
+
+    elif [ "$OPERATION" == "MODIFY" ]; then
+
+        # modify only secrets for backup server, it will be affected at the next cron job
+        generate_backup_server_secrets
+
+    else
+
+        if [ -z "$SSH_PORT" ] ; then
+            SSH_PORT=20022
+        fi
+
+        if [ "$VPN" == "true" ]; then
+            NETWORK=$VPN_NETWORK
+            create_backup_service
+        else
+            NETWORK="host"
+            create_backup_service
+        fi
+    
+    fi
+
+    if [ -n "$PLANNED_TIME" ]; then
+        if [ "$VPN" == "true" ]; then
+            if [ -n "$BACKUP_SERVER" ] ; then
+                echo "$BACKUP_SERVER" | jq -r . >/etc/user/config/services/service-backup-server-vpn.json
+            fi
+            echo "'$PLANNED_TIME' service service-backup-server-vpn" >> /etc/user/data/cron/crontab.txt 
+        else
+            if [ -n "$BACKUP_SERVER" ] ; then
+             echo "$BACKUP_SERVER" | jq -r . >/etc/user/config/services/service-backup-server-local.json
+            fi
+            echo "'$PLANNED_TIME' service service-backup-server-local" >> /etc/user/data/cron/crontab.txt 
+        fi
+    fi    
+
 
 }
 
 backup_set_client() {
 
-    NAME="$1"
-    SIZE="$2"
-    VPN="$3"
-    SSH_PORT="$4"
-    SSH_USER="$5"
-    SSH_PASSWORD="$6"
-    OPERATION="$7"
-    VPN_KEY="$8"
+    local NAME="$1"
+    local SIZE="$2"
+    local VPN="$3"
+    local SSH_PORT="$4"
+    local SSH_USER="$5"
+    local SSH_PASSWORD="$6"
+    local OPERATION="$7"
+    local VPN_KEY="$8"
 
     if [ "$OPERATION" == "DELETE" ]; then
         # delete service
@@ -152,7 +296,7 @@ backup_set_client() {
         fi
 
         ADDITIONAL=""
-        ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart=always", "PRE_START": [], "DEPEND": [], "CMD": ""'
+        ADDITIONAL='"EXTRA":"--restart=always","PRE_START":[],"DEPEND":[],"CMD": ""'
         ENVS='"ENVS": [{"SSH_USER":"'$SSH_USER'"},{"SSH_PORT":"'$SSH_PORT'"},{"SSH_PASSWORD":"'$SSH_PASSWORD'"},{"VPN_CLIENT_KEY":"'$VPN_KEY'"}],'
 
         echo '{
@@ -163,6 +307,7 @@ backup_set_client() {
     {
     "IMAGE": "alpine:latest",
     "NAME": "'$NAME'-init",
+    "NETWORK": "host",
     "UPDATE": "true",
     "MEMORY": "64M",
     "EXTRA": "--rm",
@@ -174,7 +319,7 @@ backup_set_client() {
         }
             ],
     "ENTRYPOINT": "sh -c",
-    "CMD": "mkdir -p /etc/user/data/backup/clients/'$NAME'/backup && /etc/user/data/backup/clients/'$NAME'/ssh",
+    "CMD": "mkdir -p /etc/user/data/backup/clients/'$NAME'/backup && mkdir -p /etc/user/data/backup/clients/'$NAME'/ssh",
     "POST_START": []
     },
     {
@@ -1136,13 +1281,29 @@ execute_task() {
 
     elif [ "$TASK_NAME" == "backup" ]; then
 
-        TASK_TYPE=$(echo $B64_JSON | base64 -d | jq -r '.TASK_TYPE)')
+        TASK_TYPE=$(echo $B64_JSON | base64 -d | jq -r '.TASK_TYPE')
 
         if [ "$TASK_TYPE" == "backup_query_state" ]; then
             echo "task type is backup_query_state"
 
         elif [ "$TASK_TYPE" == "backup_set_service" ]; then
+
+            PASSWORD="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_SERVER_PASSWORD')"
+            PERIOD="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_PERIOD')"
+            COMPRESSION="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_COMPRESSION')"
+            PLANNED_TIME="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_PLANNED_TIME')"
+            DIRECTRIES="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_DIRECTORIES')"
+            SERVICES="$(echo $B64_JSON | base64 -d | jq -r '.SERVICES')"
+            BACKUP_LOCAL_CLIENTS="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_LOCAL_CLIENTS')"
+            BACKUP_VPN_CLIENTS="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_VPN_CLIENTS')"
+            VPN="$(echo $B64_JSON | base64 -d | jq -r '.VPN')"
+            SSH_PORT="$(echo $B64_JSON | base64 -d | jq -r '.SSH_PORT')"
+            SSH_USER="$(echo $B64_JSON | base64 -d | jq -r '.SSH_USER')"
+            SSH_PASSWORD="$(echo $B64_JSON | base64 -d | jq -r '.SSH_PASSWORD')"
+            OPERATION="$(echo $B64_JSON | base64 -d | jq -r '.OPERATION')"
+
             echo "task type is backup_set_service"
+            backup_set_service "$PASSWORD" "$PERIOD" "$COMPRESSION" "$PLANNED_TIME" "$DIRECTRIES" "$SERVICES" "$BACKUP_LOCAL_CLIENTS" "$BACKUP_VPN_CLIENTS" "$VPN" "$SSH_PORT" "$SSH_USER" "$SSH_PASSWORD" "$OPERATION"
 
         elif [ "$TASK_TYPE" == "backup_set_client" ]; then
             
@@ -1153,14 +1314,8 @@ execute_task() {
             SSH_USER="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_SSH_USER')"
             SSH_PASSWORD="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_SSH_PASSWORD')"
             OPERATION="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_CLIENT_OPERATION')"
+            
             debug "task type is backup_set_client for $NAME"
-            debug "   size: $SIZE"
-            debug "   vpn: $VPN"
-            debug "   ssh_port: $SSH_PORT"
-            debug "   ssh_user: $SSH_USER"
-            debug "   ssh_password: $SSH_PASSWORD"
-            debug "   operation: $OPERATION"
-
             backup_set_client "$NAME" "$SIZE" "$VPN" "$SSH_PORT" "$SSH_USER" "$SSH_PASSWORD" "$OPERATION"
 
         elif [ "$TASK_TYPE" == "backup_challenge_clients" ]; then
@@ -1193,8 +1348,8 @@ execute_task() {
 
             upgrade_scheduler
             echo "Removing old framework scheduler container..."
-            JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":1}' | jq -r . | base64 -w0)
-            add_json_target $NAME
+            JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":1,"VERSION":'$VERSION'}' | jq -r . | base64 -w0)
+            add_json_target $NAME $VERSION
             sleep 1
             /usr/bin/docker rm -f $HOSTNAME
 
