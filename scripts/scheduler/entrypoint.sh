@@ -4,10 +4,6 @@ cd /scripts
 DEBUG_MODE=${DEBUG_MODE:-false}
 VERSION=1.1.0
 
-# Set installed version number
-echo '{}' | jq --arg VERSION "$VERSION" '.VERSION = $VERSION' > /var/tmp/shared/output/version.json
-############################
-
 #DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
 USER_INIT_PATH=$USER_INIT_PATH
@@ -1496,7 +1492,13 @@ DATE=$(date +%F-%H-%M-%S)
 DIR=$SHARED/input
 
 # Triggers by certificate or domain config changes
+# Set installed version number
+echo '{}' | jq --arg VERSION "$VERSION" '.VERSION = $VERSION' > $SHARED/output/version.json
+############################
 
+if [ "$DEBUG_MODE" == "true" ]; then
+    rm $DIR/*
+fi
 unset IFS
 
 inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r $DIR |
