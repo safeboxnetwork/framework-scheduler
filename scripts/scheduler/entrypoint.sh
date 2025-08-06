@@ -510,6 +510,10 @@ get_repositories() {
     local TREES=""
     local REPO
 
+    if [ ! -f "/etc/user/config/repositories.json" ]; then
+        create_repositories_json
+    fi
+
     REPOS=$(jq -r .repositories[] /etc/user/config/repositories.json) # list of repos, delimiter by space
     for REPO in $REPOS; do
 
