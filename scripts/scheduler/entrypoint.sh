@@ -112,6 +112,8 @@ backup_query_state() {
 
 generate_backup_server_secrets () {
 
+        mkdir -p $SECRET_DIR/backup/server
+
         echo '{ 
             "backupserver":{
                 "SSH_USER":"'$SSH_USER'",
@@ -125,7 +127,7 @@ generate_backup_server_secrets () {
                 "BACKUP_LOCAL_CLIENTS":"'$BACKUP_LOCAL_CLIENTS'",
                 "BACKUP_VPN_CLIENTS":"'$BACKUP_VPN_CLIENTS'"
             }
-        }' | jq -r . > /etc/user/secret/backup/server/backup.json
+        }' | jq -r . > $SECRET_DIR/backup/server/backup.json
 }
 
 create_backup_service () {
@@ -320,7 +322,7 @@ backup_set_client() {
         }
             ],
     "ENTRYPOINT": "sh -c",
-    "CMD": "mkdir -p /etc/user/data/backup/clients/'$NAME'/backup && mkdir -p /etc/user/data/backup/clients/'$NAME'/ssh" && chmod -R '$SSH_USER':'$SSH_USER' /etc/user/data/backup/clients/'$NAME'",
+    "CMD": "mkdir -p /etc/user/data/backup/clients/'$NAME'/backup && mkdir -p /etc/user/data/backup/clients/'$NAME'/ssh && chmod -R '$SSH_USER':'$SSH_USER' /etc/user/data/backup/clients/'$NAME'",
     "POST_START": []
     },
     {
@@ -335,13 +337,12 @@ backup_set_client() {
     "VOLUMES":[
         { 
         "SOURCE": "/etc/user/data/backup/clients/'$NAME'/backup",
-        "DEST": "/backup",
-        "TYPE": "rw"
-        },
-        { 
-        "SOURCE": "/etc/user/data/backup/clients/'$NAME'/ssh",
-        "DEST": "/home/'$SSH_USER'/",
-        "TYPE": "rw"
+        "DEST": "/home/'$SSH_USER'/backup",
+        "TYPE": "rw"                   
+        },                       
+        {
+        "SOURCE": "/etc/user/data/backup/clients/'$NAME'/ssh",                   
+        "DEST": "/home/'$SSH_USER'/.ssh",
         }
             ],
     "POST_START": []
@@ -349,8 +350,8 @@ backup_set_client() {
     ]
  }' | jq -r . >/etc/user/config/services/service-backup-client-$NAME.json
 
-        debug "service-backup-client-$NAME.json stop force dns-remove"
-        $service_exec service-backup-client-$NAME.json start &
+        debug "service-backup-client-$NAME.json start info"
+        $service_exec service-backup-client-$NAME.json start info &
 
     fi
 
