@@ -265,7 +265,7 @@ backup_set_client() {
     local NAME="$1"
     local SIZE="$2"
     local VPN="$3"
-    local SSH_PORT="$4"
+    local SSH_PORT="${4:-20022}"
     local SSH_USER="${5:-"backup"}"
     local SSH_PASSWORD="${6:-"backup"}"
     local OPERATION="$7"
