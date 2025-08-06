@@ -1244,9 +1244,9 @@ execute_task() {
             if [ "$CONTAINERS" != "" ]; then
                 UP=$(echo $CONTAINERS | grep -w 'Up')
                 if [ "$UP" != "" ]; then
-                    VPN_STATUS="2"
-                else
                     VPN_STATUS="1"
+                else
+                    VPN_STATUS="2"
                 fi
                 VPN_RESULT=$(echo "$CONTAINERS" | base64 -w0)
             fi
