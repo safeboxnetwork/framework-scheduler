@@ -116,7 +116,7 @@ generate_backup_server_secrets () {
             "backupserver":{
                 "SSH_USER":"'$SSH_USER'",
                 "SSH_PORT":"'$SSH_PORT'",
-                "SSH_PASSWORD":"'$SSH_PASSWORD'"
+                "SSH_PASSWORD":"'$SSH_PASSWORD'",
                 "PASSWORD":"'$PASSWORD'",
                 "PERIOD":"'$PERIOD'",
                 "COMPRESSION":"'$COMPRESSION'",
@@ -153,7 +153,7 @@ create_backup_service () {
         }
             ],
     "ENTRYPOINT": "sh -c",
-    "CMD": "mkdir -p /etc/user/data/backup/server/",
+    "CMD": "mkdir -p /etc/user/data/backup/server/ssh",
     "POST_START": []
     },
     {
@@ -178,15 +178,16 @@ create_backup_service () {
         "DEST": "/etc/user/secret/",
         "TYPE": "ro"
         },
+        {
         "SOURCE": "/etc/user/data/backup/server/ssh",
         "DEST": "/home/'$SSH_USER'/",
         "TYPE": "rw"
         }
             ],
     "ENV_FILES":["/etc/user/secret/backup/server/backup.json"],
-    '$ADDITIONAL'
+    '$ADDITIONAL',
     "POST_START": []
-        },
+        }
     ]
  }' 
     # create backup server secrets from variables
@@ -207,9 +208,9 @@ backup_set_service() {
     local BACKUP_VPN_CLIENTS="$8"
 
     local VPN="$9"
-    local SSH_PORT="${10}"
-    local SSH_USER="${11}"
-    local SSH_PASSWORD="${12}"
+    local SSH_PORT="${10:-20022}"
+    local SSH_USER="${11:-"backup"}"
+    local SSH_PASSWORD="${12:-"backup"}"
     local OPERATION="${13}"
 
     if [ "$OPERATION" == "DELETE" ]; then
@@ -265,8 +266,8 @@ backup_set_client() {
     local SIZE="$2"
     local VPN="$3"
     local SSH_PORT="$4"
-    local SSH_USER="$5"
-    local SSH_PASSWORD="$6"
+    local SSH_USER="${5:-"backup"}"
+    local SSH_PASSWORD="${6:-"backup"}"
     local OPERATION="$7"
     local VPN_KEY="$8"
 
@@ -319,7 +320,7 @@ backup_set_client() {
         }
             ],
     "ENTRYPOINT": "sh -c",
-    "CMD": "mkdir -p /etc/user/data/backup/clients/'$NAME'/backup && mkdir -p /etc/user/data/backup/clients/'$NAME'/ssh",
+    "CMD": "mkdir -p /etc/user/data/backup/clients/'$NAME'/backup && mkdir -p /etc/user/data/backup/clients/'$NAME'/ssh" && chmod -R '$SSH_USER':'$SSH_USER' /etc/user/data/backup/clients/'$NAME'",
     "POST_START": []
     },
     {
@@ -1238,15 +1239,17 @@ execute_task() {
 
         VPN_STATUS="0"
         VPN_RESULT=""
-        CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -w wireguardproxy)
-        if [ "$CONTAINERS" != "" ]; then
-            UP=$(echo $CONTAINERS | grep -w 'Up')
-            if [ "$UP" != "" ]; then
-                VPN_STATUS="2"
-            else
-                VPN_STATUS="1"
+        if [ -f $SECRET_DIR/vpn-proxy/wg0.conf ]; then
+            CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -w wireguardproxy)
+            if [ "$CONTAINERS" != "" ]; then
+                UP=$(echo $CONTAINERS | grep -w 'Up')
+                if [ "$UP" != "" ]; then
+                    VPN_STATUS="2"
+                else
+                    VPN_STATUS="1"
+                fi
+                VPN_RESULT=$(echo "$CONTAINERS" | base64 -w0)
             fi
-            VPN_RESULT=$(echo "$CONTAINERS" | base64 -w0)
         fi
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "'$VPN_STATUS'", "RESULT": "'$VPN_RESULT'" }' | jq -r . | base64 -w0)
 
