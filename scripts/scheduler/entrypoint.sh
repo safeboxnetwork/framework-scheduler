@@ -2,7 +2,7 @@
 
 cd /scripts
 DEBUG_MODE=${DEBUG_MODE:-false}
-VERSION=1.1.0
+VERSION=1.1.1
 
 #DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
@@ -509,6 +509,10 @@ get_repositories() {
     local BASE
     local TREES=""
     local REPO
+
+    if [ ! -f "/etc/user/config/repositories.json" ]; then
+        create_repositories_json
+    fi
 
     REPOS=$(jq -r .repositories[] /etc/user/config/repositories.json) # list of repos, delimiter by space
     for REPO in $REPOS; do
