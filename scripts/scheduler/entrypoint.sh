@@ -887,6 +887,12 @@ upgrade_scheduler() {
         SET_DEBUG_MODE=""
     fi
 
+    if [ -n "$DOCKER_REGISTRY_USERNAME"] && [ -n "$DOCKER_REGISTRY_PASSWORD" ]; then
+        DOCKER_REGISTRY_ENVS="--env DOCKER_REGISTRY_USERNAME=$DOCKER_REGISTRY_USERNAME --env DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD"
+    else
+        DOCKER_REGISTRY_ENVS=""
+    fi
+
     FRAMEWORK_SCHEDULER_NAME="$FRAMEWORK_SCHEDULER_NAME-$(head /dev/urandom | tr -dc '0-9' | head -c 6)"
 
     DOCKER_RUN="/usr/bin/docker run -d \
@@ -900,6 +906,7 @@ upgrade_scheduler() {
 		-v USER_SECRET:/etc/user/secret \
 		--restart=always \
         --name $FRAMEWORK_SCHEDULER_NAME \
+        $DOCKER_REGISTRY_ENVS \
         $SET_DEBUG_MODE \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
