@@ -100,7 +100,9 @@ add_json_target(){
             TASK="upgrade-$TASK_NAME"
         fi
         
-        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
+        if [ -z $SHARED/output/$TASK.json ]; then
+            install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
+        fi
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 }
 
