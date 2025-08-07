@@ -6,6 +6,16 @@ VERSION=1.1.1
 
 #DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
+DOCKER_REGISTRY_USERNAME=$DOCKER_REGISTRY_USERNAME
+DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD
+
+if [ -n "$DOCKER_REGISTRY_USERNAME" ] && [ -n "$DOCKER_REGISTRY_PASSWORD" ]; then
+    echo "Logging in to Docker registry $DOCKER_REGISTRY_URL"
+    echo "$DOCKER_REGISTRY_PASSWORD" | docker login $DOCKER_REGISTRY_URL --username $DOCKER_REGISTRY_USERNAME --password-stdin
+else
+    echo "No Docker registry credentials provided, skipping login."
+fi
+
 USER_INIT_PATH=$USER_INIT_PATH
 GLOBAL_VERSION=${GLOBAL_VERSION:-latest}
 SERVICE_DIR=${SERVICE_DIR:-/etc/user/config/services}
