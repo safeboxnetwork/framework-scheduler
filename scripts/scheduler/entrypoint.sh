@@ -1362,6 +1362,8 @@ execute_task() {
             sleep 1
             /usr/bin/docker rm -f $HOSTNAME
 
+            JSON_TARGET="" # do not create upgrade.json
+
             #CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E 'framework-scheduler|webserver')
         else
             echo "Upgrading service: $NAME"
