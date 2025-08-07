@@ -913,6 +913,7 @@ upgrade_scheduler() {
 		--env RUN_FORCE=$RUN_FORCE \
 		--env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
 	  $DOCKER_START"
+    echo "DOCKER RUN: $DOCKER_RUN"
     eval "$DOCKER_RUN"
 }
 
