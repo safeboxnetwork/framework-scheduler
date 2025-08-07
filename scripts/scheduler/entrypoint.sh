@@ -518,7 +518,9 @@ get_repositories() {
             GIT_HTTP_CONNECT_TIMEOUT=10 GIT_HTTP_TIMEOUT=30 git clone $REPO /tmp/$BASE >/dev/null
         else
             cd /tmp/$BASE
-            GIT_HTTP_CONNECT_TIMEOUT=10 GIT_HTTP_TIMEOUT=30 git pull >/dev/null
+            echo "Starting git pull for $BASE"
+            GIT_HTTP_CONNECT_TIMEOUT=10 GIT_HTTP_TIMEOUT=30 git pull
+            echo
         fi
         if [ -f "/tmp/$BASE/applications-tree.json" ]; then
             TREES=$TREES" /tmp/$BASE/applications-tree.json"
