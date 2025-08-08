@@ -3,7 +3,7 @@
 cd /scripts
 DEBUG_MODE=${DEBUG_MODE:-false}
 
-VERSION="1.1.2"
+VERSION="1.1.1"
 
 #DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
@@ -1377,7 +1377,7 @@ execute_task() {
 
             upgrade_scheduler
             echo "Removing old framework scheduler container..."
-            JSON_TARGET=$(echo '{"DATE":"'$DATE'","STATUS":2,"VERSION":"'$VERSION'""}' | jq -r . | base64 -w0)
+            JSON_TARGET=$(echo '{"DATE":"'$DATE'","STATUS":2,"VERSION":"'$VERSION'"}' | jq -r . | base64 -w0)
             add_json_target $NAME
             sleep 1
             /usr/bin/docker rm -f $HOSTNAME
