@@ -1364,7 +1364,7 @@ execute_task() {
         JSON="$(echo $B64_JSON | base64 -d)"
         NAME=$(echo "$JSON" | jq -r .NAME | awk '{print tolower($0)}')
         if [ "$NAME" == "framework" ]; then
-            JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":0}' | jq -r . | base64 -w0)
+            JSON_TARGET=$(echo '{"DATE":"'$DATE'","STATUS":1}' | jq -r . | base64 -w0)
             add_json_target $NAME
             echo "Upgrading service: webserver"
             upgrade webserver
@@ -1377,7 +1377,7 @@ execute_task() {
 
             upgrade_scheduler
             echo "Removing old framework scheduler container..."
-            JSON_TARGET=$(echo '{"DATE":"'$DATE'","INSTALL_STATUS":1,"VERSION":"'$VERSION'""}' | jq -r . | base64 -w0)
+            JSON_TARGET=$(echo '{"DATE":"'$DATE'","STATUS":2,"VERSION":"'$VERSION'""}' | jq -r . | base64 -w0)
             add_json_target $NAME
             sleep 1
             /usr/bin/docker rm -f $HOSTNAME
