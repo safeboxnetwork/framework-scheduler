@@ -1508,7 +1508,7 @@ fi
 #RS=$(docker ps | grep redis-server)
 WS=$(/usr/bin/docker ps | grep -o webserver)
 
-if [ "$WS" == "" ]; then
+if [ "$WS" == "" ] && [ ! -f $SHARED/output/upgrade-framework.json ]; then
     # START SERVICES
     echo "Starting webserver"
     $service_exec service-framework.containers.webserver start &
