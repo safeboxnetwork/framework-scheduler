@@ -565,6 +565,9 @@ check_volumes() {
     if [ ! -d "/var/tmp/shared" ]; then
         /usr/bin/docker volume create SHARED
         RET=0
+    else
+        rm -rf /var/tmp/shared/input/*
+        rm -rf /var/tmp/shared/output/*
     fi
 
     if [ ! -d "/etc/system/data/" ]; then
@@ -1370,11 +1373,6 @@ execute_task() {
             upgrade webserver
 
             echo "Upgrading framework scheduler..."
-            echo "Cleaning temporary files..."
-            
-            rm -rf /var/tmp/shared/input/*
-            rm -rf /var/tmp/shared/output/*
-
             upgrade_scheduler
             echo "Removing old framework scheduler container..."
             JSON_TARGET=$(echo '{"DATE":"'$DATE'","STATUS":2,"VERSION":"'$VERSION'"}' | jq -r . | base64 -w0)
