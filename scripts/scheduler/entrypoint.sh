@@ -3,7 +3,7 @@
 cd /scripts
 DEBUG_MODE=${DEBUG_MODE:-false}
 
-VERSION="1.1.3"
+VERSION="1.1.4"
 
 #DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
@@ -1392,9 +1392,9 @@ execute_task() {
         sh /scripts/check_pid.sh "$PID" "$SHARED" "$TASK_NAME-$NAME" "$DATE" "$DEBUG" &
     fi
 
-    if [ "$TASK_NAME" != "check_vpn" ]; then
-        debug "JSON_TARGET: $JSON_TARGET"
-    fi
+#    if [ "$TASK_NAME" != "check_vpn" ]; then
+#        debug "JSON_TARGET: $JSON_TARGET"
+#    fi
 
     if [ "$JSON_TARGET" != "" ]; then
         add_json_target
