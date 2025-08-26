@@ -142,23 +142,27 @@ generate_backup_server_secrets () {
 
         echo '{ 
             "backupserver":{
+                "SSH_HOST":"'$SSH_HOST'",
                 "SSH_USER":"'$SSH_USER'",
                 "SSH_PORT":"'$SSH_PORT'",
                 "SSH_PASSWORD":"'$SSH_PASSWORD'",
-                "PASSWORD":"'$PASSWORD'",
+                "BACKUP_PASSWORD":"'$BACKUP_PASSWORD'",
                 "PERIOD":"'$PERIOD'",
                 "COMPRESSION":"'$COMPRESSION'",
                 "DIRECTORIES":"'$DIRECTORIES'",
-                "SERVICES":"'$SERVICES'",
-                "BACKUP_LOCAL_CLIENTS":"'$BACKUP_LOCAL_CLIENTS'",
-                "BACKUP_VPN_CLIENTS":"'$BACKUP_VPN_CLIENTS'"
+                "SERVICES":"'$SERVICES'"
             }
         }' | jq -r . > $SECRET_DIR/backup/server/backup.json
 }
 
 defaulting_missing_paramaters() {
+
+    if [ "$SSH_HOST" == "" ] || [ "$SSH_HOST" == "null" ]; then
+        SSH_HOST="localhost"
+    fi
+
     if [ "$SSH_PORT" == "" ] || [ "$SSH_PORT" == "null" ]; then
-        SSH_PORT="10022"
+        SSH_PORT="20022"
     fi
 
     if [ "$SSH_USER" == "" ] || [ "$SSH_USER" == "null" ]; then
@@ -238,22 +242,20 @@ create_backup_service () {
 
 backup_set_service() {
 
-
-    local PASSWORD="$1"
+    local BACKUP_PASSWORD="$1"
     local PERIOD="$2"
     local COMPRESSION="$3"
 
     local PLANNED_TIME="$(echo "$4" | base64 -d)"
     local DIRECTRIES="$5"
     local SERVICES="$6"
-    local BACKUP_LOCAL_CLIENTS="$7"
-    local BACKUP_VPN_CLIENTS="$8"
+    local SSH_HOST="$7"
 
-    local VPN="$9"
-    local SSH_PORT="${10}"
-    local SSH_USER="${11}"
-    local SSH_PASSWORD="${12}"
-    local OPERATION="${13}"
+    local VPN="$8"
+    local SSH_PORT="$9"
+    local SSH_USER="${10}"
+    local SSH_PASSWORD="${11}"
+    local OPERATION="${12}"
 
     defaulting_missing_paramaters
 
@@ -1339,7 +1341,7 @@ execute_task() {
 
         elif [ "$TASK_TYPE" == "backup_set_service" ]; then
 
-            PASSWORD="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_SERVER_PASSWORD')"
+            BACKUP_PASSWORD="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_SERVER_PASSWORD')"
             PERIOD="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_PERIOD')"
             COMPRESSION="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_COMPRESSION')"
             PLANNED_TIME="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_PLANNED_TIME')"
@@ -1348,13 +1350,14 @@ execute_task() {
             BACKUP_LOCAL_CLIENTS="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_LOCAL_CLIENTS')"
             BACKUP_VPN_CLIENTS="$(echo $B64_JSON | base64 -d | jq -r '.BACKUP_VPN_CLIENTS')"
             VPN="$(echo $B64_JSON | base64 -d | jq -r '.VPN')"
+            SSH_HOST="$(echo $B64_JSON | base64 -d | jq -r '.SSH_HOST')"
             SSH_PORT="$(echo $B64_JSON | base64 -d | jq -r '.SSH_PORT')"
             SSH_USER="$(echo $B64_JSON | base64 -d | jq -r '.SSH_USER')"
             SSH_PASSWORD="$(echo $B64_JSON | base64 -d | jq -r '.SSH_PASSWORD')"
             OPERATION="$(echo $B64_JSON | base64 -d | jq -r '.OPERATION')"
 
             echo "task type is backup_set_service"
-            backup_set_service "$PASSWORD" "$PERIOD" "$COMPRESSION" "$PLANNED_TIME" "$DIRECTRIES" "$SERVICES" "$BACKUP_LOCAL_CLIENTS" "$BACKUP_VPN_CLIENTS" "$VPN" "$SSH_PORT" "$SSH_USER" "$SSH_PASSWORD" "$OPERATION"
+            backup_set_service "$BACKUP_PASSWORD" "$PERIOD" "$COMPRESSION" "$PLANNED_TIME" "$DIRECTRIES" "$SERVICES" "$SSH_HOST" "$VPN" "$SSH_PORT" "$SSH_USER" "$SSH_PASSWORD" "$OPERATION"
 
         elif [ "$TASK_TYPE" == "backup_set_client" ]; then
             
