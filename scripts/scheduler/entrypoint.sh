@@ -326,7 +326,7 @@ backup_set_client() {
 
         ADDITIONAL=""
         ADDITIONAL='"EXTRA":"--restart=always","PRE_START":[],"DEPEND":[],"CMD": ""'
-        ENVS='"ENVS": [{"SSH_USER":"'$SSH_USER'"},{"SSH_PORT":"'$SSH_PORT'"},{"SSH_PASSWORD":"'$SSH_PASSWORD'"},{"VPN_CLIENT_KEY":"'$VPN_KEY'"}],'
+        ENVS='"ENVS":[{"SSH_USER":"'$SSH_USER'"},{"SSH_PORT":"'$SSH_PORT'"},{"SSH_PASSWORD":"'$SSH_PASSWORD'"},{"VPN_CLIENT_KEY":"'$VPN_KEY'"}],'
 
         echo '{
     "main": {
@@ -369,6 +369,7 @@ backup_set_client() {
         {
         "SOURCE": "/etc/user/data/backup/clients/'$NAME'/ssh",                   
         "DEST": "/home/'$SSH_USER'/.ssh",
+        "TYPE": "rw"
         }
             ],
     "POST_START": []
