@@ -156,6 +156,20 @@ generate_backup_server_secrets () {
         }' | jq -r . > $SECRET_DIR/backup/server/backup.json
 }
 
+defaulting_missing_paramaters() {
+    if [ "$SSH_PORT" == "" ] || [ "$SSH_PORT" == "null" ]; then
+        SSH_PORT="10022"
+    fi
+
+    if [ "$SSH_USER" == "" ] || [ "$SSH_USER" == "null" ]; then
+        SSH_USER="backup"
+    fi
+
+    if [ "$SSH_PASSWORD" == "" ] || [ "$SSH_PASSWORD" == "null" ]; then
+        SSH_PASSWORD="backup"
+    fi
+}
+
 create_backup_service () {
 
     ADDITIONAL=""
@@ -236,10 +250,12 @@ backup_set_service() {
     local BACKUP_VPN_CLIENTS="$8"
 
     local VPN="$9"
-    local SSH_PORT="${10:-20022}"
-    local SSH_USER="${11:-"backup"}"
-    local SSH_PASSWORD="${12:-"backup"}"
+    local SSH_PORT="${10}"
+    local SSH_USER="${11}"
+    local SSH_PASSWORD="${12}"
     local OPERATION="${13}"
+
+    defaulting_missing_paramaters
 
     if [ "$OPERATION" == "DELETE" ]; then
 
@@ -293,11 +309,13 @@ backup_set_client() {
     local NAME="$1"
     local SIZE="$2"
     local VPN="$3"
-    local SSH_PORT="${4:-20022}"
-    local SSH_USER="${5:-"backup"}"
-    local SSH_PASSWORD="${6:-"backup"}"
+    local SSH_PORT="$4"
+    local SSH_USER="$5"
+    local SSH_PASSWORD="$6"
     local OPERATION="$7"
     local VPN_KEY="$8"
+
+    defaulting_missing_paramaters
 
     if [ "$OPERATION" == "DELETE" ]; then
         # delete service
