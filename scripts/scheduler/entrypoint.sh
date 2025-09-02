@@ -944,6 +944,10 @@ upgrade_scheduler() {
 upgrade() {
     local NAME=$1
 
+    if ! echo "$NAME" | grep -q '\.'; then
+        NAME="$NAME.json"
+    fi
+
     if [ "$NAME" == "webserver" ]; then
         debug "$service_exec service-framework.containers.$NAME stop force"
         $service_exec service-framework.containers.$NAME stop force
@@ -951,10 +955,10 @@ upgrade() {
         $service_exec service-framework.containers.$NAME start info &
     else
 
-        debug "$service_exec $NAME.json stop force"
-        $service_exec $NAME.json stop force
-        debug "$service_exec $NAME.json start info"
-        $service_exec $NAME.json start info &
+        debug "$service_exec $NAME stop force"
+        $service_exec $NAME stop force
+        debug "$service_exec $NAME start info"
+        $service_exec $NAME start info &
 
     fi
 
