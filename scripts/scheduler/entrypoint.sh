@@ -103,6 +103,7 @@ $VOLUME_MOUNTS \
 --env SETUP_VERSION=$SETUP_VERSION \
 --env GLOBAL_VERSION=$GLOBAL_VERSION \
 --env HOST_FILE=$HOST_FILE \
+-w /etc/user/config/services/ \
  $SET_DEBUG_MODE \
  $DOCKER_REGISTRY_ENVS \
 $DOCKER_REGISTRY_URL$SETUP:$SETUP_VERSION"
@@ -920,6 +921,7 @@ upgrade_scheduler() {
     FRAMEWORK_SCHEDULER_NAME="$FRAMEWORK_SCHEDULER_NAME-$(head /dev/urandom | tr -dc '0-9' | head -c 6)"
 
     DOCKER_RUN="/usr/bin/docker run -d \
+        -w /etc/user/config/services/ \
         -v SHARED:/var/tmp/shared \
 	  	-v /var/run/docker.sock:/var/run/docker.sock \
 		-v SYSTEM_DATA:/etc/system/data \
