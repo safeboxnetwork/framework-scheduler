@@ -255,7 +255,7 @@ if [ "$INIT" == "true" ]; then
     if [ "$SMARTHOST_PROXY" == "yes" ]; then
         $SERVICE_EXEC smarthost-proxy start
         $SERVICE_EXEC smarthost-proxy-scheduler start
-        $SERVICE_EXEC local-proxy start
+        $SERVICE_EXEC local-loadbalancer start
 
         echo "$INIT_SERVICE_PATH/smarthost-proxy.json" >>$AUTO_START_SERVICES/.init_services
         echo "$INIT_SERVICE_PATH/firewall-smarthost-loadbalancer-dns.json" >>$AUTO_START_SERVICES/.init_services
@@ -264,7 +264,7 @@ if [ "$INIT" == "true" ]; then
         echo "$INIT_SERVICE_PATH/firewall-smarthost-backend-dns.json" >>$AUTO_START_SERVICES/.init_services
         echo "$INIT_SERVICE_PATH/firewall-smarthost-to-backend.json" >>$AUTO_START_SERVICES/.init_services
         echo "$INIT_SERVICE_PATH/smarthost-proxy-scheduler.json" >>$AUTO_START_SERVICES/.init_services
-        echo "$INIT_SERVICE_PATH/local-proxy.json" >>$AUTO_START_SERVICES/.init_services
+        echo "$INIT_SERVICE_PATH/local-loadbalancer.json" >>$AUTO_START_SERVICES/.init_services
 
         if [ "$LOCAL_BACKEND" == "yes" ]; then
             $SERVICE_EXEC local-backend start
