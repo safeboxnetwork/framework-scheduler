@@ -1,0 +1,65 @@
+SafeBox / framework-scheduler
+Combined Licensing Notice (Version 1.0)
+
+You may choose to use this software under EITHER:
+  (A) Mozilla Public License 2.0 (preferred for contributing improvements), OR
+  (B) A permissive MIT-style license for unmodified use of the public API surface and example code.
+
+========================================================================
+A. Mozilla Public License 2.0
+========================================================================
+The core source files of framework-scheduler are made available under the MPL 2.0.
+Only files you modify or create that are based on MPL-covered files must be shared under MPL 2.0 when distributed.
+Unmodified surrounding code, plugins, or separate modules may remain under any license.
+
+Full text (do not remove this link):
+https://www.mozilla.org/MPL/2.0/
+
+You MUST keep:
+  - Copyright notices
+  - License reference (this file or a pointer to MPL 2.0)
+  - Notices of changes inside changed files (at top or in a CHANGES log)
+
+========================================================================
+B. MIT-Style License (for examples, integration stubs, and explicitly marked files)
+========================================================================
+The files explicitly marked with: 
+  SPDX-License-Identifier: MIT
+are licensed under the following permission notice:
+
+Permission is granted to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of those MIT-marked files, subject to including the above SPDX line and this permission notice.
+
+Those MIT-marked files are provided “AS IS”, without warranty of any kind.
+
+========================================================================
+PATENTS
+========================================================================
+Contributors grant a royalty-free patent license to their contributions under the same terms as the chosen option (MPL 2.0 already includes this; MIT-marked files rely on implied patent rights to the extent allowed by law). If you submit code, you affirm you have the right to do so.
+
+========================================================================
+TRADEMARK
+========================================================================
+“SafeBox” trademarks are not licensed. You may describe factual use (e.g., “Built with framework-scheduler”) but not imply endorsement.
+
+========================================================================
+HOW TO CONTRIBUTE
+========================================================================
+1. Fork, modify, keep file-level notices.
+2. Add SPDX-License-Identifier: MPL-2.0 to MPL source files you create.
+3. For examples or snippets you want maximally permissive, use SPDX-License-Identifier: MIT.
+4. Submit a pull request; by doing so you agree your contribution is licensed under the same dual-option scheme.
+
+========================================================================
+QUICK SUMMARY (Not a substitute for the licenses)
+========================================================================
+- Modify core? Share modifications to the modified files (MPL path).
+- Build proprietary plugin? Keep it separate; OK under MPL rules.
+- Want to copy an example verbatim into closed code? Use MIT-marked files.
+- Distribute a product including modified core? Provide source to the modified MPL files.
+
+========================================================================
+DISCLAIMER
+========================================================================
+THIS SOFTWARE IS PROVIDED “AS IS” WITHOUT WARRANTY OR LIABILITY, TO THE MAXIMUM EXTENT PERMITTED BY LAW.
+
+End of LICENCE.txt
