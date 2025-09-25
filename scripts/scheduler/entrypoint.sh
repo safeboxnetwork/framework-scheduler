@@ -3,7 +3,7 @@
 cd /scripts
 DEBUG_MODE=${DEBUG_MODE:-false}
 
-VERSION="1.1.5"
+VERSION="1.1.6"
 
 #DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
@@ -92,7 +92,7 @@ mkdir -p $CA_PATH
 
 VOLUME_MOUNTS="-v SYSTEM_DATA:/etc/system/data -v SYSTEM_CONFIG:/etc/system/config -v SYSTEM_LOG:/etc/system/log -v USER_DATA:/etc/user/data -v USER_CONFIG:/etc/user/config -v USER_SECRET:/etc/user/secret"
 
-service_exec="/usr/bin/docker run --rm \
+service_exec="docker run --rm \
 $DNS \
 $CA \
 -w /etc/user/config/services/ \
@@ -585,7 +585,7 @@ check_volumes() {
 
     RET=1
     if [ ! -d "/var/tmp/shared" ]; then
-        /usr/bin/docker volume create SHARED
+        docker volume create SHARED
         RET=0
     else
         rm -rf /var/tmp/shared/input/*
@@ -593,27 +593,27 @@ check_volumes() {
     fi
 
     if [ ! -d "/etc/system/data/" ]; then
-        /usr/bin/docker volume create SYSTEM_DATA
+        docker volume create SYSTEM_DATA
         RET=0
     fi
     if [ ! -d "/etc/system/config/" ]; then
-        /usr/bin/docker volume create SYSTEM_CONFIG
+        docker volume create SYSTEM_CONFIG
         RET=0
     fi
     if [ ! -d "/etc/system/log/" ]; then
-        /usr/bin/docker volume create SYSTEM_LOG
+        docker volume create SYSTEM_LOG
         RET=0
     fi
     if [ ! -d "/etc/user/data/" ]; then
-        /usr/bin/docker volume create USER_DATA
+        docker volume create USER_DATA
         RET=0
     fi
     if [ ! -d "/etc/user/config/" ]; then
-        /usr/bin/docker volume create USER_CONFIG
+        docker volume create USER_CONFIG
         RET=0
     fi
     if [ ! -d "/etc/user/secret/" ]; then
-        /usr/bin/docker volume create USER_SECRET
+        docker volume create USER_SECRET
         RET=0
     fi
     echo $RET
@@ -663,7 +663,7 @@ check_dirs_and_files() {
 check_subnets() {
 
     RET=1
-    SUBNETS=$(for ALL in $(/usr/bin/docker network ls | grep bridge | awk '{print $1}'); do /usr/bin/docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}'; done)
+    SUBNETS=$(for ALL in $(docker network ls | grep bridge | awk '{print $1}'); do docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}'; done)
     RES=$(echo "$SUBNETS" | grep "172.19.")
     if [ "$RES" != "" ]; then
         for R in $RES; do
@@ -672,6 +672,8 @@ check_subnets() {
                 RET=0
             fi
         done
+    elif docker network ls | grep framework-network; then
+        RET=0
     fi
     echo $RET
 }
@@ -685,11 +687,11 @@ check_framework_scheduler_status() {
         RET=0
     else
         desired_subnet=$FRAMEWORK_SCHEDULER_NETWORK_SUBNET
-        existing_subnets=$(/usr/bin/docker network inspect $(/usr/bin/docker network ls -q) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
+        existing_subnets=$(docker network inspect $(docker network ls -q) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
 
         # Check if the desired subnet is in the list of existing subnets
         if echo "$existing_subnets" | grep -q "$desired_subnet"; then
-            if [ "$(/usr/bin/docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" != "$FRAMEWORK_NETWORK_SUBNET" ]; then
+            if [ "$(docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" != "$FRAMEWORK_NETWORK_SUBNET" ]; then
                 RET=0
             fi
         else
@@ -900,7 +902,7 @@ check_update() {
         debug "$REMOTE_URL not accessible, http error code: $CURL_CHECK_CODE"
 
         echo "Force image pull has started without digest check..."
-        DOCKER_PULL="/usr/bin/docker pull $IMAGE"
+        DOCKER_PULL="docker pull $IMAGE"
         eval $DOCKER_PULL
         STATUS=$?
         debug "PULL STATUS: $STATUS"
@@ -916,11 +918,11 @@ upgrade_scheduler() {
 
     # Upgrading framework scheduler
     debug "Upgrading framework scheduler..."
-    /usr/bin/docker pull "$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
+    docker pull "$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
 
     FRAMEWORK_SCHEDULER_NAME="$FRAMEWORK_SCHEDULER_NAME-$(head /dev/urandom | tr -dc '0-9' | head -c 6)"
 
-    DOCKER_RUN="/usr/bin/docker run -d \
+    DOCKER_RUN="docker run -d \
         -w /etc/user/config/services/ \
         -v SHARED:/var/tmp/shared \
 	  	-v /var/run/docker.sock:/var/run/docker.sock \
@@ -1404,7 +1406,7 @@ execute_task() {
             JSON_TARGET=$(echo '{"DATE":"'$DATE'","STATUS":2,"VERSION":"'$VERSION'"}' | jq -r . | base64 -w0)
             add_json_target $NAME
             sleep 1
-            /usr/bin/docker rm -f $HOSTNAME
+            docker rm -f $HOSTNAME
 
             JSON_TARGET="" # do not create upgrade.json
 
@@ -1513,13 +1515,13 @@ if [ "$SN" != "1" ]; then
 fi
 STATUS=$(check_framework_scheduler_status $HOSTNAME)
 if [ "$STATUS" != "1" ]; then
-    /usr/bin/docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_SCHEDULER_NETWORK_SUBNET
+    docker network create $FRAMEWORK_SCHEDULER_NETWORK --subnet $FRAMEWORK_SCHEDULER_NETWORK_SUBNET
 fi
 
 VOL=$(check_volumes)
 if [ "$VOL" != "1" ]; then
     upgrade_scheduler
-    /usr/bin/docker rm -f $HOSTNAME
+    docker rm -f $HOSTNAME
 fi
 
 DF=$(check_dirs_and_files)
@@ -1530,7 +1532,7 @@ if [ "$DF" != "1" ]; then
 fi
 
 #RS=$(docker ps | grep redis-server)
-WS=$(/usr/bin/docker ps | grep -o webserver)
+WS=$(docker ps | grep -o webserver)
 
 if [ "$WS" == "" ] && [ ! -f $SHARED/output/upgrade-framework.json ]; then
     # START SERVICES
