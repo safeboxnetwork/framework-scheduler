@@ -673,7 +673,7 @@ check_subnets() {
             fi
         done
     elif docker network ls | grep framework-network; then
-        RET=0
+        RET=1
     fi
     echo $RET
 }
