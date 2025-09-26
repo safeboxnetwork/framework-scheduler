@@ -665,15 +665,13 @@ check_subnets() {
     RET=1
     SUBNETS=$(for ALL in $(docker network ls | grep bridge | awk '{print $1}'); do docker network inspect $ALL --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}'; done)
     RES=$(echo "$SUBNETS" | grep "172.19.")
-    if [ "$RES" != "" ]; then
+    if [ "$RES" != "" ] && [ ! docker network ls | grep framework-network ]; then
         for R in $RES; do
             NUMBER=$(echo $R | cut -d '.' -f3)
             if [[ $NUMBER -ge 0 && $NUMBER -le 254 ]]; then
                 RET=0
             fi
         done
-    elif docker network ls | grep framework-network; then
-        RET=1
     fi
     echo $RET
 }
