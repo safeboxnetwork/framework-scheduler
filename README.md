@@ -17,7 +17,7 @@ You can find the current version of the web-installer image on [Docker Hub](http
 
 ## How to Use
 
-## Running the Container
+### Running the Container
 
 ```bash
   docker run \
@@ -26,7 +26,7 @@ You can find the current version of the web-installer image on [Docker Hub](http
   safebox/framework-scheduler:latest
 ```
 
-## Build your own image
+### Build your own image
 To build the framework-scheduler image from the source code, follow these steps:
 1. Clone the repository:
    ```bash
@@ -42,3 +42,19 @@ To build the framework-scheduler image from the source code, follow these steps:
    docker run --rm -e DOCKER_REGISTRY_URL=<your docker registry> -v /var/run/docker.sock:/var/run/docker.sock <your docker registry>/framework-scheduler:latest
    ```
 Keep in mind to replace `<your docker registry>` with your actual Docker registry URL because the image will use the fallback docker registry url as 'safebox' .
+
+### Environment Variables
+The following environment variables can be set to configure the framework-scheduler:
+If you want to push the image to a private docker registry you need to set these environment variables:
+| Environment Variable | Description |
+|---------------------|-------------|
+| DOCKER_REGISTRY_URL | Docker registry URL for image operations |
+| DOCKER_REGISTRY_USERNAME | Username for Docker registry authentication |
+| DOCKER_REGISTRY_PASSWORD | Password for Docker registry authentication 
+
+The framework-scheduler web interface used the localhost 8080 port by default, you can change it with this environment variable:
+| Environment Variable | Description |
+|---------------------|-------------|
+| WEBSERVER_PORT | Port number for the web interface. Default: 8080. |
+
+
