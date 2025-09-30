@@ -57,4 +57,8 @@ The framework-scheduler web interface used the localhost 8080 port by default, y
 |---------------------|-------------|
 | WEBSERVER_PORT | Port number for the web interface. Default: 8080. |
 
-
+## TODO
+The framework-scheduler is under active development. Future plans include:
+- Backup and restore functionality for challenge clients with different users' safebox platforms.
+- Enhanced monitoring and alerting features.
+- Enhanced disk space management and alerting features also.
