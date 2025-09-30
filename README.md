@@ -13,8 +13,7 @@ The framework-scheduler is a part of the Safebox platform. For the full function
 You can find the current version of the web-installer image on [Docker Hub](https://hub.docker.com/r/safebox/web-installer). The source code repository you can find here: https://git.format.hu/safebox/web-installer
 
 ## Screenshots
-
-*Screenshots will be added as the project develops*
+![Framework Scheduler Screenshot](./resources/framework_scheduler_main.png)
 
 ## How to Use
 
@@ -40,6 +39,6 @@ To build the framework-scheduler image from the source code, follow these steps:
    ```
 3. Run the container:
    ```bash
-   docker run --rm -e DOCKER_REGISTRY_URL='<your docker registry>' -v /var/run/docker.sock:/var/run/docker.sock framework-scheduler:latest
+   docker run --rm -e DOCKER_REGISTRY_URL=<your docker registry> -v /var/run/docker.sock:/var/run/docker.sock <your docker registry>/framework-scheduler:latest
    ```
 Keep in mind to replace `<your docker registry>` with your actual Docker registry URL because the image will use the fallback docker registry url as 'safebox' .
