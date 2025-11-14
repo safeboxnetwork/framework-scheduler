@@ -25,11 +25,23 @@ docker run \
     safebox/framework-scheduler:latest
 ```
 
+### Alternative way to deploy via command line
+```bash
+curl https://raw.githubusercontent.com/safeboxnetwork/framework-scheduler/refs/heads/main/development/installer.sh | bash
+```
+bash 
+
+**Please note:** This method is recommended only for quick tests and development purposes. Avoid using it in production environments.
+
+### Accessing the Web Interface
+Once the container is running, you can access the web interface by navigating to `http://<host-ip>:8080` in your web browser. Replace `<host-ip>` with the IP address of the host machine where the container is running.
+
+
 ### Build Your Own Image
 To build the Framework Scheduler image from the source code, follow these steps:
 1. Clone the repository:
      ```bash
-     git clone https://git.format.hu/safebox/framework-scheduler.git
+     git clone https://github.com/safebox/framework-scheduler.git
      cd framework-scheduler
      ```
 2. Build the Docker image:
