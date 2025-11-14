@@ -29,7 +29,6 @@ docker run \
 ```bash
 curl https://raw.githubusercontent.com/safeboxnetwork/framework-scheduler/refs/heads/main/development/installer.sh | bash
 ```
-bash 
 
 **Please note:** This method is recommended only for quick tests and development purposes. Avoid using it in production environments.
 
