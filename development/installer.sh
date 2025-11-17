@@ -137,9 +137,6 @@ if ! [ -x "$(command -v docker)" ]; then
     "ubuntu" | "debian" | "raspbian")
         if ! [ -x "$(command -v docker)" ]; then
 
-            $SUDO_CMD update-alternatives --set iptables /usr/sbin/iptables-legacy
-            $SUDO_CMD update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
-
             echo " - Automated Docker installation failed. Trying manual installation."
             echo exit 101 > /tmp/p-rc; $SUDO_CMD mv /tmp/p-rc /usr/sbin/policy-rc.d
             $SUDO_CMD chmod +x /usr/sbin/policy-rc.d
@@ -160,8 +157,19 @@ if ! [ -x "$(command -v docker)" ]; then
             fi
 
             $SUDO_CMD apt-get install --no-install-recommends docker-ce docker-ce-cli containerd.io -y
+            $SUDO_CMD mkdir -p /etc/docker
+
+            if [ ! -f /etc/docker/daemon.json ]; then
+            $SUDO_CMD bash -c 'cat > /etc/docker/daemon.json << EOF
+{
+  "iptables": true,
+  "firewall-backend": "nftables"
+}
+EOF'
+            fi
+
         fi
-        $SUDO_CMD systemctl start docker >/dev/null 2>&1
+        $SUDO_CMD systemctl restart docker >/dev/null 2>&1
         $SUDO_CMD systemctl enable docker >/dev/null 2>&1
 
         echo "Debian installation complete."
@@ -178,4 +186,5 @@ else
 fi
 
 echo "Starting deploy Safebox containers"
+
 $SUDO_CMD docker run --rm -e RUN_FORCE=true -v /var/run/docker.sock:/var/run/docker.sock safebox/framework-scheduler:latest
