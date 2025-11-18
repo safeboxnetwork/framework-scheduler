@@ -157,16 +157,6 @@ if ! [ -x "$(command -v docker)" ]; then
             fi
 
             $SUDO_CMD apt-get install --no-install-recommends docker-ce docker-ce-cli containerd.io -y
-            $SUDO_CMD mkdir -p /etc/docker
-
-            if [ ! -f /etc/docker/daemon.json ]; then
-            $SUDO_CMD bash -c 'cat > /etc/docker/daemon.json << EOF
-{
-  "iptables": true,
-  "firewall-backend": "nftables"
-}
-EOF'
-            fi
 
         fi
         $SUDO_CMD systemctl restart docker >/dev/null 2>&1
