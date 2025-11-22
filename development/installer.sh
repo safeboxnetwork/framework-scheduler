@@ -175,6 +175,13 @@ else
     echo " - Docker is installed."
 fi
 
+$SUDO_CMD bash -c 'cat > /etc/systemd/system/docker.service.d/insecure_direct_routing.conf << EOF
+[Service]
+Environment="DOCKER_INSECURE_NO_IPTABLES_RAW=1"
+EOF'
+systemctl daemon-reload
+systemctl restart docker
+
 echo "Starting deploy Safebox containers"
 
 $SUDO_CMD docker run --rm -e RUN_FORCE=true -v /var/run/docker.sock:/var/run/docker.sock safebox/framework-scheduler:latest
