@@ -20,8 +20,7 @@ The Safebox solution is not the first attempt to bring together third‑party st
 It is important to emphasize that Safebox does not aim to be just another software installer solution or yet another cloud‑based storage service. Our goal is to create a well‑manageable, easy‑to‑understand software platform that enables users to build their own data storage infrastructure, providing solutions equivalent to those of large providers, but without their disadvantages. The main characteristics of the Safebox platform are the following:
 </p>
 
-<p align="justify">
-**Can be used without a subscription –** The Safebox platform can be used without a subscription, as its core features are fully available without any ongoing fees. Users can install and manage services, store and access data locally, and access their data over the local network without any subscription.
+**Can be used without a subscription –**<p align="justify">The Safebox platform can be used without a subscription, as its core features are fully available without any ongoing fees. Users can install and manage services, store and access data locally, and access their data over the local network without any subscription.
 </p>
 
 <p align="justify">
