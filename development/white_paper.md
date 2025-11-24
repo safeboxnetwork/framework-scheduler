@@ -53,8 +53,35 @@ This backup and recovery system can also operate in a cross‑provider manner, m
 
 ### 3rd party service management via templates
 
+<p align="justify">
+The Safebox platform is designed so that the installation and management of available 3rd‑party applications are based on templates. These templates contain predefined configurations that simplify the installation and setup of applications, allowing users to quickly and easily access the desired services without requiring in‑depth technical knowledge.
+</p>
+
+<p align="justify">
+The current solution manages the operation and configuration of applications based on a custom descriptor document. This document includes the steps required to start the application, configuration settings, the necessary and optional environment variables, and the dependencies of each application, such as descriptions of databases or other initialization applications. It also always includes descriptions of dependencies that are interpretable within the Safebox platform, such as handling local firewall settings or performing the domain registrations required for proxy services.
+</p>
+
+<p align="justify">
+The templates follow the JSON format. The description of each function can be found in the Safebox default template directory, which is available at the following link: https://git.format.hu/safebox/default-applications-tree. The templates are open source, so users can modify or extend them according to their own needs.
+</p>
+
+<p align="justify">
+At the same time, the Safebox platform can handle multiple template environments simultaneously. By forking the git repository mentioned above, users can create their own template environment, and by adding it to the platform, they can create and manage custom applications in Safebox.
+</p>
+
+<p align="justify">
+Future plans include improving template management (currently only addition is supported, and only through a developer interface), which would allow templates to be managed directly through the Safebox web interface, including searching, adding, updating, and removing templates. Further plans include standardizing the custom descriptor document so that it works similarly to commonly used container descriptor formats such as Docker Compose or Kubernetes, thereby simplifying the creation and management of templates on the Safebox platform.
+</p>
+
 ### Integrated domain management
 
+<p align="justify">
+Domain management consists of two parts: one is the general domain registration (or subdomain entry) service, which is closely linked to the Safebox platform’s remote access function; the other is handling internal domain name resolution between applications within Safebox. The former is only mentioned to the extent that the Safebox platform enables users, when using the remote access service, to easily register domain or subdomain names through the platform, which are then used for remote access. This service is part of the Safebox platform’s subscription‑based features, and the registration and management of domain names take place through the Safebox provider’s infrastructure. Naturally, so‑called primary domain registrations can also be carried out independently of Safebox; the service is primarily intended to simplify access to (mainly) web services related to domains or subdomains.
+</p>
+
+<p align="justify">
+If the user decides at any time that they no longer wish to use the Safebox platform’s remote access service, the management of the registered domains and subdomains will not be discontinued; since it does not impose any significant load, it remains available, and only the remote access function itself becomes unavailable. At the same time, managing domain name resolution between applications within the Safebox platform is fundamentally important for the proper operation of the platform, as the system uses this to implement inter‑application communication and services. This function makes it possible for individual applications to easily find and reach each other within the Safebox platform, without having to configure complex network settings. This service is a core part of the Safebox platform and is available to every user, regardless of whether they use the remote access service or not. The service is called core‑dns and covers the management of the configuration of internal DNS services used by various components within the Safebox platform.
+</p>
 
 # What is the differencies between any existing solutions and our approach?
 
