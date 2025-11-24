@@ -20,14 +20,14 @@ The Safebox solution is not the first attempt to bring together third‑party st
 It is important to emphasize that Safebox does not aim to be just another software installer solution or yet another cloud‑based storage service. Our goal is to create a well‑manageable, easy‑to‑understand software platform that enables users to build their own data storage infrastructure, providing solutions equivalent to those of large providers, but without their disadvantages. The main characteristics of the Safebox platform are the following:
 </p>
 
-**Can be used without a subscription –**<p align="justify">The Safebox platform can be used without a subscription, as its core features are fully available without any ongoing fees. Users can install and manage services, store and access data locally, and access their data over the local network without any subscription.
+<p align="justify"><b>**Can be used without a subscription –</b>The Safebox platform can be used without a subscription, as its core features are fully available without any ongoing fees. Users can install and manage services, store and access data locally, and access their data over the local network without any subscription.
 </p>
 
 <p align="justify">
 Another built‑in default software solution, backup and recovery, is also available without any subscription, with the limitation that its capabilities cannot extend beyond the boundaries of the local network. This ensures that users have full control over their data and services without being tied to a specific provider or service plan.
 </p>
 
-### Remote access
+### Remote access (only available with subscription)
 
 <p align="justify">
 The remote access service is one of the most important features of the Safebox platform, enabling users to securely access their data and services from anywhere in the world. This function provides practically the same level of convenience and accessibility as the cloud‑based services of major providers, without requiring users to share their data with third parties. Remote access operates over encrypted data streams, leveraging TCP‑based routing proxy technology, which ensures the security and integrity of data during transmission. One of its key characteristics is that users’ computers do not only become remote endpoints, but from the very beginning the first publicly trusted certificates are also created directly on their own machines. The generated certificates are stored locally in a verifiable way, and later, at any time, the issued certificates can be monitored and checked during data stream usage.
@@ -37,7 +37,7 @@ The remote access service is one of the most important features of the Safebox p
 It is also important to emphasize that while the remote access service is a key element of the Safebox platform, its absence does not prevent the software from functioning; it only removes the option of remote access for users. This means that users of the Safebox platform can still access their data and services over the local network, or even directly on their Safebox device, without using the remote access feature. The service is intentionally designed as a paid component, which not only covers remote access itself, but also includes the management, registration and deletion of domains and subdomains, as well as the use of mobile applications. In addition, it provides further capabilities such as displaying traffic data, statistics, and similar functions. Use of these services is optional, and the core features of the Safebox platform remain fully available even without the remote access service. However, there is currently no provider that does not charge a fee for managing domains and ensuring public access; therefore, in the case of the Safebox platform, this is likewise a service whose use is subject to payment.
 </p>
 
-### Multiple georeduntant backups
+### Multiple georeduntant backups (only available with subscription)
 
 <p align="justify">
 The possibility of backup and recovery is critically important for the security of personal data and services. By default, Safebox includes backup capabilities for the supported 3rd‑party applications, selectable per service. It shows which services are involved, how much data is associated with each, and what their current backup status is, while also storing the most relevant metadata. This service enables the user to back up their data to other machines running the Safebox platform within their local network, in automated and scheduled ways – all without involving any 3rd‑party provider. Data recovery is also available via the interface: after selecting the source and the restore point, the user can restore their data with a single click. It is important to emphasize that the Safebox platform only provides the capability; creating the backup locations (i.e., setting up and operating additional devices running the Safebox platform, configuring their network settings), and ensuring their availability, capacity, etc. is the user’s responsibility.
