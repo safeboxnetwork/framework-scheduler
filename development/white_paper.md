@@ -104,6 +104,18 @@ Safebox simultaneously offers an integrated, “all‑in‑one” platform while
 
 ## Who is this for?
 
+<p align="justify">
+In the short term, the Safebox platform almost instantly delivers a usable experience for anyone who wants to manage their own data and services without having to deal with complex technical configuration. This is particularly attractive for individuals who value privacy and security but do not have deep technical expertise. At the same time, in the longer term it does not exclude the possibility of gaining in‑depth knowledge either, since the openness and customizability of the platform allow users to gradually expand their skills and capabilities. In addition, Safebox can be an ideal choice for small and medium‑sized businesses that want to build their own data management infrastructure without making significant investments or operating complex systems.
+</p>
+
+<p align="justify">
+At present, the Safebox platform supports a number of well‑known 3rd‑party applications that anyone can quickly and easily try out, even though in most cases these are completely unfamiliar solutions for users who are just getting to know the self‑hosted world. There is no risk for them, since installing and using the Safebox platform is free of charge, and users can at any time decide to try different applications without committing themselves to any specific service. This gives users the opportunity to explore the world of self‑hosted solutions and find the applications that best match their needs and expectations.
+</p>
+
+<p align="justify">
+In the longer term, the goal of the Safebox platform is to support an increasing number of 3rd‑party applications and to enable users to create and share their own templates. In this way, the platform can evolve into a dynamically growing community ecosystem where users can share their experiences and knowledge with one another and jointly shape future developments. Safebox is therefore not only a tool for managing data, but also a community opportunity where users can actively participate in the evolution and direction of the platform.
+</p>
+
 # Technical Architecture
 
 ## Concepts and Definitions
