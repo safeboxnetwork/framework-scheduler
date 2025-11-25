@@ -96,7 +96,7 @@ Other important characteristics that competing solutions do not necessarily offe
 - a fundamentally containerized, and therefore platform‑independent, solution
 - domain-based data transfer service (subscription‑based)
 
-## Miért jobb a Safebox?
+## Why is Safebox better than other solutions?
 
 <p align="justify">
 Safebox simultaneously offers an integrated, “all‑in‑one” platform while still providing fully standalone, independent operation for the user. It does not lock you into any single provider: the system runs locally, and by default the data remains on the user’s own devices. Application installation, (local) domain management, web‑based access, and backup/restore are all available through a unified interface, so there is no need to stitch together separate systems. A key difference is that backup and restore are not optional extras, but built‑in, default services of the platform. From the very first start, users can design their setup so that the backup strategy is an organic part of day‑to‑day operations. Safebox supports both local and multiple, geographically separated backup endpoints, so high availability and protection against data loss are core capabilities, not premium add‑ons. All this is achieved in a way that allows the user to switch at any time to a fully private operating mode independent of any provider, or, if desired, to opt into subscription‑based convenience features. The platform therefore gives users the freedom to define their own balance between tight integration and full independence.
