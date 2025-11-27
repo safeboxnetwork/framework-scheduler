@@ -118,19 +118,31 @@ In the longer term, the goal of the Safebox platform is to support an increasing
 
 # Technical Architecture
 
+<p align="justify">
 A detailed description of the technical architecture consists of two parts. One presents the components running on the user’s devices, and the other introduces the services that provide remote access.
+</p>
 
 ## Concepts and Definitions
 
+<p align="justify">
 Before describing these two technical setups in detail, it is important to clarify a few basic concepts that will be referenced multiple times later. The original goal was for the Safebox platform to be an easy‑to‑use yet flexible and customizable solution that allows users to build their own data‑management infrastructure without requiring deep technical knowledge. To this end, we introduced the following core concepts:
+</p>
 
+<p align="justify">
 - **Safebox Device**: A Safebox device is a physical or virtual machine on which the Safebox platform runs. This can be a home server, a NAS device, or even a virtual machine running in the cloud. Third‑party applications run on Safebox devices, and this is where data is stored and managed.
+</p>
 
+<p align="justify">
 - **Template**: A template is a predefined configuration file that describes how to install and configure a given third‑party application on the Safebox platform. Templates allow users to quickly and easily access the desired services without needing detailed technical information; their primary purpose is to let users easily and quickly try out whether a given application meets their needs.
+</p>
 
+<p align="justify">
 - **Remote Access Service**: The remote access service enables users to securely access their data and services from anywhere in the world. This service operates over encrypted data streams and allows users to register their own domain or subdomain names through the Safebox platform.
+</p>
 
+<p align="justify">
 - **Backup and Recovery**: The backup and recovery service enables users to back up data to other Safebox devices within the local network, as well as to geographically separated locations. This service ensures high availability of data and protection against data loss.
+</p>
 
 ## Core Components
 
