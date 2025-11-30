@@ -3,7 +3,9 @@
 ## Problem Statement
 <p align="justify">
 Data storage, management, accessibility and security are becoming an ever greater challenge in the modern digital age. Traditional data management methods often cannot keep pace with the growing volume of data and complex security requirements. From another perspective, increasingly intensive large-scale corporate services are being built on the accessibility and storage of user data, which often monopolize the market, limiting users' choices and increasing privacy risks, if not otherwise, then through continuous service fees or the loss of control over the data, for example by using it for data mining purposes.
+</p>
 
+<p align="justify">
 In addition to the above, more and better-functioning private data storage and management solutions are appearing on the market, whose goal is to give users back control over their data while ensuring its secure storage and accessibility. These solutions often use decentralized systems that enable distributed storage and management of data, thereby reducing dependence on central service providers and increasing data security. However, in most cases operating these solutions requires significant technical knowledge, which limits their wider adoption, and at the same time can endanger security and availability, since their creators basically implement individual services and may not necessarily be able to meet complex data storage or access requirements.
 </p>
 
@@ -145,6 +147,13 @@ Before describing these two technical setups in detail, it is important to clari
 </p>
 
 ## Core Components
+
+<p align="justify">
+A Safebox platform installation consists of two core components that work together to provide a seamless user experience:
+</p>
+- <b>webserver</b>: <p align="justify">it is the primary user interface for managing the Safebox platform. It provides a clean, easy‑to‑understand graphical interface that allows users to install and manage third‑party applications, configure backup and recovery settings, and manage domain names. The web interface is accessible from any device with a web browser, making it easy for users to manage their data and services from anywhere. The web interface is built using nginx as a webserver and PHP for server-side logic. This component also uses the local file system by reading from and writing to a dedicated shared Docker volume to communicate with the other core component, the framework-scheduler. Whether through built‑in, periodically and automatically executed JavaScript calls, or through user interactions that require background operations, all requests are written in JSON format into this shared folder; more precisely, into <code>/var/tmp/shared/input</code> inside the SHARED Docker volume, which is written by this running container. The <code>output</code> directory, in turn, is written by the other component (framework-scheduler) after processing, and the webserver component reads these files as responses and displays the execution results to the user.</p>
+
+- <b>framework-scheduler</b>: <p align="justify">it responsibles for the core functionality of the platform using linux kernel based builtin application, the Inotify to discover and response for any changes  </p>
 
 ## Implementation Details
 
