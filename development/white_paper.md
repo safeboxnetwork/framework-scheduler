@@ -170,18 +170,41 @@ A Safebox platform installation consists of two core components that work togeth
 <p align="justify">
 In addition to the two core components above, the Safebox platform consists of several additional, smaller components that complement and support the main functions. Some of them run continuously in the background, while others are created and stopped temporarily as needed and are then removed. These components are the following:
 </p>
-<p align="justify">- <b>core-dns</b>: a name resolution service that operates when access is enabled for the given process (UDP port 53 access for DNS resolution). It is needed when individual services running in isolated Docker networks require connectivity (for example, to enable email sending). Most commonly, however, it is used by firewall services when the generated IP address associated with a service name needs to be retrieved.</p>
-<p align="justify">- <b>cron</b>: a process created to provide periodically executed services. Its operation is extremely simple: it reads a file every second, generates a crontab format from it, and is able to run processes at the appropriate times. The most common use case is the daily execution of the letsencrypt process.</p>
-<p align="justify">- <b>loadbalancer and local-loadbalancer</b>: these containers are based on Alpine Linux and use the HAProxy solution. They run under the "haproxy" user instead of root privileges and operate using global variables set at process startup. The loadbalancer listens on TCP ports 80 and 443 and forwards packets via TCP to the backend proxies. The goal of this solution is twofold: first, incoming TCP packets (if they do not already have it) are assigned proxy protocol content; second, thanks to load balancing technology, TCP packets are forwarded to one of the two active backend proxies. This is important because configuration changes sometimes require restarting the backend proxies, but only one at a time, so the loadbalancer can always forward packets to an available proxy.</p>
-<p align="justify">- <b>backend-proxy</b>: these containers are based on Alpine Linux and use the Nginx server solution. For high availability, two instances must run on every Safebox platform. These services handle certificate verification, terminate SSL connections, and forward incoming data at the application layer (HTTP) without encryption to the actual applications, according to the web configuration files loaded at startup.</p>
-<p align="justify">- <b>proxy-scheduler</b>: this container is based on Alpine Linux and uses the Linux kernel’s inotify mechanism to monitor changes within the smarthost-domains directory. When changes are detected, it automatically starts and manages containers that update firewall rules, proxy configurations, and handle certificate requests as needed.</p>
-<p align="justify">- <b>wireguard-client</b>: this container provides WireGuard VPN-based network connectivity for services connected to the Safebox platform. It is part of the open-source software stack but is only started if the user enables the PRO subscription. Its operation is managed by functions built into the framework-scheduler, which retrieve the configuration files associated with the subscription and start the WireGuard VPN clients. (For remote access, a single instance runs; for providing georedundant backups to other users, multiple instances run—one for each supported user.)</p>
-<p align="justify">- <b>letsencrypt</b>: this container is based on Alpine Linux and uses the Letsencrypt-provided <code>acme.sh</code> script-based solution to handle domain-based certificate requests. For the service to function properly, the current domain value must not be <code>localhost</code>; in other words, a publicly accessible service must be available on TCP port 80 at the time of the certificate request.</p>
-<p align="justify">- <b>firewall</b>: .</p>
-<p align="justify">- <b>domain-checker</b>: .</p>
-<p align="justify">- <b>setup</b>: .</p>
-<p align="justify">- <b>installer</b>: .</p>
-
+<ul>
+<li>
+<p align="justify"><b>core-dns</b>: a name resolution service that operates when access is enabled for the given process (UDP port 53 access for DNS resolution). It is needed when individual services running in isolated Docker networks require connectivity (for example, to enable email sending). Most commonly, however, it is used by firewall services when the generated IP address associated with a service name needs to be retrieved.</p>
+</li>
+<li>
+<p align="justify"><b>cron</b>: a process created to provide periodically executed services. Its operation is extremely simple: it reads a file every second, generates a crontab format from it, and is able to run processes at the appropriate times. The most common use case is the daily execution of the letsencrypt process.</p>
+</li>
+<li>
+<p align="justify"><b>loadbalancer and local-loadbalancer</b>: these containers are based on Alpine Linux and use the HAProxy solution. They run under the "haproxy" user instead of root privileges and operate using global variables set at process startup. The loadbalancer listens on TCP ports 80 and 443 and forwards packets via TCP to the backend proxies. The goal of this solution is twofold: first, incoming TCP packets (if they do not already have it) are assigned proxy protocol content; second, thanks to load balancing technology, TCP packets are forwarded to one of the two active backend proxies. This is important because configuration changes sometimes require restarting the backend proxies, but only one at a time, so the loadbalancer can always forward packets to an available proxy.</p>
+</li>
+<li>
+<p align="justify"><b>backend-proxy</b>: these containers are based on Alpine Linux and use the Nginx server solution. For high availability, two instances must run on every Safebox platform. These services handle certificate verification, terminate SSL connections, and forward incoming data at the application layer (HTTP) without encryption to the actual applications, according to the web configuration files loaded at startup.</p>
+</li>
+<li>
+<p align="justify"><b>proxy-scheduler</b>: this container is based on Alpine Linux and uses the Linux kernel’s inotify mechanism to monitor changes within the smarthost-domains directory. When changes are detected, it automatically starts and manages containers that update firewall rules, proxy configurations, and handle certificate requests as needed.</p>
+</li>
+<li>
+<p align="justify"><b>wireguard-client</b>: this container provides WireGuard VPN-based network connectivity for services connected to the Safebox platform. It is part of the open-source software stack but is only started if the user enables the PRO subscription. Its operation is managed by functions built into the framework-scheduler, which retrieve the configuration files associated with the subscription and start the WireGuard VPN clients. (For remote access, a single instance runs; for providing georedundant backups to other users, multiple instances run—one for each supported user.)</p>
+</li>
+<li>
+<p align="justify"><b>letsencrypt</b>: this container is based on Alpine Linux and uses the Letsencrypt-provided <code>acme.sh</code> script-based solution to handle domain-based certificate requests. For the service to function properly, the current domain value must not be <code>localhost</code>; in other words, a publicly accessible service must be available on TCP port 80 at the time of the certificate request.</p>
+</li>
+<li>
+<p align="justify"><b>firewall</b>: .</p>
+</li>
+<li>
+<p align="justify"><b>domain-checker</b>: .</p>
+</li>
+<li>
+<p align="justify"><b>setup</b>: .</p>
+</li>
+<li>
+<p align="justify"><b>installer</b>: .</p>
+</li>
+</ul>
 
 ## Implementation Details
 
