@@ -148,7 +148,7 @@ Before describing these two technical setups in detail, it is important to clari
 ## Core Components
 
 <p align="justify">
-A Safebox platform installation consists of two core components that work together to provide a seamless user experience:
+A Safebox platform installation consists of two core components that work together to provide a seamless user experience via Docker containers. These components are:
 </p>
 <p align="justify"> - <b>webserver</b>: it is the primary user interface for managing the Safebox platform. It provides a clean, easy‑to‑understand graphical interface that allows users to install and manage third‑party applications, configure backup and recovery settings, and manage domain names. The web interface is accessible from any device with a web browser, making it easy for users to manage their data and services from anywhere. The web interface is built using nginx as a webserver and PHP for server-side logic. This component also uses the local file system by reading from and writing to a dedicated shared Docker volume to communicate with the other core component, the framework-scheduler. Whether through built‑in, periodically and automatically executed JavaScript calls, or through user interactions that require background operations, all requests are written in JSON format into this shared folder; more precisely, into <code>/var/tmp/shared/input</code> inside the SHARED Docker volume, which is written by this running container. The <code>output</code> directory, in turn, is written by the other component (framework-scheduler) after processing, and the webserver component reads these files as responses and displays the execution results to the user.</p>
 
@@ -161,9 +161,8 @@ In addition to the two core components above, the Safebox platform consists of s
 </p>
 <p align="justify">- <b>core-dns</b>: a name resolution service that operates when access is enabled for the given process (UDP port 53 access for DNS resolution). It is needed when individual services running in isolated Docker networks require connectivity (for example, to enable email sending). Most commonly, however, it is used by firewall services when the generated IP address associated with a service name needs to be retrieved.</p>
 <p align="justify">- <b>cron</b>: a process created to provide periodically executed services. Its operation is extremely simple: it reads a file every second, generates a crontab format from it, and is able to run processes at the appropriate times. The most common use case is the daily execution of the letsencrypt process.</p>
-<p align="justify">- <b>loadbalancer</b>: .</p>
-<p align="justify">- <b>local-loadbalancer</b>: .</p>
-<p align="justify">- <b>backend-proxy</b>: .</p>
+<p align="justify">- <b>loadbalancer and local-loadbalancer</b>: these containers are based on Alpine Linux and use the HAProxy solution. They run under the "haproxy" user instead of root privileges and operate using global variables set at process startup. The loadbalancer listens on TCP ports 80 and 443 and forwards packets via TCP to the backend proxies. The goal of this solution is twofold: first, incoming TCP packets (if they do not already have it) are assigned proxy protocol content; second, thanks to load balancing technology, TCP packets are forwarded to one of the two active backend proxies. This is important because configuration changes sometimes require restarting the backend proxies, but only one at a time, so the loadbalancer can always forward packets to an available proxy.</p>
+<p align="justify">- <b>backend-proxy</b>: these containers are based on Alpine Linux and use the Nginx server solution. For high availability, two instances must run on every Safebox platform. These services handle certificate verification, terminate SSL connections, and forward incoming data at the application layer (HTTP) without encryption to the actual applications, according to the web configuration files loaded at startup.</p>
 <p align="justify">- <b>proxy-scheduler</b>: .</p>
 <p align="justify">- <b>wireguard-client</b>: .</p>
 <p align="justify">- <b>letsencrypt</b>: .</p>
