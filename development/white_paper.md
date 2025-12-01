@@ -129,21 +129,28 @@ A detailed description of the technical architecture consists of two parts. One 
 Before describing these two technical setups in detail, it is important to clarify a few basic concepts that will be referenced multiple times later. The original goal was for the Safebox platform to be an easy‑to‑use yet flexible and customizable solution that allows users to build their own data‑management infrastructure without requiring deep technical knowledge. To this end, we introduced the following core concepts:
 </p>
 
+<ul>
+<li>
 <p align="justify">
-- <b>Safebox Device</b>: A Safebox device is a physical or virtual machine on which the Safebox platform runs. This can be a home server, a NAS device, or even a virtual machine running in the cloud. Third‑party applications run on Safebox devices, and this is where data is stored and managed.
+<b>Safebox Device</b>: A Safebox device is a physical or virtual machine on which the Safebox platform runs. This can be a home server, a NAS device, or even a virtual machine running in the cloud. Third‑party applications run on Safebox devices, and this is where data is stored and managed.
 </p>
-
+</li>
+<li>
 <p align="justify">
-- <b>Template</b>: A template is a predefined configuration file that describes how to install and configure a given third‑party application on the Safebox platform. Templates allow users to quickly and easily access the desired services without needing detailed technical information; their primary purpose is to let users easily and quickly try out whether a given application meets their needs.
+<b>Template</b>: A template is a predefined configuration file that describes how to install and configure a given third‑party application on the Safebox platform. Templates allow users to quickly and easily access the desired services without needing detailed technical information; their primary purpose is to let users easily and quickly try out whether a given application meets their needs.
 </p>
-
+</li>
+<li>
 <p align="justify">
-- <b>Remote Access Service</b>: The remote access service enables users to securely access their data and services from anywhere in the world. This service operates over encrypted data streams and allows users to register their own domain or subdomain names through the Safebox platform.
+<b>Remote Access Service</b>: The remote access service enables users to securely access their data and services from anywhere in the world. This service operates over encrypted data streams and allows users to register their own domain or subdomain names through the Safebox platform.
 </p>
-
+</li>
+<li>
 <p align="justify">
-- <b>Backup and Recovery</b>: The backup and recovery service enables users to back up data to other Safebox devices within the local network, as well as to geographically separated locations. This service ensures high availability of data and protection against data loss.
+<b>Backup and Recovery</b>: The backup and recovery service enables users to back up data to other Safebox devices within the local network, as well as to geographically separated locations. This service ensures high availability of data and protection against data loss.
 </p>
+</li>
+</ul>
 
 ## Core Components
 
@@ -152,10 +159,10 @@ A Safebox platform installation consists of two core components that work togeth
 </p>
 <ul>
 <li>
-<p align="justify"> - <b>webserver</b>: it is the primary user interface for managing the Safebox platform. It provides a clean, easy‑to‑understand graphical interface that allows users to install and manage third‑party applications, configure backup and recovery settings, and manage domain names. The web interface is accessible from any device with a web browser, making it easy for users to manage their data and services from anywhere. The web interface is built using nginx as a webserver and PHP for server-side logic. This component also uses the local file system by reading from and writing to a dedicated shared Docker volume to communicate with the other core component, the framework-scheduler. Whether through built‑in, periodically and automatically executed JavaScript calls, or through user interactions that require background operations, all requests are written in JSON format into this shared folder; more precisely, into <code>/var/tmp/shared/input</code> inside the SHARED Docker volume, which is written by this running container. The <code>output</code> directory, in turn, is written by the other component (framework-scheduler) after processing, and the webserver component reads these files as responses and displays the execution results to the user.</p>
+<p align="justify"><b>webserver</b>: it is the primary user interface for managing the Safebox platform. It provides a clean, easy‑to‑understand graphical interface that allows users to install and manage third‑party applications, configure backup and recovery settings, and manage domain names. The web interface is accessible from any device with a web browser, making it easy for users to manage their data and services from anywhere. The web interface is built using nginx as a webserver and PHP for server-side logic. This component also uses the local file system by reading from and writing to a dedicated shared Docker volume to communicate with the other core component, the framework-scheduler. Whether through built‑in, periodically and automatically executed JavaScript calls, or through user interactions that require background operations, all requests are written in JSON format into this shared folder; more precisely, into <code>/var/tmp/shared/input</code> inside the SHARED Docker volume, which is written by this running container. The <code>output</code> directory, in turn, is written by the other component (framework-scheduler) after processing, and the webserver component reads these files as responses and displays the execution results to the user.</p>
 </li>
 <li>
-<p align="justify">- <b>framework-scheduler</b>: it is responsible for the core functionality of the platform. It uses the Linux kernel’s built‑in inotify mechanism to detect (read) any changes in the dedicated <code>/var/tmp/shared/input</code> folder, and writes the results of the executed requests in JSON format to the <code>/var/tmp/shared/output</code> folder after each action. The framework-scheduler uses the BusyBox shell to handle requests, because these are almost all low‑level Linux or container‑management commands, but there are plans to replace this with a higher‑level (Python‑based) interpreter implementation.</p>
+<p align="justify"><b>framework-scheduler</b>: it is responsible for the core functionality of the platform. It uses the Linux kernel’s built‑in inotify mechanism to detect (read) any changes in the dedicated <code>/var/tmp/shared/input</code> folder, and writes the results of the executed requests in JSON format to the <code>/var/tmp/shared/output</code> folder after each action. The framework-scheduler uses the BusyBox shell to handle requests, because these are almost all low‑level Linux or container‑management commands, but there are plans to replace this with a higher‑level (Python‑based) interpreter implementation.</p>
 </li>
 </ul>
 ## Other Components
