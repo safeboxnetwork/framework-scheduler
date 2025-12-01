@@ -160,8 +160,8 @@ A Safebox platform installation consists of two core components that work togeth
 <p align="justify">
 In addition to the two core components above, the Safebox platform consists of several additional, smaller components that complement and support the main functions. Some of them run continuously in the background, while others are created and stopped temporarily as needed and are then removed. These components are the following:
 </p>
-<p align="justify">- <b>core-dns</b>: .</p>
-<p align="justify">- <b>cron</b>: .</p>
+<p align="justify">- <b>core-dns</b>: a name resolution service that operates when access is enabled for the given process (UDP port 53 access for DNS resolution). It is needed when individual services running in isolated Docker networks require connectivity (for example, to enable email sending). Most commonly, however, it is used by firewall services when the generated IP address associated with a service name needs to be retrieved.</p>
+<p align="justify">- <b>cron</b>: a process created to provide periodically executed services. Its operation is extremely simple: it reads a file every second, generates a crontab format from it, and is able to run processes at the appropriate times. The most common use case is the daily execution of the letsencrypt process.</p>
 <p align="justify">- <b>loadbalancer</b>: .</p>
 <p align="justify">- <b>local-loadbalancer</b>: .</p>
 <p align="justify">- <b>backend-proxy</b>: .</p>
@@ -170,6 +170,8 @@ In addition to the two core components above, the Safebox platform consists of s
 <p align="justify">- <b>letsencrypt</b>: .</p>
 <p align="justify">- <b>firewall</b>: .</p>
 <p align="justify">- <b>domain-checker</b>: .</p>
+<p align="justify">- <b>setup</b>: .</p>
+<p align="justify">- <b>installer</b>: .</p>
 
 
 ## Implementation Details
