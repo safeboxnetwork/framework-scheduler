@@ -72,3 +72,5 @@ The Framework Scheduler is under active development. Future plans include:
 - Enhanced disk space management and alerting features.
 - Notifications for better performance and management of your installed applications.
 
+## Whitepaper
+![Safebox Whitepaper](./development/white_paper.md)
