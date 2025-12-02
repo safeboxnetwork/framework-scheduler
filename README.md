@@ -25,7 +25,7 @@ docker run \
     safebox/framework-scheduler:latest
 ```
 
-**<p align=justify><i>Keep in mind that the Safebox platfrom requires an isolated Docker network which is automatically created when you run the `safebox/framework-scheduler` image for the first time. While running the container, it will check for the existence of this network and create it if it does not exist and also check the desired subnet availability. If you would like to specify a custom subnet for the Safebox network, you can set the <code>FRAMEWORK_SCHEDULER_NETWORK_SUBNET</code> environment variable when running the container or set the <code>RUN_FORCE=true</code> environment variable to force the creation of the network even if the desired subnet is not available.</i></p>**
+ ><p align=justify><i><b>Keep in mind!</b> that the Safebox platfrom requires an isolated Docker network which is automatically created when you run the `safebox/framework-scheduler` image for the first time. While running the container, it will check for the existence of this network and create it if it does not exist and also check the desired subnet availability. If you would like to specify a custom subnet for the Safebox network, you can set the <code>FRAMEWORK_SCHEDULER_NETWORK_SUBNET</code> environment variable when running the container or set the <code>RUN_FORCE=true</code> environment variable to force the creation of the network even if the desired subnet is not available.</i></p>
 
 
 ### Alternative way to deploy via command line
