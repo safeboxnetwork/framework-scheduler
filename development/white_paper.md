@@ -172,6 +172,7 @@ A Safebox platform installation consists of two core components that work togeth
 <p align="justify"><b>framework-scheduler</b>: it is responsible for the core functionality of the platform. It uses the Linux kernel’s built‑in inotify mechanism to detect (read) any changes in the dedicated <code>/var/tmp/shared/input</code> folder, and writes the results of the executed requests in JSON format to the <code>/var/tmp/shared/output</code> folder after each action. The framework-scheduler uses the BusyBox shell to handle requests, because these are almost all low‑level Linux or container‑management commands, but there are plans to replace this with a higher‑level (Python‑based) interpreter implementation.</p>
 </li>
 </ul>
+
 ## Other Components
 
 <p align="justify">
