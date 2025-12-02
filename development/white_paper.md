@@ -223,17 +223,30 @@ In addition to the two core components above, the Safebox platform consists of s
 ## Implementation Details
 
 <p align="justify">
-The Safebox platform is implemented using Docker containers, which provide a flexible and scalable environment for running third-party applications. A konténerizáció értelme az, hogy a különböző alkalmazások és szolgáltatások elkülönítve futhatnak egymástól, mivel 3rd party alkalmazások lévén, szükség van hálózati és fájlrendszert érintő izolációkra a nagyobb biztonság érdekében. Ezen felül a konténerizáció azt is lehetővé tette, hogy az egyes alkalmazások csak azokat a függőségeiket tartalmazzák, amelyekre valóban szükségük van, így csökkentve a rendszer erőforrásigényét és növelve a teljesítményt és a biztonságot. 
+The Safebox platform is implemented using Docker containers, which provide a flexible and scalable environment for running third-party applications. The purpose of containerization is to allow different applications and services to run isolated from each other; since these are third-party applications, network and filesystem isolation is required for enhanced security. Additionally, containerization enables each application to include only the dependencies it actually needs, reducing system resource usage and increasing both performance and security.
+</p>
 
-The framework-scheduler component is one of the core components of the platform, it is needed to start at first, and it continuously runs in the background to handle user requests. Amint a framework-scheduler elindult, elvégez ellenőzéseket, létrehoz, ha szükséges, erőforrásokat, útvonalakat, majd elindítja a webserver komponenst, amely a felhasználói felületet biztosítja. A webserver komponens ezután elérhetővé válik a felhasználók számára a böngészőn keresztül, és lehetővé teszi számukra a Safebox platform kezelését és konfigurálását.
+<p align="justify">
+The framework-scheduler component is one of the core components of the platform; it must be started first and continuously runs in the background to handle user requests. Once the framework-scheduler has started, it performs checks, creates resources and routes if necessary, and then launches the webserver component, which provides the user interface. The webserver component then becomes accessible to users via their browser, allowing them to manage and configure the Safebox platform.
+</p>
 
-A Safebox platform telepítése és konfigurálása során a felhasználók a webes felületet érhetnek el, a telepítés során töltődnek és indulnak el az egyéb komponensek.
+<p align="justify">
+During installation and configuration of the Safebox platform, users can access the web interface, and the other components are loaded and started during the installation process.
+</p>
 
-A Safebox platform arra is fel van készítve, hogy bármikor újraindulhat, vagy bármikor a felhasználó is kérheti a felület újratöltését, a szükséges komponensek újraindulnak, és a felhasználói felület ismét elérhetővé válik, a tűzfal beállítások ellenőrzése és beállítása is ismét megtörténik. (sok esetben ez egy megfelelő eszköz is arra, hogy a megkívánt állapotot stabilan elérhessük)
+<p align="justify">
+The Safebox platform is also designed to be restarted at any time, either automatically or at the user's request; the necessary components will restart, and the user interface will become available again, with firewall settings checked and reconfigured as needed. (In many cases, this is a useful tool to reliably reach the desired stable state.)
+</p>
 
-Fontos eleme a Safebox platformnak a rugalmasan bővíthető sablonrendszer, amely lehetővé teszi a felhasználók számára, hogy könnyen telepítsenek és kezeljenek különböző 3rd party alkalmazásokat. A sablonok JSON formátumban vannak definiálva, és tartalmazzák az alkalmazások telepítéséhez és konfigurálásához szükséges lépéseket és beállításokat. A sablonok segítségével a felhasználók gyorsan és egyszerűen hozzáférhetnek a kívánt szolgáltatásokhoz anélkül, hogy mély technikai ismeretekre lenne szükségük.
+<p align="justify">
+A key element of the Safebox platform is the flexible, extensible template system, which allows users to easily install and manage various third-party applications. Templates are defined in JSON format and include the steps and settings required for installing and configuring applications. With templates, users can quickly and easily access desired services without needing deep technical knowledge. The templates are open source, available in git format, so users can modify or extend them according to their own needs.
+</p>
 
-Beépített mentés és helyreállítás megoldást is tartalmaz a 
+<p align="justify">
+The platform also includes a built-in backup and recovery solution, which can perform data backups and restores to the disks of multiple different machines within the local network. The data transfer protocol is SSH-based, and the actual backup and recovery operations are performed by the open-source BorgBackup solution. Backup processes can be scheduled and run automatically, while restore requests can be initiated manually via the user interface.
+</p>
+
+
 
 ## System Requirements
 
