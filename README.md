@@ -71,3 +71,6 @@ The Framework Scheduler is under active development. Future plans include:
 - Enhanced monitoring and alerting features.
 - Enhanced disk space management and alerting features.
 - Notifications for better performance and management of your installed applications.
+
+## Documentation
+- [White Paper](./development/white_paper.md)
