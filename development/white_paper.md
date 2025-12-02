@@ -126,8 +126,15 @@ A detailed description of the technical architecture consists of two parts. One 
 ## Concepts and Definitions
 
 <p align="justify">
-Before describing these two technical setups in detail, it is important to clarify a few basic concepts that will be referenced multiple times later. The original goal was for the Safebox platform to be an easy‑to‑use yet flexible and customizable solution that allows users to build their own data‑management infrastructure without requiring deep technical knowledge. To this end, we introduced the following core concepts:
+Before describing these two technical setups in detail, it is important to clarify a few basic concepts that will be referenced multiple times later. The original goal was for the Safebox platform to be an easy‑to‑use yet flexible and customizable solution that allows users to build their own data‑management infrastructure without requiring deep technical knowledge.
+
+<p align="justify">
+A key element is data security, one aspect of which is that no one can access the user's data except those whom the user explicitly authorizes. This is a fundamental requirement throughout the use of the software.
+
+<p align="justify">
+Additionally, it is a very important goal for the Safebox platform to serve as a long-term data storage solution that preserves the user's data even if they no longer subscribe to any services. However, the responsibility for the data remains with the user.
 </p>
+To this end, we introduced the following core concepts:
 
 <ul>
 <li>
