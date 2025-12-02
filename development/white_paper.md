@@ -246,7 +246,15 @@ A key element of the Safebox platform is the flexible, extensible template syste
 The platform also includes a built-in backup and recovery solution, which can perform data backups and restores to the disks of multiple different machines within the local network. The data transfer protocol is SSH-based, and the actual backup and recovery operations are performed by the open-source BorgBackup solution. Backup processes can be scheduled and run automatically, while restore requests can be initiated manually via the user interface.
 </p>
 
+### A kapcsolódó szolgáltatásokról
 
+<p align="justify">
+It is important to emphasize that the goal of the Safebox platform is to create a data and service management infrastructure that is fully under the control and responsibility of the user. This does not require any additional subscription. However, certain features of the Safebox platform - primarily remote access and the use of geographically separated backup endpoints - are only available if the user either subscribes to Safebox services or provides their own domain and related proxy services. These services enable users to securely access their data and services from anywhere in the world, as well as to back up data to geographically separated locations or restore it from those locations.
+</p>
+
+<p align="justify">
+The subscription-based services of the Safebox platform include domain name registration and management, as well as the ability to create any subdomain under the main domains provided free of charge by the provider. These domain services are complemented by proxy and backup client services provided via WireGuard VPN, as well as other features such as network monitoring or community backup HUB services. These services are optional, and the core functions of the Safebox platform remain fully accessible even without a subscription.
+</p>
 
 ## System Requirements
 
