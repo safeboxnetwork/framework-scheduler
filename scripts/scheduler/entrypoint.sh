@@ -3,7 +3,7 @@
 cd /scripts
 DEBUG_MODE=${DEBUG_MODE:-false}
 
-VERSION="1.1.6"
+VERSION="1.1.7"
 
 #DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
@@ -937,6 +937,7 @@ upgrade_scheduler() {
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
 		--env RUN_FORCE=$RUN_FORCE \
+        --env UPGRADE=true \
 		--env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
 	  $DOCKER_START"
     echo "DOCKER RUN: $DOCKER_RUN"
@@ -1506,7 +1507,7 @@ fi
 SN=$(check_subnets)
 if [ "$SN" != "1" ]; then
     echo "Desired network subnet not available running ahead is your own risk"
-    if [ "$RUN_FORCE" != "true" ]; then
+    if [ "$RUN_FORCE" != "true" ] || [ "$UPGRADE" != "true" ]; then
         echo "Desired network subnet not available, exiting"
         exit
     fi

@@ -193,7 +193,7 @@ In addition to the two core components above, the Safebox platform consists of s
 <p align="justify"><b>letsencrypt</b>: this container is based on Alpine Linux and uses the Letsencrypt-provided <code>acme.sh</code> script-based solution to handle domain-based certificate requests. For the service to function properly, the current domain value must not be <code>localhost</code>; in other words, a publicly accessible service must be available on TCP port 80 at the time of the certificate request.</p>
 </li>
 <li>
-<p align="justify"><b>firewall</b>: .</p>
+<p align="justify"><b>firewall</b>: this container type is an alpine </p>
 </li>
 <li>
 <p align="justify"><b>domain-checker</b>: .</p>
