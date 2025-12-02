@@ -212,9 +212,28 @@ In addition to the two core components above, the Safebox platform consists of s
 <li>
 <p align="justify"><b>installer</b>: this container is primarily responsible for installing applications. It reads configuration files available in git format, which contain the required applications and the additional parameters needed for their execution in JSON format. After execution, it is always deleted.</p>
 </li>
+<li>
+<p align="justify"><b>backup-server</b>: this is a service that is created during user setup and will be executed by the <code>cron</code> application at scheduled times as needed. It runs an Alpine-based SSH client in the background, and the Borg backup service performs data backup or restoration from previous backups based on user-specified parameters. This is under active development actually.</p>
+</li>
+<li>
+<p align="justify"><b>backup-client</b>: this container type is Alpine-based and runs permanently in the background. Only one instance can run on a Safebox platform on behalf of the user, but it is possible to run additional instances on behalf of other users. The container includes an SSH server solution, which after initial setup is accessible only with the appropriate SSH key, and also contains a Borg backup client solution to securely and efficiently store the file content sent by the <code>backup-server</code>, encrypted and compressed, on a Docker volume. This is under active development actually.</p>
+</li>
 </ul>
 
 ## Implementation Details
+
+<p align="justify">
+The Safebox platform is implemented using Docker containers, which provide a flexible and scalable environment for running third-party applications. A konténerizáció értelme az, hogy a különböző alkalmazások és szolgáltatások elkülönítve futhatnak egymástól, mivel 3rd party alkalmazások lévén, szükség van hálózati és fájlrendszert érintő izolációkra a nagyobb biztonság érdekében. Ezen felül a konténerizáció azt is lehetővé tette, hogy az egyes alkalmazások csak azokat a függőségeiket tartalmazzák, amelyekre valóban szükségük van, így csökkentve a rendszer erőforrásigényét és növelve a teljesítményt és a biztonságot. 
+
+The framework-scheduler component is one of the core components of the platform, it is needed to start at first, and it continuously runs in the background to handle user requests. Amint a framework-scheduler elindult, elvégez ellenőzéseket, létrehoz, ha szükséges, erőforrásokat, útvonalakat, majd elindítja a webserver komponenst, amely a felhasználói felületet biztosítja. A webserver komponens ezután elérhetővé válik a felhasználók számára a böngészőn keresztül, és lehetővé teszi számukra a Safebox platform kezelését és konfigurálását.
+
+A Safebox platform telepítése és konfigurálása során a felhasználók a webes felületet érhetnek el, a telepítés során töltődnek és indulnak el az egyéb komponensek.
+
+A Safebox platform arra is fel van készítve, hogy bármikor újraindulhat, vagy bármikor a felhasználó is kérheti a felület újratöltését, a szükséges komponensek újraindulnak, és a felhasználói felület ismét elérhetővé válik, a tűzfal beállítások ellenőrzése és beállítása is ismét megtörténik. (sok esetben ez egy megfelelő eszköz is arra, hogy a megkívánt állapotot stabilan elérhessük)
+
+Fontos eleme a Safebox platformnak a rugalmasan bővíthető sablonrendszer, amely lehetővé teszi a felhasználók számára, hogy könnyen telepítsenek és kezeljenek különböző 3rd party alkalmazásokat. A sablonok JSON formátumban vannak definiálva, és tartalmazzák az alkalmazások telepítéséhez és konfigurálásához szükséges lépéseket és beállításokat. A sablonok segítségével a felhasználók gyorsan és egyszerűen hozzáférhetnek a kívánt szolgáltatásokhoz anélkül, hogy mély technikai ismeretekre lenne szükségük.
+
+Beépített mentés és helyreállítás megoldást is tartalmaz a 
 
 ## System Requirements
 
