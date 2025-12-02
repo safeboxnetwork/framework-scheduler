@@ -246,7 +246,7 @@ A key element of the Safebox platform is the flexible, extensible template syste
 The platform also includes a built-in backup and recovery solution, which can perform data backups and restores to the disks of multiple different machines within the local network. The data transfer protocol is SSH-based, and the actual backup and recovery operations are performed by the open-source BorgBackup solution. Backup processes can be scheduled and run automatically, while restore requests can be initiated manually via the user interface.
 </p>
 
-### A kapcsolódó szolgáltatásokról
+### About related services
 
 <p align="justify">
 It is important to emphasize that the goal of the Safebox platform is to create a data and service management infrastructure that is fully under the control and responsibility of the user. This does not require any additional subscription. However, certain features of the Safebox platform - primarily remote access and the use of geographically separated backup endpoints - are only available if the user either subscribes to Safebox services or provides their own domain and related proxy services. These services enable users to securely access their data and services from anywhere in the world, as well as to back up data to geographically separated locations or restore it from those locations.
