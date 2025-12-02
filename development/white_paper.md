@@ -201,16 +201,16 @@ In addition to the two core components above, the Safebox platform consists of s
 <p align="justify"><b>letsencrypt</b>: this container is based on Alpine Linux and uses the Letsencrypt-provided <code>acme.sh</code> script-based solution to handle domain-based certificate requests. For the service to function properly, the current domain value must not be <code>localhost</code>; in other words, a publicly accessible service must be available on TCP port 80 at the time of the certificate request.</p>
 </li>
 <li>
-<p align="justify"><b>firewall</b>: this container type is an alpine </p>
+<p align="justify"><b>firewall</b>: this container type is Alpine-based and is run occasionally to configure firewall settings. Its main characteristic is that it reads the <code>core-dns</code> source and, based on the stored names and IP addresses, modifies network access between individual applications. After completing its tasks, it is always deleted.</p>
 </li>
 <li>
-<p align="justify"><b>domain-checker</b>: .</p>
+<p align="justify"><b>domain-checker</b>: this container type is Alpine-based and is run occasionally to create, modify or delete domain files which contain in JSON format the desired domain names and the related applications path.</p>
 </li>
 <li>
-<p align="justify"><b>setup</b>: .</p>
+<p align="justify"><b>setup</b>: this is a container specifically responsible for starting, modifying or stopping additional Docker containers using Docker, as well as reading other key-value pairs defined in JSON format to provide the appropriate parameters. It also monitors dependencies described in the configuration and can manage container chains in various orders as required. After execution, it is always deleted.</p>
 </li>
 <li>
-<p align="justify"><b>installer</b>: .</p>
+<p align="justify"><b>installer</b>: this container is primarily responsible for installing applications. It reads configuration files available in git format, which contain the required applications and the additional parameters needed for their execution in JSON format. After execution, it is always deleted.</p>
 </li>
 </ul>
 
