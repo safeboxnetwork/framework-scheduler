@@ -1,4 +1,3 @@
-![White Paper](./development/white_paper.md)
 ![Safebox Logo](./resources/safebox_logo.svg)
 # Framework Scheduler
 
