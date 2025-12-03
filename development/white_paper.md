@@ -258,6 +258,18 @@ The subscription-based services of the Safebox platform include domain name regi
 
 ## System Requirements
 
+<p align="justify">
+The resource requirements of the Safebox platform itself are very low, but its later needs may vary depending on the services being run. The most important determining factor is the runtime environment, which (currently) requires the ability to run Docker containers. Fast disk read/write capability is essential for Docker to function properly, so at least an SSD drive is recommended. Another recommended system requirement is the use of redundant disks (RAID or similar solutions), since the primary goal of the Safebox platform is the secure storage and management of data, and providing the necessary hardware background is the user's responsibility. However, this is only a recommendation, not a mandatory requirement, as users can ensure regular backups; thus, even if the storage device temporarily fails, they can restore their data, only having to endure service downtime during the replacement.
+</p>
+
+<p align="justify">
+Another hardware requirement may be the presence of a suitable processor that supports containerization technologies (e.g., Intel VT-x or AMD-V). These technologies enable Docker to efficiently isolate containers from each other and from the host, thereby increasing security and performance. Both Intel and ARM processors are supported.
+</p>
+
+<p align="justify">
+In certain cases, such as media streaming services, hardware acceleration support may also be advantageous, so the presence of dedicated video cards is recommended. However, this is not a mandatory requirement, and the Safebox platform is fundamentally based on software solutions.
+</p>
+
 ## Security Considerations
 
 # Template Use Cases
