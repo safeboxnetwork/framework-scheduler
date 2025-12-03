@@ -298,13 +298,13 @@ Each application is registered twice (this is because during the initial read, o
 Each application's directory must contain a <code>template.json</code> file, which includes the variables required for installing and configuring the given application, along with their default values. These variables are presented to the user during the installation process via the user interface.
 </li>
 <li>
-An application's directory may also contain a JSON file starting with <code>service</code>, which holds all the parameters necessary for launching all instances of the given application together.
+An application's directory may also contain a JSON file starting with <code>service-*</code>, which holds all the parameters necessary for launching all instances of the given application together.
 </li>
 <li>
-An application's directory may contain one or more files starting with <code>firewall</code>, which specify the firewall rules associated with the given service.
+An application's directory may contain one or more files starting with <code>firewall-*</code>, which specify the firewall rules associated with the given service.
 </li>
 <li>
-An application's directory may contain one or more files starting with <code>domain</code>, which specify the domain requirements associated with the given service.
+An application's directory may contain one or more files starting with <code>domain-*</code>, which specify the domain requirements associated with the given service.
 </li>
 </ul>
 <p align="justify">
