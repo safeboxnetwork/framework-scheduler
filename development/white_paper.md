@@ -299,19 +299,19 @@ Each application's directory must contain a <code>template.json</code> file, whi
 Példa:
 <code>
 {
-    "name": "\<name of the application\>",
-    "description": "\<described content of the application\>",
-    "subtitle": "\<sub defintion of the application for exapmple document management\>",
-    "icon": "\<small sized picture of the application\>",
+    "name": "name of the application",
+    "description": "described content of the application",
+    "subtitle": "sub defintion of the application for exapmple document management",
+    "icon": "small sized picture of the application",
     "fields": [
         {
-            "title": "<header of the actual field>",
-            "details": "<described content of the actual field>",
-            "info": "<mouse over conent when user move the mouse to the 'i' character>",
-            "description": "<detailed explanation of the actual field>",
-            "key": "<key definition of the actual field>",
-            "value": "<it is needed to complete the user but can be defined with any value>",
-            "required": "<if true user can not save it without complete this field>"
+            "title": "header of the actual field",
+            "details": "described content of the actual field",
+            "info": "mouse over conent when user move the mouse to the 'i' character",
+            "description": "<detailed explanation of the actual field",
+            "key": "key definition of the actual field>",
+            "value": "it is needed to complete the user but can be defined with any value",
+            "required": "if true user can not save it without complete this field"
         }
     ]
 }
