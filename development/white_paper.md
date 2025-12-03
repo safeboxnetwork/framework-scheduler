@@ -296,25 +296,25 @@ Each application is registered twice (this is because during the initial read, o
 </li>
 <li>
 Each application's directory must contain a <code>template.json</code> file, which includes the variables required for installing and configuring the given application, along with their default values. These variables are presented to the user during the installation process via the user interface.
-Példa:
+For explample, a sample <code>template.json</code> file may look like this:
 <code>
-{
-    "name": "name of the application",
-    "description": "described content of the application",
-    "subtitle": "sub defintion of the application for exapmple document management",
-    "icon": "small sized picture of the application",
-    "fields": [
-        {
-            "title": "header of the actual field",
-            "details": "described content of the actual field",
-            "info": "mouse over conent when user move the mouse to the 'i' character",
-            "description": "<detailed explanation of the actual field",
-            "key": "key definition of the actual field>",
-            "value": "it is needed to complete the user but can be defined with any value",
-            "required": "if true user can not save it without complete this field"
-        }
-    ]
-}
+    {
+        "name": "name of the application",
+        "description": "described content of the application",
+        "subtitle": "sub defintion of the application for exapmple document management",
+        "icon": "small sized picture of the application",
+        "fields": [
+            {
+                "title": "header of the actual field",
+                "details": "described content of the actual field",
+                "info": "mouse over conent when user move the mouse to the 'i' character",
+                "description": "<detailed explanation of the actual field",
+                "key": "key definition of the actual field>",
+                "value": "it is needed to complete the user but can be defined with any value",
+                "required": "if true user can not save it without complete this field"
+            }
+        ]
+    }
 </code>
 </li>
 <li>
