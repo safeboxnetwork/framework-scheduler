@@ -272,6 +272,18 @@ In certain cases, such as media streaming services, hardware acceleration suppor
 
 ## Security Considerations
 
+<p align="justify">
+During the operation of the Safebox platform, numerous security measures are implemented to ensure that users' data and services are protected from unauthorized access and other threats. First and foremost, the operating environment stands out: containerization and the use of isolated runtime environments significantly reduce the risk that compromising one application could have system-wide effects. Another layer of security is provided by the implementation of separated network operations between individual applications, which prevents one application from directly accessing another. Additionally, the Safebox platform includes a built-in firewall service that allows fine-tuning of network access rules between applications, further enhancing system security.
+</p>
+
+<p align="justify">
+One of the key security features of the Safebox platform is the remote access service, which enables users to securely access their data and services worldwide via encrypted data streams. This service uses TCP-based routing proxy technology, ensuring that neither unauthorized parties nor even the provider can read the data stream, as it is encrypted using OpenSSL. As part of the remote access service, the Safebox platform itself handles the authentication of domain names (and subdomains also), so users can be confident that only those they explicitly authorize can access their data. The generated certificates are stored locally on the user's machine and can be verified at any time.
+</p>
+
+<p align="justify">
+The Safebox platform also includes a built-in backup and recovery service, allowing users to back up their data to other Safebox devices within the local network as well as to geographically separated locations. This service ensures high data availability and protection against loss. The backup processes use an SSH-based data transfer protocol, and the actual backup and recovery operations are performed by the open-source BorgBackup solution. Both backups and restores utilize BorgBackup's built-in encryption mechanism, so only the user can access their data, even when it is stored in geographically separated locations.
+</p>
+
 # Template Use Cases
 
 # Future Work
