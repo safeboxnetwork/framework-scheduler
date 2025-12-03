@@ -9,7 +9,7 @@ Framework Scheduler is a lightweight, Alpine-based container that provides task 
 
 ### Dependencies
 The Framework Scheduler is part of the Safebox platform. For full functionality, it also requires the `safebox/web-installer` image.
-You can find the current version of the web-installer image on [Docker Hub](https://hub.docker.com/r/safebox/web-installer). The source code repository is available at [https://git.format.hu/safebox/web-installer](https://git.format.hu/safebox/web-installer).
+You can find the current version of the web-installer image on [Docker Hub](https://hub.docker.com/r/safebox/web-installer). The source code repository is available at [https://github.com/safeboxnetwork/web-installer](https://github.com/safeboxnetwork/web-installer).
 
 ## Screenshots
 ![Framework Scheduler Screenshot](./resources/framework_scheduler_main.png)
