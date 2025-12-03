@@ -286,6 +286,31 @@ The Safebox platform also includes a built-in backup and recovery service, allow
 
 # Template Use Cases
 
+<p align="justify">
+The Safebox platform supports a variety of third-party applications through its flexible template system. Safebox is capable of managing multiple template environments simultaneously, handling overlaps as well. The basic descriptor format is a JSON key-value pair. Accordingly, template management follows the pattern below:
+</p>
+
+<ul>
+<li>
+Each application is registered twice (this is because during the initial read, only the <code>applications-tree.json</code> file is loaded, and the images managed for the applications may differ), but it is important that for every application listed in the <code>applications-tree.json</code> file, a corresponding directory with the same name must also exist.
+</li>
+<li>
+Each application's directory must contain a <code>template.json</code> file, which includes the variables required for installing and configuring the given application, along with their default values. These variables are presented to the user during the installation process via the user interface.
+</li>
+<li>
+An application's directory may also contain a JSON file starting with <code>service</code>, which holds all the parameters necessary for launching all instances of the given application together.
+</li>
+<li>
+An application's directory may contain one or more files starting with <code>firewall</code>, which specify the firewall rules associated with the given service.
+</li>
+<li>
+An application's directory may contain one or more files starting with <code>domain</code>, which specify the domain requirements associated with the given service.
+</li>
+</ul>
+<p align="justify">
+You can read more about the detailed template management capabilities of the Safebox platform in the documentation.
+</p>
+
 # Future Work
 
 # Conclusion
