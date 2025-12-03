@@ -307,7 +307,7 @@ For explample, a sample <code>template.json</code> file may look like this:
             {
                 "title": "header of the actual field",
                 "details": "described content of the actual field",
-                "info": "mouse over content when user move the mouse to the 'i' character",
+                "info": "content appears when user moves the mouse over the 'i' character",
                 "description": "<detailed explanation of the actual field",
                 "key": "key definition of the actual field>",
                 "value": "it is needed to complete the user but can be defined with any value",
