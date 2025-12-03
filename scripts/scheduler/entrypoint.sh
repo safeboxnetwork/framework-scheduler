@@ -422,10 +422,10 @@ create_htpasswd_file() {
     local USER="$1"
     local PASSWD="$2"
 
-    if [ ! -f "$HTPASSWD_FILE" ]; then
-        install -m 664 -g 65534 /dev/null $HTPASSWD_FILE
-        htpasswd -cb $HTPASSWD_FILE $USER $PASSWD
-    fi
+    mkdir -p $(dirname $HTPASSWD_FILE)
+
+    install -m 664 -g 65534 /dev/null $HTPASSWD_FILE
+    htpasswd -cb $HTPASSWD_FILE $USER $PASSWD
 }
 
 deploy_additionals() {
@@ -992,9 +992,14 @@ execute_task() {
         install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 
-        #if [ "$INSTALL_STATUS" == "2" ]; then
-        # force install?
-        # TODO - start install.sh
+        # check username and password
+        AUTH_USERNAME=$(echo $B64_JSON | base64 -d | jq -r .AUTH_USERNAME)
+        AUTH_PASSWORD=$(echo $B64_JSON | base64 -d | jq -r .AUTH_PASSWORD)
+
+        if [[ "$AUTH_USERNAME" != "null" || ! -z "$AUTH_USERNAME" ]] && [[ "$AUTH_PASSWORD" != "null" || ! -z "$AUTH_PASSWORD" ]]; then
+            create_htpasswd_file "$AUTH_USERNAME" "$AUTH_PASSWORD"
+        fi
+
         sh /scripts/install.sh "$B64_JSON" "$service_exec" "true" "$GLOBAL_VERSION"
         #fi;
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0)
@@ -1055,7 +1060,11 @@ execute_task() {
             fi
         done
 
-        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'} }' | jq -r . | base64 -w0)
+        if [ -f $HTPASSWD_FILE ]; then
+            HTPASSWD_CONTENT=$(cat $HTPASSWD_FILE | base64 -w0)
+        fi
+
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'},"htpasswd":"'$HTPASSWD_CONTENT'"}' | jq -r . | base64 -w0)
 
     elif [ "$TASK_NAME" == "services" ]; then
         SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-loadbalancer.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
