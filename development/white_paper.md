@@ -307,11 +307,11 @@ For explample, a sample <code>template.json</code> file may look like this:
             {
                 "title": "header of the actual field",
                 "details": "described content of the actual field",
-                "info": "mouse over conent when user move the mouse to the 'i' character",
+                "info": "mouse over content when user move the mouse to the 'i' character",
                 "description": "<detailed explanation of the actual field",
                 "key": "key definition of the actual field>",
                 "value": "it is needed to complete the user but can be defined with any value",
-                "required": "if true user can not save it without complete this field"
+                "required": "if true then user can not save it without complete this field"
             }
         ]
     }
