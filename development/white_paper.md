@@ -299,10 +299,10 @@ Each application's directory must contain a <code>template.json</code> file, whi
 Példa:
 <code>
 {
-    "name": "<name of the application>",
-    "description": "<described content of the application>",
-    "subtitle": "<sub defintion of the application for exapmple document management>",
-    icon: "<small sized picture of the application>",
+    "name": "\<name of the application\>",
+    "description": "\<described content of the application\>",
+    "subtitle": "\<sub defintion of the application for exapmple document management\>",
+    "icon": "\<small sized picture of the application\>",
     "fields": [
         {
             "title": "<header of the actual field>",
