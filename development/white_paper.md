@@ -302,7 +302,7 @@ For explample, a sample <code>template.json</code> file may look like this:
         "name": "name of the application",
         "description": "described content of the application",
         "subtitle": "sub defintion of the application for exapmple document management",
-        "icon": "small sized picture of the application",
+        "icon": "small sized picture of the application in base64 format",
         "fields": [
             {
                 "title": "header of the actual field",
