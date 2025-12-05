@@ -53,7 +53,7 @@ REDIS_VERSION=${REDIS_VERSION:-latest}
 
 SOURCE=${SOURCE:-user-config}
 SMARTHOST_PROXY_PATH=$SMARTHOST_PROXY_PATH
-HTPASSWD_FILE=${HTPASSWD_FILE:-/etc/system/config/smarthost-proxy/nginx/htpasswd}
+HTPASSWD_FILE=${HTPASSWD_FILE:-/etc/system/config/smarthost-proxy/nginx/.htpasswd}
 
 GIT_URL=${GIT_URL:-git.format.hu}
 REPO=$REPO
@@ -424,7 +424,7 @@ create_htpasswd_file() {
 
     mkdir -p $(dirname $HTPASSWD_FILE)
 
-    install -m 664 -g 65534 /dev/null $HTPASSWD_FILE
+    install -m 644 -o 65534 -g 65534 /dev/null $HTPASSWD_FILE
     htpasswd -cb $HTPASSWD_FILE $USER $PASSWD
 }
 
