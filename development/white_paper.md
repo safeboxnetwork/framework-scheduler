@@ -308,7 +308,7 @@ For explample, a sample <code>template.json</code> file may look like this:
                 "title": "header of the actual field",
                 "details": "described content of the actual field",
                 "info": "content appears when user moves the mouse over the 'i' character",
-                "description": "<detailed explanation of the actual field",
+                "description": "detailed explanation of the actual field",
                 "key": "key definition of the actual field>",
                 "value": "it is needed to complete the user but can be defined with any value",
                 "required": "if true then user can not save it without complete this field"
