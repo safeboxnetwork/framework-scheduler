@@ -425,7 +425,7 @@ create_htpasswd_file() {
     mkdir -p $(dirname $HTPASSWD_FILE)
 
     install -m 644 -o 65534 -g 65534 /dev/null $HTPASSWD_FILE
-    htpasswd -cb $HTPASSWD_FILE $USER $PASSWD
+    htpasswd -cbB $HTPASSWD_FILE $USER $PASSWD
 }
 
 deploy_additionals() {
