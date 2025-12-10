@@ -1064,7 +1064,7 @@ execute_task() {
             HTPASSWD_CONTENT=$(cat $HTPASSWD_FILE | base64 -w0)
         fi
 
-        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'},"HTTPASSWD":"'$HTPASSWD_CONTENT'"}' | jq -r . | base64 -w0)
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'},"HTPASSWD":"'$HTPASSWD_CONTENT'"}' | jq -r . | base64 -w0)
 
     elif [ "$TASK_NAME" == "services" ]; then
         SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-loadbalancer.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
