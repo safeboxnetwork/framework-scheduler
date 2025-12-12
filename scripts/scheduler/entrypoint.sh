@@ -126,7 +126,7 @@ add_json_target(){
         fi
 
         if [ ! -f $SHARED/output/$TASK.json ]; then
-            install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
+            install -m 666 -g 65534 /dev/null $SHARED/output/$TASK.json
         fi
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 }
@@ -635,8 +635,8 @@ check_dirs_and_files() {
     fi
     # Setting file and directory permssion
     chown -R 65534:65534 /var/tmp/shared
-    chmod -R g+rws /var/tmp/shared
-    setfacl -d -m g:65534:rw /var/tmp/shared
+    chmod -R a+rws /var/tmp/shared
+    setfacl -d -m a:65534:rw /var/tmp/shared
 
     if [ ! -d "/etc/user/config/services/" ]; then
         mkdir -p /etc/user/config/services/
@@ -807,7 +807,7 @@ create_framework_json() {
       '$ADDITIONAL',
       "PORTS":[
         { "SOURCE": "'$WEBSERVER_PORT'",
-          "DEST": "80",
+          "DEST": "8080",
           "TYPE": "tcp"
         }
             ],
@@ -989,7 +989,7 @@ execute_task() {
     if [ "$TASK_NAME" == "install" ]; then
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "0" }' | jq -r . | base64 -w0) # install has started
         #redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
-        install -m 664 -g 65534 /dev/null $SHARED/output/$TASK.json
+        install -m 666 -g 65534 /dev/null $SHARED/output/$TASK.json
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 
         # check username and password
