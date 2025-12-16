@@ -996,7 +996,7 @@ execute_task() {
         AUTH_USERNAME=$(echo $B64_JSON | base64 -d | jq -r .AUTH_USERNAME)
         AUTH_PASSWORD=$(echo $B64_JSON | base64 -d | jq -r .AUTH_PASSWORD)
 
-        if [ "$(echo $B64_JSON | base64 -d | jq -r . USER_AUTH)" == "yes" ]; then 
+        if [ $(echo $B64_JSON | base64 -d | jq -r .USER_AUTH) == "yes" ]; then 
 
             if [[ "$AUTH_USERNAME" != "null" &&  ! -z "$AUTH_USERNAME" ]] && [[ "$AUTH_PASSWORD" != "null" && ! -z "$AUTH_PASSWORD" ]]; then
                 create_htpasswd_file "$AUTH_USERNAME" "$AUTH_PASSWORD"
