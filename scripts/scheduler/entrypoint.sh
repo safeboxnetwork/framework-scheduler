@@ -1519,7 +1519,9 @@ fi
 SN=$(check_subnets)
 if [ "$SN" != "1" ]; then
     echo "Desired network subnet not available running ahead is your own risk"
-    if [ "$RUN_FORCE" != "true" ] || [ "$UPGRADE" != "true" ]; then
+    if [ "$RUN_FORCE" == "true" ] || [ "$UPGRADE" == "true" ]; then
+        echo "Force mode is enabled or upgrade process is activated, continuing..."
+    else
         echo "Desired network subnet not available, exiting"
         exit
     fi
