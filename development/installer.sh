@@ -184,4 +184,4 @@ systemctl restart docker
 
 echo "Starting deploy Safebox containers"
 
-$SUDO_CMD docker run --rm -e RUN_FORCE=true -v /var/run/docker.sock:/var/run/docker.sock safebox/framework-scheduler:latest
+$SUDO_CMD docker run --rm -v /var/run/docker.sock:/var/run/docker.sock safebox/framework-scheduler:latest
