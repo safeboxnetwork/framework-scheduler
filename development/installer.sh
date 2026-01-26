@@ -175,6 +175,8 @@ else
     echo " - Docker is installed."
 fi
 
+# Prepare docker environment iptables usage method
+$SUDO_CMD mkdir -p /etc/systemd/system/docker.service.d/
 $SUDO_CMD bash -c 'cat > /etc/systemd/system/docker.service.d/insecure_direct_routing.conf << EOF
 [Service]
 Environment="DOCKER_INSECURE_NO_IPTABLES_RAW=1"
