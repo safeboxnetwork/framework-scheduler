@@ -3,7 +3,7 @@
 cd /scripts
 DEBUG_MODE=${DEBUG_MODE:-false}
 
-VERSION="1.1.8"
+VERSION="1.2.0"
 
 #DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-registry.format.hu}
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
@@ -131,6 +131,86 @@ add_json_target(){
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 }
 
+create_remote_access_json() {
+
+    local DOMAIN=$1
+    local ACTION=$2
+
+    if [[ -z "$ACTION"  && -f $SERVICE_DIR/firewall-safebox.json ]] || [[ -z "$ACTION"  && -f $SERVICE_DIR/domain-safebox.json ]]; then
+        ACTION="MODIFY"
+    elif [ -z "$ACTION" ]; then
+        ACTION="CREATE"
+    fi
+
+
+    ADDITIONAL=""
+    ADDITIONAL='"NAME": "firewall", "ROLES": "firewall", "NETWORK": "host", "SCALE": "0", "VOLUMES": [ { "SOURCE": "/etc/user/config/services", "DEST": "/services", "TYPE": "ro" }, { "SOURCE": "/etc/system/data/dns/hosts.local", "DEST": "/etc/dns/hosts.local", "TYPE": "ro" }, { "SOURCE": "/run", "DEST": "/run", "TYPE": "rw" }, { "SOURCE": "/var/run/docker.sock", "DEST": "/var/run/docker.sock", "TYPE": "rw" } ], "EXTRA": "--rm --privileged", "PRE_START": [], "DEPEND": [], "POST_START": [], "CMD": ""'
+
+    echo '{
+        "main": {
+            "SERVICE_NAME": "framework-scheduler",
+            "DOMAIN": "'$DOMAIN'"
+        },
+            "containers": [
+                {
+                "IMAGE": "'$DOCKER_REGISTRY_URL'/firewall:latest",
+                "UPDATE": "true",
+                "MEMORY": "64M",
+                '$ADDITIONAL',
+                "ENVS": [
+                    { "CHAIN": "DOCKER-USER" },
+                    { "SOURCE": "smarthostloadbalancer" },
+                    { "TARGET": "safebox-webserver" },
+                    { "TARGET_PORT": "8080" },
+                    { "TYPE": "tcp" },
+                    { "COMMENT": "proxy for safebox webserver" },
+                    { "OPERATION": "'$ACTION'"}
+                ]
+                }
+            ]
+        }' | jq -r . > $SERVICE_DIR/firewall-safebox.json
+
+    ADDITIONAL=""
+    ADDITIONAL='"NAME": "domain_checker", "ROLES": "domain_checker", "NETWORK": "host", "SCALE": "0", "EXTRA": "--rm --privileged", "PRE_START": [], "DEPEND": [], "POST_START": [], "CMD": ""'
+    echo '{
+        "main": {
+            "SERVICE_NAME": "framework-scheduler",
+            "DOMAIN": "'$DOMAIN'"
+        },
+        "containers": [
+            {
+            "IMAGE": "'$DOCKER_REGISTRY_URL'/domain-check:latest",
+            "UPDATE": "true",
+            "MEMORY": "64M",
+            '$ADDITIONAL',
+            "ENVS": [
+                { "PROXY": "smarthostloadbalancer" },
+                { "TARGET": "safebox-webserver" },
+                { "PORT": "8080" },
+                { "DOMAIN": "'$DOMAIN'" },
+                { "SMARTHOST_PROXY_PATH": "/smarthost-domains" },
+                { "OPERATION": "'$ACTION'"}
+                ],
+            "VOLUMES": [
+                {
+                "SOURCE": "/etc/user/config/smarthost-domains",
+                "DEST": "/smarthost-domains",
+                "TYPE": "rw"
+                },
+                { 
+                "SOURCE": "/etc/system/data/dns/hosts.local",
+                "DEST": "/etc/dns/hosts.local",
+                "TYPE": "ro" 
+                }
+            ]
+            }
+        ]
+    }' | jq -r . > $SERVICE_DIR/domain-safebox.json
+
+        echo "safebox remote access for URL $DOMAIN $ACTION"
+
+}
+
 backup_query_state() {
 
     echo "backup_query_state"
@@ -156,7 +236,7 @@ generate_backup_server_secrets () {
         }' | jq -r . > $SECRET_DIR/backup/server/backup.json
 }
 
-defaulting_missing_paramaters() {
+defaulting_missing_parameters() {
 
     if [ "$SSH_HOST" == "" ] || [ "$SSH_HOST" == "null" ]; then
         SSH_HOST="localhost"
@@ -248,7 +328,7 @@ backup_set_service() {
     local COMPRESSION="$3"
 
     local PLANNED_TIME="$(echo "$4" | base64 -d)"
-    local DIRECTRIES="$5"
+    local DIRECTORIES="$5"
     local SERVICES="$6"
     local SSH_HOST="$7"
 
@@ -258,7 +338,7 @@ backup_set_service() {
     local SSH_PASSWORD="${11}"
     local OPERATION="${12}"
 
-    defaulting_missing_paramaters
+    defaulting_missing_parameters
 
     if [ "$OPERATION" == "DELETE" ]; then
 
@@ -318,7 +398,7 @@ backup_set_client() {
     local OPERATION="$7"
     local VPN_KEY="$8"
 
-    defaulting_missing_paramaters
+    defaulting_missing_parameters
 
     if [ "$OPERATION" == "DELETE" ]; then
         # delete service
@@ -494,7 +574,7 @@ remove_additionals() {
     done
 
     # delete domains
-    DOMMAINS=""
+    DOMAINS=""
     DOMAINS="$(ls $SERVICE_DIR/domain-*.json | grep $NAME)"
     for DOMAIN in $(echo $DOMAINS); do
         cat $DOMAIN | jq '.containers[] |= (
@@ -527,7 +607,7 @@ remove_additionals() {
     for ENV_FILE in $(echo $ENV_FILES); do
         if [ -f "$ENV_FILE" ]; then
             rm -rf $ENV_FILE
-            debug "deleted enviroment file: $ENV_FILE"
+            debug "deleted environment file: $ENV_FILE"
         fi
     done
 
@@ -651,7 +731,7 @@ check_dirs_and_files() {
     fi
 
     if [ ! -d "/etc/system" ]; then
-        mkdir -p"/etc/system"
+        mkdir -p "/etc/system"
     fi
 
     if [ ! -d "/etc/user/secret" ]; then
@@ -689,7 +769,7 @@ check_framework_scheduler_status() {
 
         # Check if the desired subnet is in the list of existing subnets
         if echo "$existing_subnets" | grep -q "$desired_subnet"; then
-            if [ "$(docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" != "$FRAMEWORK_NETWORK_SUBNET" ]; then
+            if [ "$(docker network inspect $FRAMEWORK_SCHEDULER_NETWORK --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" != "$FRAMEWORK_SCHEDULER_NETWORK_SUBNET" ]; then
                 RET=0
             fi
         else
@@ -739,11 +819,13 @@ create_user_json() {
 
 create_framework_json() {
 
-    if [ "$DEBUG_MODE" == "TRUE" ]; then
+    if [ "$DEBUG_MODE" == "true" ]; then
         ENTRYPOINT='"ENTRYPOINT": "sh","CMD": "sleep 86400",'
     else
         ENTRYPOINT=""
     fi
+
+
 
     ADDITIONAL=""
     ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart=always", "PRE_START": [], "DEPEND": [], "CMD": ""'
@@ -759,6 +841,7 @@ create_framework_json() {
       "UPDATE": "true",
       "MEMORY": "256M",
       "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
+      "SELECTOR": "safeboxserver",
       '$ADDITIONAL',
       '$ENVS'
       '$ENTRYPOINT'
@@ -805,6 +888,7 @@ create_framework_json() {
       "MEMORY": "128M",
       "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
       '$ADDITIONAL',
+      "SELECTOR": "safebox-webserver",
       "PORTS":[
         { "SOURCE": "'$WEBSERVER_PORT'",
           "DEST": "8080",
@@ -995,6 +1079,8 @@ execute_task() {
         # check username and password
         AUTH_USERNAME=$(echo $B64_JSON | base64 -d | jq -r .AUTH_USERNAME)
         AUTH_PASSWORD=$(echo $B64_JSON | base64 -d | jq -r .AUTH_PASSWORD)
+        ENABLE_GUARD=$(echo $B64_JSON | base64 -d | jq -r .ENABLE_GUARD)
+        REMOTE_ACCESS=$(echo $B64_JSON | base64 -d | jq -r .REMOTE_ACCESS)
 
         if [ $(echo $B64_JSON | base64 -d | jq -r .USER_AUTH) == "yes" ]; then 
 
@@ -1139,7 +1225,7 @@ execute_task() {
                         elif [ "$UPDATE" == "0" ]; then
                             UPTODATE_CONTAINERS="$UPTODATE_CONTAINERS $CONTAINER_NAME"
                         else
-                            ERROR_CONTAINERS="$UPTODATE_CONTAINERS $CONTAINER_NAME"
+                            ERROR_CONTAINERS="$ERROR_CONTAINERS $CONTAINER_NAME"
                         fi
                     fi
                 done
@@ -1348,6 +1434,48 @@ execute_task() {
         CONTAINERS=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -v framework-scheduler)
         RESULT=$(echo "$CONTAINERS" | base64 -w0)
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "RESULT": "'$RESULT'" }' | jq -r . | base64 -w0)
+
+    elif [ "$TASK_NAME" == "settings" ]; then
+        # check username and password
+        USER_AUTH=$(echo $B64_JSON | base64 -d | jq -r .USER_AUTH)
+        AUTH_USERNAME=$(echo $B64_JSON | base64 -d | jq -r .AUTH_USERNAME)
+        AUTH_PASSWORD=$(echo $B64_JSON | base64 -d | jq -r .AUTH_PASSWORD)
+        ENABLE_GUARD=$(echo $B64_JSON | base64 -d | jq -r .ENABLE_GUARD)
+        DOMAINS=$(echo $B64_JSON | base64 -d | jq -r '.[].DOMAINS')
+        REMOTE_ACCESS=$(echo $B64_JSON | base64 -d | jq -r .REMOTE_ACCESS)
+
+        if [ "$USER_AUTH" == "yes" ]; then 
+
+            if [[ "$AUTH_USERNAME" != "null" &&  ! -z "$AUTH_USERNAME" ]] && [[ "$AUTH_PASSWORD" != "null" && ! -z "$AUTH_PASSWORD" ]]; then
+                create_htpasswd_file "$AUTH_USERNAME" "$AUTH_PASSWORD"
+            fi
+
+            if [ "$ENABLE_GUARD" == "yes" ]; then
+                set_guard "ENABLED" "$DOMAINS"
+            else
+                set_guard "DISABLED" "$DOMAINS"
+            fi
+
+            if [ "$REMOTE_ACCESS" != "null" ]; then
+                if [ "$REMOTE_ACCESS" != "" ]; then
+                    create_remote_access_json "$REMOTE_ACCESS"
+                    $service_exec firewall-safebox start info &
+                    $service_exec domain-safebox start info &
+                else
+                    create_remote_access_json "$REMOTE_ACCESS" "DELETE"
+                    $service_exec firewall-safebox start info &
+                    $service_exec domain-safebox start info &
+                    rm $SERVICE_DIR/firewall-safebox.json
+                    rm $SERVICE_DIR/domain-safebox.json
+                fi
+            fi
+
+        fi
+
+
+        JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "1" }' | jq -r . | base64 -w0)
+        add_json_target
+    
 
     elif [ "$TASK_NAME" == "backup" ]; then
 
