@@ -1018,7 +1018,6 @@ upgrade_scheduler() {
         $SET_DEBUG_MODE \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
-        --env SELECTOR="safeboxserver" \
 		--env RUN_FORCE=$RUN_FORCE \
         --env UPGRADE=true \
 		--env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
@@ -1458,6 +1457,10 @@ execute_task() {
             if [ "$REMOTE_ACCESS" != "null" ]; then
                 if [ "$REMOTE_ACCESS" != "" ]; then
                     create_remote_access_json "$REMOTE_ACCESS"
+                    $service_exec  service-framework.containers.framework-scheduler stop force &
+                    $service_exec  service-framework.containers.framework-scheduler start info
+                    $service_exec  service-framework.containers.webserver stop force &
+                    $service_exec  service-framework.containers.webserver start info
                     $service_exec firewall-safebox start info &
                     $service_exec domain-safebox start info &
                 else
