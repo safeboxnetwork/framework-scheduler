@@ -1018,6 +1018,7 @@ upgrade_scheduler() {
         $SET_DEBUG_MODE \
 	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
 	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
+        --env SELECTOR="safeboxserver" \
 		--env RUN_FORCE=$RUN_FORCE \
         --env UPGRADE=true \
 		--env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
@@ -1439,7 +1440,7 @@ execute_task() {
         AUTH_USERNAME=$(echo $B64_JSON | base64 -d | jq -r .AUTH_USERNAME)
         AUTH_PASSWORD=$(echo $B64_JSON | base64 -d | jq -r .AUTH_PASSWORD)
         ENABLE_GUARD=$(echo $B64_JSON | base64 -d | jq -r .ENABLE_GUARD)
-        DOMAINS=$(echo $B64_JSON | base64 -d | jq -r '.[].DOMAINS')
+        DOMAINS=$(echo $B64_JSON | base64 -d | jq -r '[.. | objects | .DOMAINS? // empty] | first // empty')
         REMOTE_ACCESS=$(echo $B64_JSON | base64 -d | jq -r .REMOTE_ACCESS)
 
         if [ "$USER_AUTH" == "yes" ]; then 
