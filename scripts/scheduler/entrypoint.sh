@@ -806,27 +806,20 @@ add_repository() {
 }
 
 create_repositories_json() {
-    {
-        echo '
-{
-	"repositories": [ "https://git.format.hu/safebox/default-applications-tree.git" ]
-}
-'
-    } | jq -r . >/etc/user/config/repositories.json
+
+    echo ' {
+    "repositories": [ "https://git.format.hu/safebox/default-applications-tree.git" ]
+    }' | jq -r . >/etc/user/config/repositories.json
 }
 
 create_system_json() {
-    {
-        echo '
-{
-	"NETWORK": {
-		"IP_POOL_START": "172.19.0.0",
-		"IP_POOL_END": "172.19.254.0",
-		"IP_SUBNET": "24"
-	}
-}
-'
-    } >/etc/user/config/system.json
+    echo '{
+    "NETWORK": {
+        "IP_POOL_START": "172.19.0.0",
+        "IP_POOL_END": "172.19.254.0",
+        "IP_SUBNET": "24"
+        }
+    }' | jq -r . >/etc/user/config/system.json
 }
 
 create_user_json() {
