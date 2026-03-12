@@ -857,7 +857,6 @@ create_framework_json() {
       "UPDATE": "true",
       "MEMORY": "256M",
       "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
-      "SELECTOR": "safeboxserver",
       '$ADDITIONAL',
       '$ENVS'
       '$ENTRYPOINT'
@@ -904,7 +903,6 @@ create_framework_json() {
       "MEMORY": "128M",
       "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
       '$ADDITIONAL',
-      "SELECTOR": "safebox-webserver",
       "PORTS":[
         { "SOURCE": "'$WEBSERVER_PORT'",
           "DEST": "8080",
