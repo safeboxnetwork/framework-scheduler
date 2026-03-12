@@ -129,6 +129,24 @@ add_json_target(){
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 }
 
+create_framework_dns_records() {
+
+    if [ ! -d /etc/system/data/dns ]; then
+        mkdir -p /etc/system/data/dns
+        touch /etc/system/data/dns/hosts.local
+    fi
+
+    if ! grep -q "safeboxserver" /etc/system/data/dns/hosts.local; then
+        FRAMEWORK_IP="$(echo "$FRAMEWORK_SCHEDULER_NETWORK_SUBNET" | cut -d '.' -f1-3).2"
+        echo "$FRAMEWORK_IP safeboxserver" >> /etc/system/data/dns/hosts.local
+    fi
+    if ! grep -q "safebox-webserver" /etc/system/data/dns/hosts.local; then
+        FRAMEWORK_WEBSERVER_IP="$(echo "$FRAMEWORK_SCHEDULER_NETWORK_SUBNET" | cut -d '.' -f1-3).3"
+        echo "$FRAMEWORK_WEBSERVER_IP safebox-webserver" >> /etc/system/data/dns/hosts.local
+    fi
+
+}
+
 create_remote_access_json() {
 
     local DOMAIN=$1
@@ -1457,10 +1475,7 @@ execute_task() {
             if [ "$REMOTE_ACCESS" != "null" ]; then
                 if [ "$REMOTE_ACCESS" != "" ]; then
                     create_remote_access_json "$REMOTE_ACCESS"
-                    $service_exec  service-framework.containers.framework-scheduler stop force &
-                    $service_exec  service-framework.containers.framework-scheduler start info
-                    $service_exec  service-framework.containers.webserver stop force &
-                    $service_exec  service-framework.containers.webserver start info
+                    create_framework_dns_records
                     $service_exec firewall-safebox start info &
                     $service_exec domain-safebox start info &
                 else
