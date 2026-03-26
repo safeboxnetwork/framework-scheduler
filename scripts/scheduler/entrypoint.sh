@@ -1097,6 +1097,14 @@ execute_task() {
                 create_htpasswd_file "$AUTH_USERNAME" "$AUTH_PASSWORD"
             fi
         fi
+        if [ "$REMOTE_ACCESS" != "null" ]; then
+            if [ "$REMOTE_ACCESS" != "" ]; then
+                create_remote_access_json "$REMOTE_ACCESS"
+                create_framework_dns_records
+                $service_exec firewall-safebox start info &
+                $service_exec domain-safebox start info &
+            fi
+        fi
 
         sh /scripts/install.sh "$B64_JSON" "$service_exec" "true" "$GLOBAL_VERSION"
         #fi;
