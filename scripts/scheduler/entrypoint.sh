@@ -732,7 +732,9 @@ check_dirs_and_files() {
     # Setting file and directory permssion
     chown -R 65534:65534 /var/tmp/shared
     chmod -R a+rws /var/tmp/shared
-    setfacl -d -m a:65534:rw /var/tmp/shared
+    setfacl -d -m u:65534:rw /var/tmp/shared
+    setfacl -d -m g:65534:rw /var/tmp/shared
+    setfacl -d -m o:65534:rw /var/tmp/shared
 
     if [ ! -d "/etc/user/config/services/" ]; then
         mkdir -p /etc/user/config/services/
