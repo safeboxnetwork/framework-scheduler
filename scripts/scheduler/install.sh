@@ -91,6 +91,301 @@ discover_services() {
     fi
 }
 
+# ─── Inlined from deploy.sh ───────────────────────────────────────────────────
+
+version_update() {
+    for JSON in $(ls /etc/user/config/services/*.json); do
+        TMP_FILE=$(mktemp -p /tmp/)
+        jq --arg registry "$DOCKER_REGISTRY_URL" --arg version "$GLOBAL_VERSION" '
+            walk(
+                if type == "string" and startswith($registry) then
+                    (split(":")[0]) + ":" + $version
+                else
+                    .
+                end
+            )
+        ' "$JSON" > "$TMP_FILE"
+        mv "$TMP_FILE" "$JSON"
+    done
+}
+
+toUpperCase() {
+    echo "$*" | tr '[:lower:]' '[:upper:]'
+}
+
+install_local_backend() {
+    sed -i "s/DOMAIN_NAME/$DOMAIN/g" /tmp/$LOCAL_BACKEND_REPO/*.json
+    cp -rv /tmp/$LOCAL_BACKEND_REPO/*.json $SERVICE_DIR/
+}
+
+install_core_dns() {
+    cp -rv /tmp/$CORE_DNS/*.json $SERVICE_DIR/
+
+    DNS_VOLUMES=$(jq -r '.containers[].VOLUMES[].SOURCE' $SERVICE_DIR/$CORE_DNS.json | grep -v '\.')
+    for VOLUME in $DNS_VOLUMES; do
+        mkdir -p $VOLUME
+    done
+
+    DNS_VOLUMES=$(jq -r --arg DEST "/etc/dnsmasq" \
+        '.containers[0].VOLUMES[] | select(.DEST | startswith($DEST))' \
+        $SERVICE_DIR/$CORE_DNS.json)
+    DNS_DIR=$(echo $DNS_VOLUMES | jq -r .SOURCE)
+    mkdir -p $DNS_DIR
+    cp -rv /tmp/$CORE_DNS/dns.conf $DNS_DIR/
+
+    if [ "$SMARTHOST_PROXY" == "YES" ] || [ "$SMARTHOST_PROXY" == "TRUE" ]; then
+        EXISTS=$(grep -E 'smarthostloadbalancer|smarthostbackend' $DNS_DIR/hosts.local 2>/dev/null)
+        if [ -z "$EXISTS" ]; then
+            echo '172.18.254.254 letsencrypt
+172.18.103.2 smarthostloadbalancer
+172.18.104.2 smarthostbackend-1
+172.18.105.2 smarthostbackend-2' >>$DNS_DIR/hosts.local
+        fi
+    fi
+}
+
+install_additionals_core() {
+
+    install_core_dns
+
+    if [ "$LOCAL_PROXY" == "YES" ] || [ "$LOCAL_PROXY" == "TRUE" ]; then
+        cp -av /tmp/$LOCAL_PROXY_REPO/*.json $SERVICE_DIR/
+        if [ "$LOCAL_BACKEND" == "YES" ] || [ "$LOCAL_BACKEND" == "TRUE" ]; then
+            install_local_backend
+        fi
+    fi
+
+    if [ "$VPN_PROXY" == "YES" ] || [ "$VPN_PROXY" == "TRUE" ]; then
+        cp -av /tmp/$VPN_PROXY_REPO/*.json $SERVICE_DIR/
+        VPN_VOLUME=$(jq -r '.containers[0].VOLUMES[0].SOURCE' $SERVICE_DIR/vpn-proxy.json)
+        mkdir -p $(dirname $VPN_VOLUME)
+    fi
+
+    if [ "$CRON" == "YES" ] || [ "$CRON" == "TRUE" ]; then
+        cp -av /tmp/$CRON_REPO/*.json $SERVICE_DIR/
+        CRON_VOLUMES=$(jq -r '.containers[].VOLUMES[].SOURCE' $SERVICE_DIR/cron.json | grep -v '\.')
+        for VOLUME in $CRON_VOLUMES; do
+            mkdir -p $VOLUME
+        done
+    fi
+
+    if [ "$DISCOVERY" == "YES" ]; then
+        cp -av /tmp/$SERVICE_EXEC_REPO/scripts/service-discovery.sh $DISCOVERY_DIR
+        cp -av /tmp/$SERVICE_EXEC_REPO/scripts/service-files.sh $DISCOVERY_DIR
+        if [ ! -f $DISCOVERY_CONFIG_FILE ]; then
+            cp -av /tmp/$SERVICE_EXEC_REPO/scripts/discovery.conf $DISCOVERY_CONFIG_FILE
+        fi
+    fi
+}
+
+deploy_core() {
+    SMARTHOST_PROXY=$(toUpperCase $SMARTHOST_PROXY)
+    LOCAL_PROXY=$(toUpperCase $LOCAL_PROXY)
+    LOCAL_BACKEND=$(toUpperCase $LOCAL_BACKEND)
+    VPN_PROXY_UPPER=$(toUpperCase $VPN_PROXY)
+    CRON=$(toUpperCase $CRON)
+    DISCOVERY=$(toUpperCase $DISCOVERY)
+
+    GIT_REPO=${GIT_REPO:-git.format.hu}
+    ORGANIZATION=${ORGANIZATION:-safebox}
+    USER_CONFIG_PATH=${USER_CONFIG_PATH:-/etc/user/config/user.json}
+    CORE_DNS=${CORE_DNS:-core-dns}
+    LOCAL_PROXY_REPO=${LOCAL_PROXY_REPO:-local-proxy}
+    VPN_PROXY_REPO=${VPN_PROXY_REPO:-wireguard-proxy-client}
+    CRON_REPO=${CRON_REPO:-cron}
+    LOCAL_BACKEND_REPO=${LOCAL_BACKEND_REPO:-local-backend}
+    SERVICE_EXEC_REPO=${SERVICE_EXEC_REPO:-service-exec-new}
+
+    if [ "$SMARTHOST_PROXY" == "YES" ] || [ "$SMARTHOST_PROXY" == "TRUE" ]; then
+        PROXY_TYPE="$PROXY_TYPE smarthost-proxy"
+    fi
+
+    git clone https://$GIT_REPO/$ORGANIZATION/$CORE_DNS.git /tmp/$CORE_DNS
+
+    if [ "$LOCAL_PROXY" == "YES" ] || [ "$LOCAL_PROXY" == "TRUE" ]; then
+        git clone https://$GIT_REPO/$ORGANIZATION/$LOCAL_PROXY_REPO.git /tmp/$LOCAL_PROXY_REPO
+        git clone https://$GIT_REPO/$ORGANIZATION/$LOCAL_BACKEND_REPO.git /tmp/$LOCAL_BACKEND_REPO
+    fi
+
+    if [ "$VPN_PROXY_UPPER" == "YES" ] || [ "$VPN_PROXY_UPPER" == "TRUE" ]; then
+        git clone https://$GIT_REPO/$ORGANIZATION/$VPN_PROXY_REPO.git /tmp/$VPN_PROXY_REPO
+    fi
+
+    if [ "$CRON" == "YES" ] || [ "$CRON" == "TRUE" ]; then
+        git clone https://$GIT_REPO/$ORGANIZATION/$CRON_REPO.git /tmp/$CRON_REPO
+    fi
+
+    for i in $PROXY_TYPE; do
+        git clone https://$GIT_REPO/$ORGANIZATION/$i.git /tmp/$i
+
+        if [ "$i" == "public-proxy" ]; then
+            PROXY_SCHEDULER_FILE=proxy-scheduler.json
+        else
+            PROXY_SCHEDULER_FILE=smarthost-proxy-scheduler.json
+        fi
+
+        PROXY_SCHEDULER_NAME=$(jq -r '.containers[0].NAME' /tmp/$i/$PROXY_SCHEDULER_FILE | cut -d "-" -f1)
+        PROXY_SERVICE_FILE=$(jq -r ".$PROXY_SCHEDULER_NAME.PROXY_SERVICE_FILE" /tmp/$i/proxy_config)
+        SERVICE_DIR=$(jq -r '.containers[0].VOLUMES[].SOURCE' /tmp/$i/$PROXY_SCHEDULER_FILE \
+            | grep $PROXY_SERVICE_FILE | sed "s/$PROXY_SERVICE_FILE//g")
+
+        PROXY_CONFIG_DIR=$(jq -r ".$PROXY_SCHEDULER_NAME.PROXY_CONFIG_DIR" /tmp/$i/proxy_config)
+        if [ "$PROXY_CONFIG_DIR" == "null" ]; then
+            echo "WARNING: $PROXY_SCHEDULER_NAME.PROXY_CONFIG_DIR not found in /tmp/$i/proxy_config"
+        fi
+
+        PROXY_VOLUME=$(jq -r --arg DEST "$PROXY_CONFIG_DIR" \
+            '.containers[0].VOLUMES[] | select(.DEST==$DEST)' /tmp/$i/$PROXY_SCHEDULER_FILE)
+        PROXY_DIR=$(echo $PROXY_VOLUME | jq -r .SOURCE)
+
+        DOMAIN_CONFIG_DIR=$(jq -r ".$PROXY_SCHEDULER_NAME.DOMAIN_DIR" /tmp/$i/proxy_config)
+        DOMAIN_VOLUME=$(jq -r --arg DEST "$DOMAIN_CONFIG_DIR" \
+            '.containers[0].VOLUMES[] | select(.DEST==$DEST)' /tmp/$i/$PROXY_SCHEDULER_FILE)
+        DOMAIN_DIR=$(echo $DOMAIN_VOLUME | jq -r .SOURCE)
+
+        mkdir -p $SERVICE_DIR
+        cp -av /tmp/$i/*.json $SERVICE_DIR/
+
+        install_additionals_core
+
+        mkdir -p $PROXY_DIR
+        mkdir -p $DOMAIN_DIR
+
+        SPEC_PROXY_DIR=$PROXY_DIR/$i
+        PROXY_VOLUMES=$(jq -r '.containers[].VOLUMES[].SOURCE' /tmp/$i/$i.json | grep -v '\.')
+        for VOLUME in $PROXY_VOLUMES; do
+            mkdir -p $VOLUME
+        done
+
+        SOURCE=$(cat /tmp/$i/proxy_config | tail -n+2 | head -n-2)
+        TMP_FILE=$(mktemp -p /tmp/)
+        if [ -f $PROXY_DIR/proxy.json ]; then
+            TARGET=$(cat $PROXY_DIR/proxy.json | tail -n+2)
+            { echo "{"; echo "$SOURCE"; echo "},"; echo "$TARGET"; } >"$TMP_FILE"
+        else
+            { echo "{"; echo "$SOURCE"; echo "}"; echo "}"; } >"$TMP_FILE"
+        fi
+        jq -r . $TMP_FILE >$PROXY_DIR/proxy.json
+        rm $TMP_FILE
+
+        mkdir -p $SPEC_PROXY_DIR/loadbalancer
+        cp -av /tmp/$i/haproxy.cfg $SPEC_PROXY_DIR/loadbalancer/
+
+        if [ "$i" == "smarthost-proxy" ]; then
+            if [ "$LETSENCRYPT_MAIL" == "" ]; then
+                echo "WARNING: No LETSENCRYPT_MAIL given — Let's Encrypt will not work properly."
+            else
+                TMP_FILE=$(mktemp -p /tmp/)
+                LETS_CONTENT='"letsencrypt": {"EMAIL": "'$LETSENCRYPT_MAIL'","SERVERNAME": "'$LETSENCRYPT_SERVERNAME'","DOCKER_REGISTRY_URL": "'$DOCKER_REGISTRY_URL'"}'
+                if [ -f $USER_CONFIG_PATH ]; then
+                    TARGET=$(cat $USER_CONFIG_PATH | head -n-2)
+                    if [ "$TARGET" != "" ]; then
+                        { echo "$TARGET"; echo "},"; echo "$LETS_CONTENT"; echo "}"; } >>"$TMP_FILE"
+                    else
+                        { echo "{"; echo "$LETS_CONTENT"; echo "}"; } >>"$TMP_FILE"
+                    fi
+                else
+                    { echo "{"; echo "$LETS_CONTENT"; echo "}"; } >>"$TMP_FILE"
+                fi
+                jq -r . $TMP_FILE >$USER_CONFIG_PATH
+                rm $TMP_FILE
+            fi
+        fi
+    done
+}
+
+# ─── Inlined from additional_install.sh ──────────────────────────────────────
+
+deploy_additional_services() {
+
+    SERVICE_DIR=${SERVICE_DIR:-/etc/user/config/services}
+    GIT_REPO=${GIT_REPO:-git.format.hu}
+    ORGANIZATION=${ORGANIZATION:-format}
+
+    if [ "$NEXTCLOUD" == "yes" ]; then
+        echo "Nextcloud install has started from ssh://$GIT_REPO/$ORGANIZATION/nextcloud.git"
+        DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)"
+        git clone ssh://$GIT_REPO/$ORGANIZATION/nextcloud.git /tmp/nextcloud
+        sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g"         /tmp/nextcloud/nextcloud-secret.json
+        sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g"           /tmp/nextcloud/nextcloud-secret.json
+        sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g"      /tmp/nextcloud/nextcloud-secret.json
+        sed -i "s/DB_MYSQL/$DB_MYSQL/g"                     /tmp/nextcloud/nextcloud-secret.json
+        sed -i "s/DB_USER/$DB_USER/g"                       /tmp/nextcloud/nextcloud-secret.json
+        sed -i "s/DB_PASSWORD/$DB_PASSWORD/g"               /tmp/nextcloud/nextcloud-secret.json
+        sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g"     /tmp/nextcloud/nextcloud-secret.json
+        sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g"         /tmp/nextcloud/domain-nextcloud.json
+        cp -rv /tmp/nextcloud/nextcloud-secret.json               /etc/user/secret/nextcloud.json
+        cp -rv /tmp/nextcloud/nextcloud.json                      $SERVICE_DIR/nextcloud.json
+        cp -rv /tmp/nextcloud/domain-nextcloud.json               $SERVICE_DIR/domain-nextcloud.json
+        cp -rv /tmp/nextcloud/firewall-nextcloud.json             $SERVICE_DIR/firewall-nextcloud.json
+        cp -rv /tmp/nextcloud/firewall-nextcloud-server-dns.json  $SERVICE_DIR/
+        cp -rv /tmp/nextcloud/firewall-nextcloud-server-smtp.json $SERVICE_DIR/
+    fi
+
+    if [ "$BITWARDEN" == "yes" ]; then
+        echo "Bitwarden install has started from ssh://$GIT_REPO/$ORGANIZATION/bitwarden.git"
+        DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)"
+        BITWARDEN_TOKEN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 48)
+        git clone ssh://$GIT_REPO/$ORGANIZATION/bitwarden.git /tmp/bitwarden
+        sed -i "s/DOMAIN_NAME/$BITWARDEN_DOMAIN/g"          /tmp/bitwarden/domain-bitwarden.json
+        BITWARDEN_DOMAIN="https://$BITWARDEN_DOMAIN"
+        sed -i "s/DB_MYSQL/$DB_MYSQL/g"                      /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/DB_USER/$DB_USER/g"                        /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/DB_PASSWORD/$DB_PASSWORD/g"                /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g"      /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s#DOMAIN_NAME#$BITWARDEN_DOMAIN#g"           /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/BITWARDEN_TOKEN/$BITWARDEN_TOKEN/g"        /tmp/bitwarden/bitwarden-secret.json
+
+        if [ "$SMTP_SERVER" == "1" ]; then
+            SMTP_SECURITY="starttls"
+        elif [ "$SMTP_SERVER" == "2" ]; then
+            SMTP_AUTH_MECHANISM="Login"
+        fi
+
+        sed -i "s/SMTPHOST/$SMTP_HOST/g"                     /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/SMTPPORT/$SMTP_PORT/g"                     /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/SMTPSECURITY/$SMTP_SECURITY/g"             /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/SMTPFROM/$SMTP_FROM/g"                     /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/SMTPUSERNAME/$SMTP_USERNAME/g"             /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/SMTPPASSWORD/$SMTP_PASSWORD/g"             /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/SMTPAUTHMECHANISM/$SMTP_AUTH_MECHANISM/g"  /tmp/bitwarden/bitwarden-secret.json
+        sed -i "s/DOMAINSWHITELIST/$DOMAINS_WHITELIST/g"     /tmp/bitwarden/bitwarden-secret.json
+        cp -rv /tmp/bitwarden/bitwarden-secret.json  /etc/user/secret/bitwarden.json
+        cp -rv /tmp/bitwarden/bitwarden.json         $SERVICE_DIR/bitwarden.json
+        cp -rv /tmp/bitwarden/domain-bitwarden.json  $SERVICE_DIR/domain-bitwarden.json
+        cp -rv /tmp/bitwarden/firewall-bitwarden.json $SERVICE_DIR/firewall-bitwarden.json
+    fi
+
+    if [ "$GUACAMOLE" == "yes" ]; then
+        echo "Guacamole install has started from ssh://$GIT_REPO/$ORGANIZATION/guacamole.git"
+        DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)"
+        git clone ssh://$GIT_REPO/$ORGANIZATION/guacamole.git /tmp/guacamole
+        sed -i "s/DOMAIN_NAME/$GUACAMOLE_DOMAIN/g"                     /tmp/guacamole/guacamole-secret.json
+        sed -i "s/GUACAMOLE_ADMIN_NAME/$GUACAMOLE_ADMIN_NAME/g"         /tmp/guacamole/guacamole-secret.json
+        sed -i "s/GUACAMOLE_ADMIN_PASSWORD/$GUACAMOLE_ADMIN_PASSWORD/g" /tmp/guacamole/guacamole-secret.json
+        sed -i "s/TOTP_USE/$TOTP_USE/g"                                 /tmp/guacamole/guacamole-secret.json
+        sed -i "s/BAN_DURATION/$BAN_DURATION/g"                         /tmp/guacamole/guacamole-secret.json
+        sed -i "s/DB_MYSQL/$DB_MYSQL/g"                                 /tmp/guacamole/guacamole-secret.json
+        sed -i "s/DB_USER/$DB_USER/g"                                   /tmp/guacamole/guacamole-secret.json
+        sed -i "s/DB_PASSWORD/$DB_PASSWORD/g"                           /tmp/guacamole/guacamole-secret.json
+        sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g"                 /tmp/guacamole/guacamole-secret.json
+        sed -i "s/DOMAIN_NAME/$GUACAMOLE_DOMAIN/g"                     /tmp/guacamole/domain-guacamole.json
+        cp -rv /tmp/guacamole/guacamole-secret.json   /etc/user/secret/guacamole.json
+        cp -rv /tmp/guacamole/guacamole.json          $SERVICE_DIR/guacamole.json
+        cp -rv /tmp/guacamole/domain-guacamole.json   $SERVICE_DIR/domain-guacamole.json
+        cp -rv /tmp/guacamole/firewall-guacamole.json $SERVICE_DIR/firewall-guacamole.json
+    fi
+
+    if [ "$SMTP" == "yes" ]; then
+        git clone ssh://$GIT_REPO/$ORGANIZATION/smtp.git /tmp/smtp
+        cp -rv /tmp/smtp/firewall-smtp.json $SERVICE_DIR/firewall-smtp.json
+    fi
+
+    if [ "$ROUNDCUBE" == "yes" ]; then
+        git clone ssh://$GIT_REPO/$ORGANIZATION/roundcube.git /tmp/roundcube
+    fi
+}
+
 #@@@@@@
 # START
 #@@@@@@
@@ -106,41 +401,9 @@ done
 SUDO_CMD=""
 
 # first install - TODEL ??
-if [[ $FIRST_INSTALL == "true" ]]; then
+if [ "$FIRST_INSTALL" == "true" ]; then
 
     INIT="true"
-
-    #discover_services;
-
-    # base variables
-
-    if [ "$DOCKER_REGISTRY_URL" != "" ]; then
-        VAR_DOCKER_REGISTRY_URL="--env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL"
-    fi
-
-    if [ "$SMARTHOST_PROXY" != "" ]; then
-        VAR_SMARTHOST_PROXY="--env SMARTHOST_PROXY=$SMARTHOST_PROXY"
-    fi
-
-    if [ "$LOCAL_PROXY" != "" ]; then
-        VAR_LOCAL_PROXY="--env LOCAL_PROXY=$LOCAL_PROXY"
-    fi
-
-    if [ "$VPN_PROXY" != "" ]; then
-        VAR_VPN_PROXY="--env VPN_PROXY=$VPN_PROXY"
-    fi
-
-    if [ "$DOMAIN" != "" ]; then
-        VAR_DOMAIN="--env DOMAIN=$DOMAIN"
-    fi
-
-    if [ "$CRON" != "" ]; then
-        VAR_CRON="--env CRON=$CRON"
-    fi
-
-    if [ "$LOCAL_BACKEND" != "" ]; then
-        VAR_LOCAL_BACKEND="--env LOCAL_BACKEND=$LOCAL_BACKEND"
-    fi
 
     if [ "$VPN_PROXY" == "yes" ]; then
         if [ "$LETSENCRYPT_SERVERNAME" = "" ]; then
@@ -148,50 +411,20 @@ if [[ $FIRST_INSTALL == "true" ]]; then
         fi
     fi
 
-    # discovery
+	if [[ "$SMARTHOST_PROXY" == "YES" || "$SMARTHOST_PROXY" == "TRUE" ]]; then 
+		PROXY_TYPE=smarthost-proxy" "$PROXY_TYPE; 
+	fi 
 
-    if [ "$DISCOVERY" != "" ]; then
-        VAR_DISCOVERY="--env DISCOVERY=$DISCOVERY"
-    fi
+	if [ "$PROXY_TYPE" == "" ] ; then
+		echo "No proxy type deployment defined, exiting."
+		exit;
+	fi
 
-    if [ "$DISCOVERY_DIR" != "" ]; then
-        VAR_DISCOVERY_DIR="--env DISCOVERY_DIR=$DISCOVERY_DIR"
-        VAR_DISCOVERY_DIRECTORY="--volume $DISCOVERY_DIR/:$DISCOVERY_DIR/"
-    fi
+    deploy_core
+	version_update;
 
-    if [ "$DISCOVERY_CONFIG_FILE" != "" ]; then
-        VAR_DISCOVERY_CONFIG_FILE="--env DISCOVERY_CONFIG_FILE=$DISCOVERY_CONFIG_FILE"
-        if [ "$DISCOVERY_CONFIG_DIR" != "" ]; then
-            VAR_DISCOVERY_CONFIG_DIRECTORY="--volume $DISCOVERY_CONFIG_DIR/:$DISCOVERY_CONFIG_DIR/"
-        fi
-    fi
+	echo "Successfully deployed $PROXY_TYPE"
 
-    # Run installer tool
-
-    $SUDO_CMD docker run \
-        $VAR_DOCKER_REGISTRY_URL \
-        $VAR_SMARTHOST_PROXY \
-        $VAR_LOCAL_PROXY \
-        $VAR_VPN_PROXY \
-        $VAR_DOMAIN \
-        $VAR_CRON \
-        $VAR_LOCAL_BACKEND \
-        $VAR_DISCOVERY \
-        $VAR_DISCOVERY_DIR \
-        $VAR_DISCOVERY_DIRECTORY \
-        $VAR_DISCOVERY_CONFIG_FILE \
-        $VAR_DISCOVERY_CONFIG_DIRECTORY \
-        --volume SYSTEM_DATA:/etc/system/data \
-        --volume SYSTEM_CONFIG:/etc/system/config \
-        --volume SYSTEM_LOG:/etc/system/log \
-        --volume USER_DATA:/etc/user/data \
-        --volume USER_CONFIG:/etc/user/config \
-        --volume USER_SECRET:/etc/user/secret \
-        --env LETSENCRYPT_MAIL=$LETSENCRYPT_MAIL \
-        --env LETSENCRYPT_SERVERNAME=$LETSENCRYPT_SERVERNAME \
-        --env GLOBAL_VERSION=$GLOBAL_VERSION \
-        --rm \
-        $DOCKER_REGISTRY_URL/installer-tool
 
 elif [ "$FIRST_INSTALL" == "vpn" ]; then
 
@@ -215,9 +448,9 @@ elif [ "$FIRST_INSTALL" == "vpn" ]; then
 
     exit
 
-else
-    $SUDO_CMD docker pull $DOCKER_REGISTRY_URL/installer-tool
-    $SUDO_CMD docker pull $DOCKER_REGISTRY_URL/setup
+#else
+    #$SUDO_CMD docker pull $DOCKER_REGISTRY_URL/installer-tool
+    #$SUDO_CMD docker pull $DOCKER_REGISTRY_URL/setup
 fi
 
 # # test - alias doesn't work inside a function
@@ -276,18 +509,14 @@ if [ "$INIT" == "true" ]; then
 
 fi
 
-ADDITIONALS="" # COMMENT
 ADDITIONAL_SERVICES=""
 
-# install additionals - run installer-tool again but additional_install.sh instead of deploy.sh
+# install additionals
 if [ "$ADDITIONALS" == "yes" ]; then
 
-    if [ "$NEXTCLOUD" == "yes" ]; then
-        VAR_NEXTCLOUD="--env NEXTCLOUD=$NEXTCLOUD"
-        VAR_NEXTCLOUD="$VAR_NEXTCLOUD --env NEXTCLOUD_DOMAIN=$NEXTCLOUD_DOMAIN"
-        VAR_NEXTCLOUD="$VAR_NEXTCLOUD --env NEXTCLOUD_USERNAME=$NEXTCLOUD_USERNAME"
-        VAR_NEXTCLOUD="$VAR_NEXTCLOUD --env NEXTCLOUD_PASSWORD=$NEXTCLOUD_PASSWORD"
+    deploy_additional_services
 
+    if [ "$NEXTCLOUD" == "yes" ]; then
         if [ ! -d "/etc/user/data/nextcloud" ]; then
             for DIR in data apps config; do
                 $SUDO_CMD mkdir -p "/etc/user/data/nextcloud/$DIR"
@@ -303,17 +532,6 @@ if [ "$ADDITIONALS" == "yes" ]; then
     fi
 
     if [ "$BITWARDEN" == "yes" ]; then
-        VAR_BITWARDEN="--env BITWARDEN=$BITWARDEN"
-        VAR_BITWARDEN="$VAR_BITWARDEN --env BITWARDEN_DOMAIN=$BITWARDEN_DOMAIN"
-        VAR_BITWARDEN="$VAR_BITWARDEN --env SMTP_SERVER=$SMTP_SERVER"
-        VAR_BITWARDEN="$VAR_BITWARDEN --env SMTP_HOST=$SMTP_HOST"
-        VAR_BITWARDEN="$VAR_BITWARDEN --env SMTP_PORT=$SMTP_PORT"
-        VAR_BITWARDEN="$VAR_BITWARDEN --env SMTP_SECURITY=$SMTP_SECURITY"
-        VAR_BITWARDEN="$VAR_BITWARDEN --env SMTP_FROM=$SMTP_FROM"
-        VAR_BITWARDEN="$VAR_BITWARDEN --env SMTP_USERNAME=$SMTP_USERNAME"
-        VAR_BITWARDEN="$VAR_BITWARDEN --env SMTP_PASSWORD=$SMTP_PASSWORD"
-        VAR_BITWARDEN="$VAR_BITWARDEN --env DOMAINS_WHITELIST=$DOMAINS_WHITELIST"
-
         echo "                                                                                      "
         echo "######################################################################################"
         echo "# You can access your bitwarden admin page here: https://$BITWARDEN_DOMAIN/admin #"
@@ -329,13 +547,6 @@ if [ "$ADDITIONALS" == "yes" ]; then
     fi
 
     if [ "$GUACAMOLE" == "yes" ]; then
-        VAR_GUACAMOLE="--env GUACAMOLE=$GUACAMOLE"
-        VAR_GUACAMOLE="$VAR_GUACAMOLE --env GUACAMOLE_DOMAIN=$GUACAMOLE_DOMAIN"
-        VAR_GUACAMOLE="$VAR_GUACAMOLE --env GUACAMOLE_ADMIN_NAME=$GUACAMOLE_ADMIN_NAME"
-        VAR_GUACAMOLE="$VAR_GUACAMOLE --env GUACAMOLE_ADMIN_PASSWORD=$GUACAMOLE_ADMIN_PASSWORD"
-        VAR_GUACAMOLE="$VAR_GUACAMOLE --env TOTP_USE=$TOTP_USE"
-        VAR_GUACAMOLE="$VAR_GUACAMOLE --env BAN_DURATION=$BAN_DURATION"
-
         echo "Would you like to run Guacamole after install? (Y/n)"
         read -r ANSWER
         if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
@@ -344,8 +555,6 @@ if [ "$ADDITIONALS" == "yes" ]; then
     fi
 
     if [ "$SMTP" == "yes" ]; then
-        VAR_SMTP="--env SMTP=$SMTP"
-
         echo "Would you like to run SMTP after install? (Y/n)"
         read -r ANSWER
         if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
@@ -354,14 +563,6 @@ if [ "$ADDITIONALS" == "yes" ]; then
     fi
 
     if [ "$ROUNDCUBE" == "yes" ]; then
-        VAR_ROUNDCUBE="--env ROUNDCUBE=$ROUNDCUBE"
-        VAR_ROUNDCUBE="$VAR_ROUNDCUBE --env ROUNDCUBE_IMAP_HOST=$ROUNDCUBE_IMAP_HOST"
-        VAR_ROUNDCUBE="$VAR_ROUNDCUBE --env ROUNDCUBE_IMAP_PORT=$ROUNDCUBE_IMAP_PORT"
-        VAR_ROUNDCUBE="$VAR_ROUNDCUBE --env ROUNDCUBE_SMTP_HOST=$ROUNDCUBE_SMTP_HOST"
-        VAR_ROUNDCUBE="$VAR_ROUNDCUBE --env ROUNDCUBE_SMTP_PORT=$ROUNDCUBE_SMTP_PORT"
-        VAR_ROUNDCUBE="$VAR_ROUNDCUBE --env ROUNDCUBE_UPLOAD_MAX_FILESIZE=$ROUNDCUBE_UPLOAD_MAX_FILESIZE"
-        VAR_ROUNDCUBE="$VAR_ROUNDCUBE --env ROUNDCUBE_DOMAIN=$ROUNDCUBE_DOMAIN"
-
         echo "Would you like to run roundcube after install? (Y/n)"
         read -r ANSWER
         if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
@@ -369,18 +570,6 @@ if [ "$ADDITIONALS" == "yes" ]; then
         fi
     fi
 
-    # Run installer tool
-    $SUDO_CMD docker run \
-        --env ADDITIONALS=true \
-        --env SERVICE_DIR=$SERVICE_DIR $VAR_NEXTCLOUD \
-        $VAR_BITWARDEN \
-        $VAR_GUACAMOLE \
-        $VAR_SMTP \
-        $VAR_ROUNDCUBE \
-        --volume $HOME/.ssh/installer:/root/.ssh/id_rsa \
-        --volume /etc/user/:/etc/user/ \
-        --volume /etc/system/:/etc/system/ \
-        $DOCKER_REGISTRY_URL/installer-tool
 fi
 
 #shopt -s expand_aliases
@@ -388,7 +577,7 @@ fi
 
 if [ "$ADDITIONAL_SERVICES" != "" ]; then
     for ADDITIONAL_SERVICE in $(echo $ADDITIONAL_SERVICES); do
-        $SERVICE-EXEC $ADDITIONAL_SERVICE start
+        $SERVICE_EXEC $ADDITIONAL_SERVICE start
         echo "$INIT_SERVICE_PATH/$ADDITIONAL_SERVICE.json" >>$AUTO_START_SERVICES/.init_services
     done
 fi
