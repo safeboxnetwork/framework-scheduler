@@ -59,39 +59,12 @@ get_vpn_key() {
     fi
 }
 
-discover_services() {
-    if [ "$DISCOVERY" == "yes" ]; then
-        if [ "$DISCOVERY_CONFIG_FILE" == "discovery.conf" ]; then
-            DISCOVERY_CONFIG_FILE=$AUTO_START_SERVICES"/discovery.conf"
-            if [ ! -f $DISCOVERY_CONFIG_FILE ]; then
-                USE_SUDO=$(whoami)
-                if [ "$USE_SUDO" == "root" ]; then
-                    USE_SUDO=0
-                else
-                    USE_SUDO=1
-                fi
-
-                {
-                    echo '#!/bin/bash'
-                    echo 'SOURCE_DIRS="/etc/user/data/ /etc/user/config/"; # separator space or |'
-                    echo 'DIRNAME="services misc"; # separator space or |'
-                    echo 'FILENAME="service healthcheck"; # separator space or |'
-                    echo 'KEYS="START_ON_BOOT"; # separator space or |'
-                    echo 'DEST_FILE="results.txt";'
-                    echo 'USE_SUDO='$USE_SUDO';'
-
-                } >>$DISCOVERY_CONFIG_FILE
-            fi
-        fi
-        DISCOVERY_CONFIG_DIR=$(dirname $DISCOVERY_CONFIG_FILE)
-        if [ "$DISCOVERY_CONFIG_DIR" == "/root" ]; then
-            DISCOVERY_CONFIG_DIR=""
-        fi
-
-    fi
-}
 
 # ─── Inlined from deploy.sh ───────────────────────────────────────────────────
+
+toUpperCase() {
+    echo "$*" | tr '[:lower:]' '[:upper:]'
+}
 
 version_update() {
     for JSON in $(ls /etc/user/config/services/*.json); do
@@ -109,8 +82,23 @@ version_update() {
     done
 }
 
-toUpperCase() {
-    echo "$*" | tr '[:lower:]' '[:upper:]'
+registry_update() {
+    OLD_REGISTRY=$1
+    NEW_REGISTRY=$2
+
+    for JSON in $(ls /etc/user/config/services/*.json); do
+        TMP_FILE=$(mktemp -p /tmp/)
+        jq --arg old_registry "$OLD_REGISTRY" --arg new_registry "$NEW_REGISTRY" '
+            walk(
+                if type == "string" and startswith($old_registry) then
+                    $new_registry + ltrimstr($old_registry)
+                else
+                    .
+                end
+            )
+        ' "$JSON" > "$TMP_FILE"
+        mv "$TMP_FILE" "$JSON"
+    done
 }
 
 install_local_backend() {
@@ -169,13 +157,6 @@ install_additionals_core() {
         done
     fi
 
-    if [ "$DISCOVERY" == "YES" ]; then
-        cp -av /tmp/$SERVICE_EXEC_REPO/scripts/service-discovery.sh $DISCOVERY_DIR
-        cp -av /tmp/$SERVICE_EXEC_REPO/scripts/service-files.sh $DISCOVERY_DIR
-        if [ ! -f $DISCOVERY_CONFIG_FILE ]; then
-            cp -av /tmp/$SERVICE_EXEC_REPO/scripts/discovery.conf $DISCOVERY_CONFIG_FILE
-        fi
-    fi
 }
 
 deploy_core() {
@@ -184,7 +165,6 @@ deploy_core() {
     LOCAL_BACKEND=$(toUpperCase $LOCAL_BACKEND)
     VPN_PROXY_UPPER=$(toUpperCase $VPN_PROXY)
     CRON=$(toUpperCase $CRON)
-    DISCOVERY=$(toUpperCase $DISCOVERY)
 
     GIT_REPO=${GIT_REPO:-git.format.hu}
     ORGANIZATION=${ORGANIZATION:-safebox}
@@ -296,96 +276,6 @@ deploy_core() {
 
 # ─── Inlined from additional_install.sh ──────────────────────────────────────
 
-deploy_additional_services() {
-
-    SERVICE_DIR=${SERVICE_DIR:-/etc/user/config/services}
-    GIT_REPO=${GIT_REPO:-git.format.hu}
-    ORGANIZATION=${ORGANIZATION:-format}
-
-    if [ "$NEXTCLOUD" == "yes" ]; then
-        echo "Nextcloud install has started from ssh://$GIT_REPO/$ORGANIZATION/nextcloud.git"
-        DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)"
-        git clone ssh://$GIT_REPO/$ORGANIZATION/nextcloud.git /tmp/nextcloud
-        sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g"         /tmp/nextcloud/nextcloud-secret.json
-        sed -i "s/USERNAME/$NEXTCLOUD_USERNAME/g"           /tmp/nextcloud/nextcloud-secret.json
-        sed -i "s/USER_PASSWORD/$NEXTCLOUD_PASSWORD/g"      /tmp/nextcloud/nextcloud-secret.json
-        sed -i "s/DB_MYSQL/$DB_MYSQL/g"                     /tmp/nextcloud/nextcloud-secret.json
-        sed -i "s/DB_USER/$DB_USER/g"                       /tmp/nextcloud/nextcloud-secret.json
-        sed -i "s/DB_PASSWORD/$DB_PASSWORD/g"               /tmp/nextcloud/nextcloud-secret.json
-        sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g"     /tmp/nextcloud/nextcloud-secret.json
-        sed -i "s/DOMAIN_NAME/$NEXTCLOUD_DOMAIN/g"         /tmp/nextcloud/domain-nextcloud.json
-        cp -rv /tmp/nextcloud/nextcloud-secret.json               /etc/user/secret/nextcloud.json
-        cp -rv /tmp/nextcloud/nextcloud.json                      $SERVICE_DIR/nextcloud.json
-        cp -rv /tmp/nextcloud/domain-nextcloud.json               $SERVICE_DIR/domain-nextcloud.json
-        cp -rv /tmp/nextcloud/firewall-nextcloud.json             $SERVICE_DIR/firewall-nextcloud.json
-        cp -rv /tmp/nextcloud/firewall-nextcloud-server-dns.json  $SERVICE_DIR/
-        cp -rv /tmp/nextcloud/firewall-nextcloud-server-smtp.json $SERVICE_DIR/
-    fi
-
-    if [ "$BITWARDEN" == "yes" ]; then
-        echo "Bitwarden install has started from ssh://$GIT_REPO/$ORGANIZATION/bitwarden.git"
-        DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)"
-        BITWARDEN_TOKEN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 48)
-        git clone ssh://$GIT_REPO/$ORGANIZATION/bitwarden.git /tmp/bitwarden
-        sed -i "s/DOMAIN_NAME/$BITWARDEN_DOMAIN/g"          /tmp/bitwarden/domain-bitwarden.json
-        BITWARDEN_DOMAIN="https://$BITWARDEN_DOMAIN"
-        sed -i "s/DB_MYSQL/$DB_MYSQL/g"                      /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/DB_USER/$DB_USER/g"                        /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/DB_PASSWORD/$DB_PASSWORD/g"                /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g"      /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s#DOMAIN_NAME#$BITWARDEN_DOMAIN#g"           /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/BITWARDEN_TOKEN/$BITWARDEN_TOKEN/g"        /tmp/bitwarden/bitwarden-secret.json
-
-        if [ "$SMTP_SERVER" == "1" ]; then
-            SMTP_SECURITY="starttls"
-        elif [ "$SMTP_SERVER" == "2" ]; then
-            SMTP_AUTH_MECHANISM="Login"
-        fi
-
-        sed -i "s/SMTPHOST/$SMTP_HOST/g"                     /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/SMTPPORT/$SMTP_PORT/g"                     /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/SMTPSECURITY/$SMTP_SECURITY/g"             /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/SMTPFROM/$SMTP_FROM/g"                     /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/SMTPUSERNAME/$SMTP_USERNAME/g"             /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/SMTPPASSWORD/$SMTP_PASSWORD/g"             /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/SMTPAUTHMECHANISM/$SMTP_AUTH_MECHANISM/g"  /tmp/bitwarden/bitwarden-secret.json
-        sed -i "s/DOMAINSWHITELIST/$DOMAINS_WHITELIST/g"     /tmp/bitwarden/bitwarden-secret.json
-        cp -rv /tmp/bitwarden/bitwarden-secret.json  /etc/user/secret/bitwarden.json
-        cp -rv /tmp/bitwarden/bitwarden.json         $SERVICE_DIR/bitwarden.json
-        cp -rv /tmp/bitwarden/domain-bitwarden.json  $SERVICE_DIR/domain-bitwarden.json
-        cp -rv /tmp/bitwarden/firewall-bitwarden.json $SERVICE_DIR/firewall-bitwarden.json
-    fi
-
-    if [ "$GUACAMOLE" == "yes" ]; then
-        echo "Guacamole install has started from ssh://$GIT_REPO/$ORGANIZATION/guacamole.git"
-        DB_MYSQL="$(echo $RANDOM | md5sum | head -c 8)"
-        git clone ssh://$GIT_REPO/$ORGANIZATION/guacamole.git /tmp/guacamole
-        sed -i "s/DOMAIN_NAME/$GUACAMOLE_DOMAIN/g"                     /tmp/guacamole/guacamole-secret.json
-        sed -i "s/GUACAMOLE_ADMIN_NAME/$GUACAMOLE_ADMIN_NAME/g"         /tmp/guacamole/guacamole-secret.json
-        sed -i "s/GUACAMOLE_ADMIN_PASSWORD/$GUACAMOLE_ADMIN_PASSWORD/g" /tmp/guacamole/guacamole-secret.json
-        sed -i "s/TOTP_USE/$TOTP_USE/g"                                 /tmp/guacamole/guacamole-secret.json
-        sed -i "s/BAN_DURATION/$BAN_DURATION/g"                         /tmp/guacamole/guacamole-secret.json
-        sed -i "s/DB_MYSQL/$DB_MYSQL/g"                                 /tmp/guacamole/guacamole-secret.json
-        sed -i "s/DB_USER/$DB_USER/g"                                   /tmp/guacamole/guacamole-secret.json
-        sed -i "s/DB_PASSWORD/$DB_PASSWORD/g"                           /tmp/guacamole/guacamole-secret.json
-        sed -i "s/DB_ROOT_PASSWORD/$DB_ROOT_PASSWORD/g"                 /tmp/guacamole/guacamole-secret.json
-        sed -i "s/DOMAIN_NAME/$GUACAMOLE_DOMAIN/g"                     /tmp/guacamole/domain-guacamole.json
-        cp -rv /tmp/guacamole/guacamole-secret.json   /etc/user/secret/guacamole.json
-        cp -rv /tmp/guacamole/guacamole.json          $SERVICE_DIR/guacamole.json
-        cp -rv /tmp/guacamole/domain-guacamole.json   $SERVICE_DIR/domain-guacamole.json
-        cp -rv /tmp/guacamole/firewall-guacamole.json $SERVICE_DIR/firewall-guacamole.json
-    fi
-
-    if [ "$SMTP" == "yes" ]; then
-        git clone ssh://$GIT_REPO/$ORGANIZATION/smtp.git /tmp/smtp
-        cp -rv /tmp/smtp/firewall-smtp.json $SERVICE_DIR/firewall-smtp.json
-    fi
-
-    if [ "$ROUNDCUBE" == "yes" ]; then
-        git clone ssh://$GIT_REPO/$ORGANIZATION/roundcube.git /tmp/roundcube
-    fi
-}
-
 #@@@@@@
 # START
 #@@@@@@
@@ -448,15 +338,7 @@ elif [ "$FIRST_INSTALL" == "vpn" ]; then
 
     exit
 
-#else
-    #$SUDO_CMD docker pull $DOCKER_REGISTRY_URL/installer-tool
-    #$SUDO_CMD docker pull $DOCKER_REGISTRY_URL/setup
 fi
-
-# # test - alias doesn't work inside a function
-# # must be outside of if
-# shopt -s expand_aliases
-# source $HOME/.bash_aliases
 
 if [ "$INIT" == "true" ]; then
 
@@ -509,152 +391,4 @@ if [ "$INIT" == "true" ]; then
 
 fi
 
-ADDITIONAL_SERVICES=""
 
-# install additionals
-if [ "$ADDITIONALS" == "yes" ]; then
-
-    deploy_additional_services
-
-    if [ "$NEXTCLOUD" == "yes" ]; then
-        if [ ! -d "/etc/user/data/nextcloud" ]; then
-            for DIR in data apps config; do
-                $SUDO_CMD mkdir -p "/etc/user/data/nextcloud/$DIR"
-                $SUDO_CMD chown -R 82:82 "/etc/user/data/nextcloud/$DIR"
-            done
-        fi
-
-        echo "Would you like to run Nextcloud after install? (Y/n)"
-        read -r ANSWER
-        if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
-            ADDITIONAL_SERVICES="$ADDITIONAL_SERVICES nextcloud"
-        fi
-    fi
-
-    if [ "$BITWARDEN" == "yes" ]; then
-        echo "                                                                                      "
-        echo "######################################################################################"
-        echo "# You can access your bitwarden admin page here: https://$BITWARDEN_DOMAIN/admin #"
-        echo "# You will find ADMIN TOKEN in this file: /etc/user/secret/bitwarden.json            #"
-        echo "######################################################################################"
-        echo "                                                                                      "
-        echo "Would you like to run Bitwarden after install? (Y/n)"
-
-        read -r ANSWER
-        if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
-            ADDITIONAL_SERVICES="$ADDITIONAL_SERVICES bitwarden"
-        fi
-    fi
-
-    if [ "$GUACAMOLE" == "yes" ]; then
-        echo "Would you like to run Guacamole after install? (Y/n)"
-        read -r ANSWER
-        if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
-            ADDITIONAL_SERVICES="$ADDITIONAL_SERVICES guacamole"
-        fi
-    fi
-
-    if [ "$SMTP" == "yes" ]; then
-        echo "Would you like to run SMTP after install? (Y/n)"
-        read -r ANSWER
-        if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
-            ADDITIONAL_SERVICES="$ADDITIONAL_SERVICES smtp"
-        fi
-    fi
-
-    if [ "$ROUNDCUBE" == "yes" ]; then
-        echo "Would you like to run roundcube after install? (Y/n)"
-        read -r ANSWER
-        if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
-            ADDITIONAL_SERVICES="$ADDITIONAL_SERVICES roundcube"
-        fi
-    fi
-
-fi
-
-#shopt -s expand_aliases
-#source $HOME/.bash_aliases
-
-if [ "$ADDITIONAL_SERVICES" != "" ]; then
-    for ADDITIONAL_SERVICE in $(echo $ADDITIONAL_SERVICES); do
-        $SERVICE_EXEC $ADDITIONAL_SERVICE start
-        echo "$INIT_SERVICE_PATH/$ADDITIONAL_SERVICE.json" >>$AUTO_START_SERVICES/.init_services
-    done
-fi
-
-if [ "$DISCOVERY" != "yes" ]; then
-    discover_services
-fi
-
-if [ "$DISCOVERY" == "yes" ]; then
-    $SUDO_CMD chmod a+x $DISCOVERY_DIR/service-discovery.sh
-    $DISCOVERY_DIR/service-discovery.sh $DISCOVERY_CONFIG_FILE
-    source $DISCOVERY_CONFIG_FILE
-    cat $DEST_FILE
-
-    echo "Would you like to run discovered services? (Y/n)"
-    read -r ANSWER
-    if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
-        $SUDO_CMD chmod a+x $DISCOVERY_DIR/service-files.sh
-        $DISCOVERY_DIR/service-files.sh $DEST_FILE &
-    fi
-fi
-
-if [ "$DEBIAN" == "true" ] || [ "$GENTOO" == "true" ]; then
-
-    echo "Do you want to start the discovered and actually started services at the next time when your system restarting? (Y/n)"
-    read -r ANSWER
-    if [ "$ANSWER" == "y" ] || [ "$ANSWER" == "Y" ] || [ "$ANSWER" == "" ]; then
-
-        cp $DISCOVERY_CONFIG_FILE $DISCOVERY_CONFIG_FILE".copy"
-        cp $DEST_FILE $DEST_FILE".copy"
-
-        DISCOVERY_CONFIG_FILENAME=$(basename $DISCOVERY_CONFIG_FILE)
-        source $DISCOVERY_CONFIG_FILE
-        {
-            echo '#!/bin/bash'
-            echo 'SOURCE_DIRS="'$SOURCE_DIRS'"; # separator space or |'
-            echo 'DIRNAME="'$DIRNAME'"; # separator space or |'
-            echo 'FILENAME="'$FILENAME'"; # separator space or |'
-            echo 'KEYS="'$KEYS'"; # separator space or |'
-            echo 'DEST_FILE="/usr/local/etc/results.txt";'
-            echo 'USE_SUDO=0;'
-        } >/tmp/$DISCOVERY_CONFIG_FILENAME
-
-        $SUDO_CMD mkdir -p /usr/local/etc
-
-        $SUDO_CMD mv /tmp/$DISCOVERY_CONFIG_FILENAME /usr/local/etc/$DISCOVERY_CONFIG_FILENAME
-
-        {
-            cat $AUTO_START_SERVICES/.init_services
-            cat $DEST_FILE
-        } >/tmp/$DEST_FILE
-
-        $SUDO_CMD mv /tmp/$DEST_FILE /usr/local/etc/$DEST_FILE
-
-        if [ "$DEBIAN" == "true" ]; then
-            {
-                echo "
-[Unit]
-Description=Discover services
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/service-files.sh /usr/local/etc/results.txt restart
-
-[Install]
-WantedBy=multi-user.target
-"
-
-            } >/tmp/discovery.service
-            $SUDO_CMD mv /tmp/discovery.service /etc/systemd/system/discovery.service
-            $SUDO_CMD systemctl enable discovery.service
-
-        elif [ "$GENTOO" == "true" ]; then
-            $SUDO_CMD echo "/usr/local/bin/service-files.sh /usr/local/etc/results.txt restart" >/etc/local.d/service-file.start
-            $SUDO_CMD chmod a+x /etc/local.d/service-file.start
-        fi
-    fi
-fi
-
-rm $AUTO_START_SERVICES/.init_services
