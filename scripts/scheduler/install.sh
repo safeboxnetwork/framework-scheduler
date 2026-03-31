@@ -86,7 +86,7 @@ registry_update() {
     OLD_REGISTRY=$1
     NEW_REGISTRY=$2
 
-    for JSON in $(ls /etc/user/config/services/*.json); do
+    for JSON in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -Hn "DOCKER_REGISTRY_URL" {} +) ; do
         TMP_FILE=$(mktemp -p /tmp/)
         jq --arg old_registry "$OLD_REGISTRY" --arg new_registry "$NEW_REGISTRY" '
             walk(
@@ -99,6 +99,7 @@ registry_update() {
         ' "$JSON" > "$TMP_FILE"
         mv "$TMP_FILE" "$JSON"
     done
+    export DOCKER_REGISTRY_URL="$NEW_REGISTRY"
 }
 
 install_local_backend() {
@@ -136,6 +137,8 @@ install_additionals_core() {
 
     install_core_dns
 
+    echo "starting core services installation"
+
     if [ "$LOCAL_PROXY" == "YES" ] || [ "$LOCAL_PROXY" == "TRUE" ]; then
         cp -av /tmp/$LOCAL_PROXY_REPO/*.json $SERVICE_DIR/
         if [ "$LOCAL_BACKEND" == "YES" ] || [ "$LOCAL_BACKEND" == "TRUE" ]; then
@@ -163,8 +166,10 @@ deploy_core() {
     SMARTHOST_PROXY=$(toUpperCase $SMARTHOST_PROXY)
     LOCAL_PROXY=$(toUpperCase $LOCAL_PROXY)
     LOCAL_BACKEND=$(toUpperCase $LOCAL_BACKEND)
-    VPN_PROXY_UPPER=$(toUpperCase $VPN_PROXY)
+    VPN_PROXY=$(toUpperCase $VPN_PROXY)
     CRON=$(toUpperCase $CRON)
+
+    PROXY_TYPE="${PROXY_TYPE:-smarthost-proxy}"
 
     GIT_REPO=${GIT_REPO:-git.format.hu}
     ORGANIZATION=${ORGANIZATION:-safebox}
@@ -187,7 +192,7 @@ deploy_core() {
         git clone https://$GIT_REPO/$ORGANIZATION/$LOCAL_BACKEND_REPO.git /tmp/$LOCAL_BACKEND_REPO
     fi
 
-    if [ "$VPN_PROXY_UPPER" == "YES" ] || [ "$VPN_PROXY_UPPER" == "TRUE" ]; then
+    if [ "$VPN_PROXY" == "YES" ] || [ "$VPN_PROXY" == "TRUE" ]; then
         git clone https://$GIT_REPO/$ORGANIZATION/$VPN_PROXY_REPO.git /tmp/$VPN_PROXY_REPO
     fi
 
@@ -217,6 +222,7 @@ deploy_core() {
         PROXY_VOLUME=$(jq -r --arg DEST "$PROXY_CONFIG_DIR" \
             '.containers[0].VOLUMES[] | select(.DEST==$DEST)' /tmp/$i/$PROXY_SCHEDULER_FILE)
         PROXY_DIR=$(echo $PROXY_VOLUME | jq -r .SOURCE)
+        PROXY_DIR=$(dirname $PROXY_DIR | sed s/$i//g)
 
         DOMAIN_CONFIG_DIR=$(jq -r ".$PROXY_SCHEDULER_NAME.DOMAIN_DIR" /tmp/$i/proxy_config)
         DOMAIN_VOLUME=$(jq -r --arg DEST "$DOMAIN_CONFIG_DIR" \
@@ -225,8 +231,6 @@ deploy_core() {
 
         mkdir -p $SERVICE_DIR
         cp -av /tmp/$i/*.json $SERVICE_DIR/
-
-        install_additionals_core
 
         mkdir -p $PROXY_DIR
         mkdir -p $DOMAIN_DIR
@@ -237,16 +241,14 @@ deploy_core() {
             mkdir -p $VOLUME
         done
 
-        SOURCE=$(cat /tmp/$i/proxy_config | tail -n+2 | head -n-2)
-        TMP_FILE=$(mktemp -p /tmp/)
-        if [ -f $PROXY_DIR/proxy.json ]; then
-            TARGET=$(cat $PROXY_DIR/proxy.json | tail -n+2)
-            { echo "{"; echo "$SOURCE"; echo "},"; echo "$TARGET"; } >"$TMP_FILE"
+        SOURCE=$(cat /tmp/$i/proxy_config)
+        # If the target file exists, merge; else, just use the new object
+        if [ -f "$PROXY_DIR/proxy.json" ]; then
+            jq -s '.[0] * .[1]' <(echo "$SOURCE") "$PROXY_DIR/proxy.json" > "$PROXY_DIR/proxy.json.tmp"
+            mv "$PROXY_DIR/proxy.json.tmp" "$PROXY_DIR/proxy.json"
         else
-            { echo "{"; echo "$SOURCE"; echo "}"; echo "}"; } >"$TMP_FILE"
+            echo "$SOURCE" > "$PROXY_DIR/proxy.json"
         fi
-        jq -r . $TMP_FILE >$PROXY_DIR/proxy.json
-        rm $TMP_FILE
 
         mkdir -p $SPEC_PROXY_DIR/loadbalancer
         cp -av /tmp/$i/haproxy.cfg $SPEC_PROXY_DIR/loadbalancer/
@@ -272,6 +274,8 @@ deploy_core() {
             fi
         fi
     done
+
+    install_additionals_core
 }
 
 # ─── Inlined from additional_install.sh ──────────────────────────────────────
@@ -300,15 +304,16 @@ if [ "$FIRST_INSTALL" == "true" ]; then
             LETSENCRYPT_SERVERNAME="letsencrypt"
         fi
     fi
+# Kiszedtem mert miért van itt?
+	# if [[ "$SMARTHOST_PROXY" == "YES" || "$SMARTHOST_PROXY" == "TRUE" ]]; then 
+	# 	PROXY_TYPE=smarthost-proxy" "$PROXY_TYPE; 
+	# fi 
 
-	if [[ "$SMARTHOST_PROXY" == "YES" || "$SMARTHOST_PROXY" == "TRUE" ]]; then 
-		PROXY_TYPE=smarthost-proxy" "$PROXY_TYPE; 
-	fi 
-
-	if [ "$PROXY_TYPE" == "" ] ; then
-		echo "No proxy type deployment defined, exiting."
-		exit;
-	fi
+	# if [ "$PROXY_TYPE" == "" ] ; then
+	# 	echo "No proxy type deployment defined, exiting."
+	# 	exit;
+	# fi
+#####################################
 
     deploy_core
 	version_update;
