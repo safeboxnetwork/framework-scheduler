@@ -178,7 +178,8 @@ deploy_core() {
     VPN_PROXY=$(toUpperCase $VPN_PROXY)
     CRON=$(toUpperCase $CRON)
 
-    PROXY_TYPE="${PROXY_TYPE:-smarthost-proxy}"
+    #PROXY_TYPE="${PROXY_TYPE:-smarthost-proxy}"
+    PROXY_TYPE=""
 
     GIT_REPO=${GIT_REPO:-git.format.hu}
     ORGANIZATION=${ORGANIZATION:-safebox}
@@ -193,6 +194,10 @@ deploy_core() {
     if [ "$SMARTHOST_PROXY" == "YES" ] || [ "$SMARTHOST_PROXY" == "TRUE" ]; then
         PROXY_TYPE="$PROXY_TYPE smarthost-proxy"
     fi
+
+	if [ "$PROXY_TYPE" == "" ] ; then
+	 	echo "No proxy type deployment defined."
+	fi
 
     git clone https://$GIT_REPO/$ORGANIZATION/$CORE_DNS.git /tmp/$CORE_DNS
 
@@ -313,16 +318,6 @@ if [ "$FIRST_INSTALL" == "true" ]; then
             LETSENCRYPT_SERVERNAME="letsencrypt"
         fi
     fi
-# Kiszedtem mert miért van itt?
-	# if [[ "$SMARTHOST_PROXY" == "YES" || "$SMARTHOST_PROXY" == "TRUE" ]]; then 
-	# 	PROXY_TYPE=smarthost-proxy" "$PROXY_TYPE; 
-	# fi 
-
-	# if [ "$PROXY_TYPE" == "" ] ; then
-	# 	echo "No proxy type deployment defined, exiting."
-	# 	exit;
-	# fi
-#####################################
 
     deploy_core
 	version_update;
