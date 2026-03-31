@@ -66,29 +66,39 @@ toUpperCase() {
     echo "$*" | tr '[:lower:]' '[:upper:]'
 }
 
-version_update() {
-    for JSON in $(ls /etc/user/config/services/*.json); do
-        TMP_FILE=$(mktemp -p /tmp/)
-        jq --arg registry "$DOCKER_REGISTRY_URL" --arg version "$GLOBAL_VERSION" '
-            walk(
-                if type == "string" and startswith($registry) then
-                    (split(":")[0]) + ":" + $version
-                else
-                    .
-                end
-            )
-        ' "$JSON" > "$TMP_FILE"
-        mv "$TMP_FILE" "$JSON"
+json_update() {
+    OLD_REGISTRY=$(set |grep DOCKER_REGISTRY_URL)
+    for JSON in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -Hn "DOCKER_REGISTRY_URL" {} +) ; do
+      version_update $OLD_REGISTRY_URL
+      registry_update $DOCKER_REGISTRY_URL $OLD_REGISTRY_URL
     done
 }
 
-registry_update() {
-    OLD_REGISTRY=$1
-    NEW_REGISTRY=$2
+version_update() {
 
-    for JSON in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -Hn "DOCKER_REGISTRY_URL" {} +) ; do
+    OLD_REGISTRY=$1
+
+    TMP_FILE=$(mktemp -p /tmp/)
+
+    jq --arg registry "$OLD_REGISTRY_URL" --arg version "$GLOBAL_VERSION" '
+        walk(
+            if type == "string" and startswith($registry) then
+                (split(":")[0]) + ":" + $version
+            else
+                .
+            end
+        )
+    ' "$JSON" > "$TMP_FILE"
+    mv "$TMP_FILE" "$JSON"
+}
+
+registry_update() {
+    
+    NEW_REGISTRY=$1
+    OLD_REGISTRY=$2
+
         TMP_FILE=$(mktemp -p /tmp/)
-        jq --arg old_registry "$OLD_REGISTRY" --arg new_registry "$NEW_REGISTRY" '
+        jq --arg old_registry "$OLD_REGISTRY_URL" --arg new_registry "$NEW_REGISTRY_URL" '
             walk(
                 if type == "string" and startswith($old_registry) then
                     $new_registry + ltrimstr($old_registry)
@@ -98,8 +108,7 @@ registry_update() {
             )
         ' "$JSON" > "$TMP_FILE"
         mv "$TMP_FILE" "$JSON"
-    done
-    export DOCKER_REGISTRY_URL="$NEW_REGISTRY"
+    export DOCKER_REGISTRY_URL="$NEW_REGISTRY_URL"
 }
 
 install_local_backend() {
