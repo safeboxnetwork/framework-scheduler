@@ -364,12 +364,12 @@ if [ "$INIT" == "true" ]; then
     $SERVICE_EXEC core-dns start
     echo "$INIT_SERVICE_PATH/core-dns.json" >>$AUTO_START_SERVICES/.init_services
 
-    if [ "$CRON" == "yes" ]; then
+    if [ "$CRON" == "YES" ]; then
         $SERVICE_EXEC cron start
         echo "$INIT_SERVICE_PATH/cron.json" >>$AUTO_START_SERVICES/.init_services
     fi
 
-    if [ "$VPN_PROXY" == "yes" ]; then
+    if [ "$VPN_PROXY" == "YES" ]; then
 
         get_vpn_key
 
@@ -381,7 +381,7 @@ if [ "$INIT" == "true" ]; then
 
     fi
 
-    if [ "$SMARTHOST_PROXY" == "yes" ]; then
+    if [ "$SMARTHOST_PROXY" == "YES" ]; then
         $SERVICE_EXEC smarthost-proxy start
         $SERVICE_EXEC smarthost-proxy-scheduler start
         $SERVICE_EXEC local-loadbalancer start
@@ -395,7 +395,7 @@ if [ "$INIT" == "true" ]; then
         echo "$INIT_SERVICE_PATH/smarthost-proxy-scheduler.json" >>$AUTO_START_SERVICES/.init_services
         echo "$INIT_SERVICE_PATH/local-loadbalancer.json" >>$AUTO_START_SERVICES/.init_services
 
-        if [ "$LOCAL_BACKEND" == "yes" ]; then
+        if [ "$LOCAL_BACKEND" == "YES" ]; then
             $SERVICE_EXEC local-backend start
             echo "$INIT_SERVICE_PATH/local-backend.json" >>$AUTO_START_SERVICES/.init_services
             echo "$INIT_SERVICE_PATH/firewall-local-backend.json" >>$AUTO_START_SERVICES/.init_services
