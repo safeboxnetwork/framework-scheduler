@@ -68,7 +68,7 @@ toUpperCase() {
 
 json_update() {
     OLD_REGISTRY=$(set |grep DOCKER_REGISTRY_URL)
-    for JSON in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -Hn "DOCKER_REGISTRY_URL" {} +) ; do
+    for JSON_FILES in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -Hn "DOCKER_REGISTRY_URL" {} +) ; do
       version_update $OLD_REGISTRY_URL
       registry_update $DOCKER_REGISTRY_URL $OLD_REGISTRY_URL
     done
