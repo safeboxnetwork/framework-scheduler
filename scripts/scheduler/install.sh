@@ -320,7 +320,7 @@ if [ "$FIRST_INSTALL" == "true" ]; then
     fi
 
     deploy_core
-	version_update;
+	#version_update
 
 	echo "Successfully deployed $PROXY_TYPE"
 
