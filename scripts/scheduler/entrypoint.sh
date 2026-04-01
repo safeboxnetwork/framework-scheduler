@@ -1097,6 +1097,8 @@ execute_task() {
         install -m 666 -g 65534 /dev/null $SHARED/output/$TASK.json
         echo $JSON_TARGET | base64 -d >$SHARED/output/$TASK.json
 
+        sh /scripts/install.sh "$B64_JSON" "$service_exec" "true" "$GLOBAL_VERSION"
+
         # check username and password
         AUTH_USERNAME=$(echo $B64_JSON | base64 -d | jq -r .AUTH_USERNAME)
         AUTH_PASSWORD=$(echo $B64_JSON | base64 -d | jq -r .AUTH_PASSWORD)
@@ -1119,8 +1121,6 @@ execute_task() {
                 $service_exec domain-safebox start info &
             fi
         fi
-
-        sh /scripts/install.sh "$B64_JSON" "$service_exec" "true" "$GLOBAL_VERSION"
         #fi;
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0)
 
