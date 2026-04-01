@@ -130,7 +130,9 @@ add_json_target(){
 }
 
 create_firewall_from_template() {
-  ADDITIONAL=""
+    
+    ACTION=$1
+    ADDITIONAL=""
     ADDITIONAL='"NAME": "firewall", "ROLES": "firewall", "NETWORK": "host", "SCALE": "0", "VOLUMES": [ { "SOURCE": "/etc/user/config/services", "DEST": "/services", "TYPE": "ro" }, { "SOURCE": "/etc/system/data/dns/hosts.local", "DEST": "/etc/dns/hosts.local", "TYPE": "ro" }, { "SOURCE": "/run", "DEST": "/run", "TYPE": "rw" }, { "SOURCE": "/var/run/docker.sock", "DEST": "/var/run/docker.sock", "TYPE": "rw" } ], "EXTRA": "--rm --privileged", "PRE_START": [], "DEPEND": [], "POST_START": [], "CMD": ""'
 
     echo '{
@@ -160,6 +162,9 @@ create_firewall_from_template() {
 }
 
 create_domain_from_template() {
+
+    ACTION=$1
+    DOMAIN=$2
     
     ADDITIONAL=""
     ADDITIONAL='"NAME": "domain_checker", "ROLES": "domain_checker", "NETWORK": "host", "SCALE": "0", "EXTRA": "--rm --privileged", "PRE_START": [], "DEPEND": [], "POST_START": [], "CMD": ""'
@@ -209,6 +214,8 @@ create_remote_access_json() {
     elif [ -z "$ACTION" ]; then
         ACTION="CREATE"
     fi
+    create_firewall_from_template "$ACTION"
+    create_domain_from_template "$ACTION" "$DOMAIN"
 
     echo "safebox remote access for URL $DOMAIN $ACTION"
 
