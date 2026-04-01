@@ -108,16 +108,27 @@ registry_update() {
     
     NEW_REGISTRY_URL=$1
     OLD_REGISTRY_URL=$2
+    DEFAULT_REGISTRY_URL="${DEFAULT_REGISTRY_URL:-safebox}"
 
         TMP_FILE=$(mktemp -p /tmp/)
-        jq --arg old_registry "$OLD_REGISTRY_URL" --arg new_registry "$NEW_REGISTRY_URL" '
+        jq --arg old_registry "$OLD_REGISTRY_URL" --arg new_registry "$NEW_REGISTRY_URL" --arg default_registry "$DEFAULT_REGISTRY_URL" '
             walk(
                 if type == "object" then
                     with_entries(
-                        if .key == "DOCKER_REGISTRY_URL" and (.value | type == "string") then
-                            .value = $new_registry
-                        elif .key == "IMAGE" and (.value | type == "string") and (.value | startswith($old_registry)) then
-                            .value = $new_registry + (.value | ltrimstr($old_registry))
+                        if .key == "IMAGE" and (.value | type == "string") then
+                            if (.value | startswith($old_registry)) then
+                                .value = $new_registry + (.value | ltrimstr($old_registry))
+                            elif (.value | startswith($default_registry)) then
+                                .value = $new_registry + (.value | ltrimstr($default_registry))
+                            else
+                                .
+                            end
+                        elif .key == "DOCKER_REGISTRY_URL" and (.value | type == "string") then
+                            if .value == $old_registry or .value == $default_registry then
+                                .value = $new_registry
+                            else
+                                .
+                            end
                         else
                             .
                         end
