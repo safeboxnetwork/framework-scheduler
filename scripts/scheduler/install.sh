@@ -188,6 +188,12 @@ install_additionals_core() {
     if [ "$VPN_PROXY" == "YES" ] || [ "$VPN_PROXY" == "TRUE" ]; then
         cp -av /tmp/$VPN_PROXY_REPO/*.json $SERVICE_DIR/
         VPN_VOLUME=$(jq -r '.containers[0].VOLUMES[0].SOURCE' $SERVICE_DIR/vpn-proxy.json)
+        if [ -n "$VIRTUAL_SAFEBOX" ] && [ "$VIRTUAL_SAFEBOX" != "null" ]; then
+            VPN_SERVER_IP=${VIRTUAL_SAFEBOX_SERVER_IP:-10.0.12.250}
+            VPN_SERVER_NAME=${VIRTUAL_SAFEBOX_SERVER_NAME:-vpn1.safebox.network}
+            jq --arg ip "$VPN_SERVER_IP" --arg name "$VPN_SERVER_NAME" '.containers[0].EXTRA = .containers[0].EXTRA + " --add-host=\"" + $name + ":" + $ip + "\""' $SERVICE_DIR/vpn-proxy.json > $SERVICE_DIR/vpn-proxy.json.tmp 
+            mv $SERVICE_DIR/vpn-proxy.json.tmp $SERVICE_DIR/vpn-proxy.json      
+        fi
         mkdir -p "$(dirname "$VPN_VOLUME")"
     fi
 
