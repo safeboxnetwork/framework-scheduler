@@ -69,8 +69,8 @@ toUpperCase() {
 json_update() {
     REGISTRY_URL=$(jq -r '.DOCKER_REGISTRY_URL' /etc/user/config/user.json)
     OLD_REGISTRY_URL="${REGISTRY_URL:-safebox}"
-    for JSON_FILES in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -Hn "DOCKER_REGISTRY_URL" {} +) ; do
-      version_update $OLD_REGISTRY_URL
+    for JSON_FILE in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -Hn "DOCKER_REGISTRY_URL" {} +) ; do
+      #version_update $OLD_REGISTRY_URL
       registry_update $DOCKER_REGISTRY_URL $OLD_REGISTRY_URL
     done
 }
@@ -111,7 +111,7 @@ registry_update() {
             walk(
                 if type == "object" then
                     with_entries(
-                        if .key == "IMAGE" and (.value | type == "string") and (.value | startswith($old_registry)) then
+                        if (.key == "IMAGE" or .key == "DOCKER_REGISTRY_URL") and (.value | type == "string") and (.value | startswith($old_registry)) then
                             .value = $new_registry + (.value | ltrimstr($old_registry))
                         else
                             .
@@ -122,6 +122,7 @@ registry_update() {
                 end
             )
         ' "$JSON_FILE" > "$TMP_FILE"
+        cat "$TMP_FILE"
         mv "$TMP_FILE" "$JSON_FILE"
 }
 
