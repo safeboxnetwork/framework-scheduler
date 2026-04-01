@@ -124,7 +124,7 @@ registry_update() {
                                 .
                             end
                         elif .key == "DOCKER_REGISTRY_URL" and (.value | type == "string") then
-                            if .value == $old_registry
+                            if .value == $old_registry or .value == $default_registry then
                                 .value = $new_registry
                             else
                                 .
