@@ -69,7 +69,8 @@ toUpperCase() {
 json_update() {
     REGISTRY_URL=$(jq -r '.DOCKER_REGISTRY_URL' /etc/user/config/user.json)
     OLD_REGISTRY_URL="${REGISTRY_URL:-safebox}"
-    for JSON_FILE in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -Hn "DOCKER_REGISTRY_URL" {} +) ; do
+    for JSON_FILE in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -l "DOCKER_REGISTRY_URL" {} +) ; do
+        ls 
       #version_update $OLD_REGISTRY_URL
       registry_update $DOCKER_REGISTRY_URL $OLD_REGISTRY_URL
     done
