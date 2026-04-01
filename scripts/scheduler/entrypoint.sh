@@ -1111,8 +1111,10 @@ execute_task() {
         fi
         if [ "$REMOTE_ACCESS" != "null" ]; then
             if [ "$REMOTE_ACCESS" != "" ]; then
-                create_remote_access_json "$REMOTE_ACCESS"
+
                 create_framework_dns_records
+                create_remote_access_json "$REMOTE_ACCESS"
+                
                 $service_exec firewall-safebox start info &
                 $service_exec domain-safebox start info &
             fi
@@ -1487,8 +1489,9 @@ execute_task() {
 
             if [ "$REMOTE_ACCESS" != "null" ]; then
                 if [ "$REMOTE_ACCESS" != "" ]; then
-                    create_remote_access_json "$REMOTE_ACCESS"
                     create_framework_dns_records
+                    create_remote_access_json "$REMOTE_ACCESS"
+                    
                     $service_exec firewall-safebox start info &
                     $service_exec domain-safebox start info &
                 else
