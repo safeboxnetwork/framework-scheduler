@@ -97,8 +97,8 @@ version_update() {
                 .
             end
         )
-    ' "$JSON" > "$TMP_FILE"
-    mv "$TMP_FILE" "$JSON"
+    ' "$JSON_FILE" > "$TMP_FILE"
+    mv "$TMP_FILE" "$JSON_FILE"
 }
 
 registry_update() {
@@ -121,8 +121,8 @@ registry_update() {
                     .
                 end
             )
-        ' "$JSON" > "$TMP_FILE"
-        mv "$TMP_FILE" "$JSON"
+        ' "$JSON_FILE" > "$TMP_FILE"
+        mv "$TMP_FILE" "$JSON_FILE"
 }
 
 install_local_backend() {
