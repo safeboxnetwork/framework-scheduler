@@ -1649,34 +1649,3 @@ inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r 
             rm -f $dir/$file
         fi
     done
-
-# while true; do
-
-#     TASKS=""
-
-#     # GET DEPLOYMENT IDs FROM generate key
-#     #TASKS=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT SMEMBERS web_in)
-#     TASK=$(read $SHARED/output/*)
-#     if [[ "$TASKS" != "0" && "$TASKS" != "" ]]; then
-
-#         # PROCESSING TASK
-#         for TASK in $(echo $TASKS); do
-
-#             ### READ TASKS FROM REDIS
-#             B64_JSON=$(redis-cli -h $REDIS_SERVER -p $REDIS_PORT GET $TASK)
-
-#             JSON_TARGET=$(echo $B64_JSON | base64 -d | jq -rc .'STATUS="0"' | base64 -w0)
-#             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SET $TASK "$JSON_TARGET"
-
-#             execute_task "$TASK" "$B64_JSON"
-
-#             # MOVE TASK from web_in into web_out
-#             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SREM web_in $TASK
-#             redis-cli -h $REDIS_SERVER -p $REDIS_PORT SADD web_out $TASK
-#             echo $JSON_TARGET | base64 -d > $SHARED/output/$TASK.json
-
-#         done
-#     fi
-
-#     sleep 1
-# done

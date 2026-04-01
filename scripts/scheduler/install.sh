@@ -67,7 +67,8 @@ toUpperCase() {
 }
 
 json_update() {
-    OLD_REGISTRY=$(set |grep DOCKER_REGISTRY_URL)
+    REGISTRY_URL=$(jq -r '.DOCKER_REGISTRY_URL' /etc/user/config/user.json)
+    OLD_REGISTRY_URL="${REGISTRY_URL:-safebox}"
     for JSON_FILES in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -Hn "DOCKER_REGISTRY_URL" {} +) ; do
       version_update $OLD_REGISTRY_URL
       registry_update $DOCKER_REGISTRY_URL $OLD_REGISTRY_URL
@@ -76,14 +77,22 @@ json_update() {
 
 version_update() {
 
-    OLD_REGISTRY=$1
+    OLD_REGISTRY_URL=$1
+    GLOBAL_VERSION=$(jq -r '.GLOBAL_VERSION' /etc/user/config/user.json)
+    GLOBAL_VERSION="${GLOBAL_VERSION:-latest}"
 
     TMP_FILE=$(mktemp -p /tmp/)
 
     jq --arg registry "$OLD_REGISTRY_URL" --arg version "$GLOBAL_VERSION" '
         walk(
-            if type == "string" and startswith($registry) then
-                (split(":")[0]) + ":" + $version
+            if type == "object" then
+                with_entries(
+                    if .key == "IMAGE" and (.value | type == "string") and (.value | startswith($registry)) then
+                        .value = (.value | split(":")[0]) + ":" + $version
+                    else
+                        .
+                    end
+                )
             else
                 .
             end
@@ -94,21 +103,26 @@ version_update() {
 
 registry_update() {
     
-    NEW_REGISTRY=$1
-    OLD_REGISTRY=$2
+    NEW_REGISTRY_URL=$1
+    OLD_REGISTRY_URL=$2
 
         TMP_FILE=$(mktemp -p /tmp/)
         jq --arg old_registry "$OLD_REGISTRY_URL" --arg new_registry "$NEW_REGISTRY_URL" '
             walk(
-                if type == "string" and startswith($old_registry) then
-                    $new_registry + ltrimstr($old_registry)
+                if type == "object" then
+                    with_entries(
+                        if .key == "IMAGE" and (.value | type == "string") and (.value | startswith($old_registry)) then
+                            .value = $new_registry + (.value | ltrimstr($old_registry))
+                        else
+                            .
+                        end
+                    )
                 else
                     .
                 end
             )
         ' "$JSON" > "$TMP_FILE"
         mv "$TMP_FILE" "$JSON"
-    export DOCKER_REGISTRY_URL="$NEW_REGISTRY_URL"
 }
 
 install_local_backend() {
@@ -158,14 +172,14 @@ install_additionals_core() {
     if [ "$VPN_PROXY" == "YES" ] || [ "$VPN_PROXY" == "TRUE" ]; then
         cp -av /tmp/$VPN_PROXY_REPO/*.json $SERVICE_DIR/
         VPN_VOLUME=$(jq -r '.containers[0].VOLUMES[0].SOURCE' $SERVICE_DIR/vpn-proxy.json)
-        mkdir -p $(dirname $VPN_VOLUME)
+        mkdir -p "$(dirname "$VPN_VOLUME")"
     fi
 
     if [ "$CRON" == "YES" ] || [ "$CRON" == "TRUE" ]; then
         cp -av /tmp/$CRON_REPO/*.json $SERVICE_DIR/
-        CRON_VOLUMES=$(jq -r '.containers[].VOLUMES[].SOURCE' $SERVICE_DIR/cron.json | grep -v '\.')
+        CRON_VOLUMES=$(jq -r '[.containers[].VOLUMES[].SOURCE | select(type == "string" and length > 0 and (test("\\.") | not) and (test("^\\s+$") | not))] | unique[]' "$SERVICE_DIR/cron.json")
         for VOLUME in $CRON_VOLUMES; do
-            mkdir -p $VOLUME
+            mkdir -p "$VOLUME"
         done
     fi
 
@@ -272,19 +286,21 @@ deploy_core() {
                 echo "WARNING: No LETSENCRYPT_MAIL given — Let's Encrypt will not work properly."
             else
                 TMP_FILE=$(mktemp -p /tmp/)
-                LETS_CONTENT='"letsencrypt": {"EMAIL": "'$LETSENCRYPT_MAIL'","SERVERNAME": "'$LETSENCRYPT_SERVERNAME'","DOCKER_REGISTRY_URL": "'$DOCKER_REGISTRY_URL'"}'
-                if [ -f $USER_CONFIG_PATH ]; then
-                    TARGET=$(cat $USER_CONFIG_PATH | head -n-2)
-                    if [ "$TARGET" != "" ]; then
-                        { echo "$TARGET"; echo "},"; echo "$LETS_CONTENT"; echo "}"; } >>"$TMP_FILE"
-                    else
-                        { echo "{"; echo "$LETS_CONTENT"; echo "}"; } >>"$TMP_FILE"
-                    fi
+                if [ -f "$USER_CONFIG_PATH" ] && [ -s "$USER_CONFIG_PATH" ]; then
+                    jq --arg email "$LETSENCRYPT_MAIL" \
+                       --arg servername "$LETSENCRYPT_SERVERNAME" \
+                       --arg registry "$DOCKER_REGISTRY_URL" \
+                       '. + {"letsencrypt": {"EMAIL": $email, "SERVERNAME": $servername, "DOCKER_REGISTRY_URL": $registry}}' \
+                       "$USER_CONFIG_PATH" > "$TMP_FILE"
                 else
-                    { echo "{"; echo "$LETS_CONTENT"; echo "}"; } >>"$TMP_FILE"
+                    jq -n \
+                       --arg email "$LETSENCRYPT_MAIL" \
+                       --arg servername "$LETSENCRYPT_SERVERNAME" \
+                       --arg registry "$DOCKER_REGISTRY_URL" \
+                       '{"letsencrypt": {"EMAIL": $email, "SERVERNAME": $servername, "DOCKER_REGISTRY_URL": $registry}}' \
+                       > "$TMP_FILE"
                 fi
-                jq -r . $TMP_FILE >$USER_CONFIG_PATH
-                rm $TMP_FILE
+                mv "$TMP_FILE" "$USER_CONFIG_PATH"
             fi
         fi
     done
@@ -320,7 +336,7 @@ if [ "$FIRST_INSTALL" == "true" ]; then
     fi
 
     deploy_core
-	#version_update
+	json_update
 
 	echo "Successfully deployed $PROXY_TYPE"
 
