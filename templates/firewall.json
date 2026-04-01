@@ -1,0 +1,67 @@
+{
+    "main": {
+        "SERVICE_NAME": "${SERVICE_NAME}",
+        "DOMAIN": "${DOMAIN}"
+    },
+    "containers": [
+        {
+            "IMAGE": "${DOCKER_REGISTRY_URL}/firewall:${IMAGE_TAG}",
+            "UPDATE": "true",
+            "MEMORY": "64M",
+            "ENVS": [
+                {
+                    "CHAIN": "${CHAIN}"
+                },
+                {
+                    "SOURCE": "${SOURCE}"
+                },
+                {
+                    "TARGET": "${TARGET}"
+                },
+                {
+                    "TARGET_PORT": "${TARGET_PORT}"
+                },
+                {
+                    "TYPE": "${TYPE}"
+                },
+                {
+                    "COMMENT": "${COMMENT}"
+                },
+                {
+                    "OPERATION": "${ACTION}"
+                }
+            ],
+            "NAME": "firewall",
+            "ROLES": "firewall",
+            "NETWORK": "host",
+            "SCALE": "0",
+            "VOLUMES": [
+                {
+                    "SOURCE": "/etc/user/config/services",
+                    "DEST": "/services",
+                    "TYPE": "ro"
+                },
+                {
+                    "SOURCE": "/etc/system/data/dns/hosts.local",
+                    "DEST": "/etc/dns/hosts.local",
+                    "TYPE": "ro"
+                },
+                {
+                    "SOURCE": "/run",
+                    "DEST": "/run",
+                    "TYPE": "rw"
+                },
+                {
+                    "SOURCE": "/var/run/docker.sock",
+                    "DEST": "/var/run/docker.sock",
+                    "TYPE": "rw"
+                }
+            ],
+            "EXTRA": "--rm --privileged",
+            "PRE_START": [],
+            "DEPEND": [],
+            "POST_START": [],
+            "CMD": ""
+        }
+    ]
+}

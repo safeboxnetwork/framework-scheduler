@@ -309,6 +309,13 @@ deploy_core() {
     install_additionals_core
 }
 
+create_files_from_template() {
+    FILE_TYPE=$1
+    TARGET_NAME=$2
+    ENVIRIONMENT_VARS=$3
+
+}
+
 # ─── Inlined from additional_install.sh ──────────────────────────────────────
 
 #@@@@@@

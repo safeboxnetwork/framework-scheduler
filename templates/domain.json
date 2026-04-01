@@ -1,0 +1,54 @@
+{
+    "main": {
+        "SERVICE_NAME": "${SERVICE_NAME}",
+        "DOMAIN": "${DOMAIN}"
+    },
+    "containers": [
+        {
+            "IMAGE": "${DOCKER_REGISTRY_URL}/domain-check:${IMAGE_TAG}",
+            "UPDATE": "true",
+            "MEMORY": "64M",
+            "ENVS": [
+                {
+                    "PROXY": "${PROXY}"
+                },
+                {
+                    "TARGET": "${TARGET}"
+                },
+                {
+                    "PORT": "${PORT}"
+                },
+                {
+                    "DOMAIN": "${DOMAIN}"
+                },
+                {
+                    "SMARTHOST_PROXY_PATH": "${SMARTHOST_PROXY_PATH}"
+                },
+                {
+                    "OPERATION": "${OPERATION}"
+                }
+            ],
+            "VOLUMES": [
+                {
+                    "SOURCE": "/etc/user/config/smarthost-domains",
+                    "DEST": "/smarthost-domains",
+                    "TYPE": "rw"
+                },
+                {
+                    "SOURCE": "/etc/system/data/dns/hosts.local",
+                    "DEST": "/etc/dns/hosts.local",
+                    "TYPE": "ro"
+                }
+            ],
+            "NAME": "domain_checker",
+            "ROLES": "domain_checker",
+            "NETWORK": "host",
+            "SCALE": "0",
+            "EXTRA": "--rm --privileged",
+            "PRE_START": [],
+            "DEPEND": [],
+            "POST_START": [],
+            "CMD": ""
+        }
+    ]
+}

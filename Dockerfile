@@ -16,8 +16,9 @@ FROM alpine:latest
 
 RUN apk add --update --no-cache docker-cli wget curl dos2unix jq openssl git coreutils inotify-tools acl apache2-utils
 
+COPY templates/ /templates/
 COPY scripts/scheduler/*.sh /scripts/
-RUN find ./scripts -name "*.sh" | xargs dos2unix
+RUN find ./scripts -name "*.sh" | xargs dos2unix && find ./templates -name "*.json" | xargs dos2unix
 RUN ["chmod", "+x", "-R", "/scripts/"]
 
 CMD /scripts/entrypoint.sh
