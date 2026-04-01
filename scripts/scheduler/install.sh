@@ -114,7 +114,9 @@ registry_update() {
             walk(
                 if type == "object" then
                     with_entries(
-                        if (.key == "IMAGE" or .key == "DOCKER_REGISTRY_URL") and (.value | type == "string") and (.value | startswith($old_registry)) then
+                        if .key == "DOCKER_REGISTRY_URL" and (.value | type == "string") then
+                            .value = $new_registry
+                        elif .key == "IMAGE" and (.value | type == "string") and (.value | startswith($old_registry)) then
                             .value = $new_registry + (.value | ltrimstr($old_registry))
                         else
                             .
