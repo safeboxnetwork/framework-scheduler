@@ -67,7 +67,7 @@ toUpperCase() {
 }
 
 json_update() {
-    REGISTRY_URL=$(jq -r '.DOCKER_REGISTRY_URL' /etc/user/config/user.json)
+    REGISTRY_URL=$(jq -r '.letsencrypt.DOCKER_REGISTRY_URL' /etc/user/config/user.json 2>/dev/null)
     OLD_REGISTRY_URL="${REGISTRY_URL:-safebox}"
     echo "Current registry URL: $OLD_REGISTRY_URL"
     for JSON_FILE in $(find /etc/user/config/ /etc/system/config -type f -name "*.json" -exec grep -lE '"DOCKER_REGISTRY_URL"|"IMAGE"' {} +) ; do
