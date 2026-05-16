@@ -1333,7 +1333,7 @@ execute_task() {
                     elif [ "$DEPLOY_ACTION" == "reinstall" ]; then
                         APP_TEMPLATE=$APP_DIR"/template.json"
                         TEMPLATE=$(cat $APP_TEMPLATE)
-                        for LINE in $(cat $SERVICE_DIR/service-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]' 2>/dev/null); do
+                        for LINE in $(cat $SERVICE_DIR/service-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] ? | to_entries[]' 2>/dev/null); do
                             KEY=$(echo $LINE | jq -r .key)
                             VALUE=$(echo $LINE | jq -r .value)
                             debug "$KEY: $VALUE"
@@ -1342,7 +1342,7 @@ execute_task() {
                             TEMPLATE=$(echo "$TEMPLATE" | jq -r '.fields |= map(if .key == "'$KEY'" then .value = "'$VALUE'" else . end)')
                         done
                         # write ENV value from domain file to template value by key name
-                        for LINE in $(cat $SERVICE_DIR/domain-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] | to_entries[]' 2>/dev/null); do
+                        for LINE in $(cat $SERVICE_DIR/domain-$DEPLOY_NAME.json | jq -rc '.containers[].ENVS[] ? | to_entries[]' 2>/dev/null); do
                             KEY=$(echo $LINE | jq -r .key)
                             VALUE=$(echo $LINE | jq -r .value)
                             debug "$KEY: $VALUE"
