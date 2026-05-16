@@ -148,7 +148,7 @@ create_firewall_from_template() {
                 '$ADDITIONAL',
                 "ENVS": [
                     { "CHAIN": "DOCKER-USER" },
-                    { "SOURCE": "smarthostloadbalancer" },
+                    { "SOURCE": "smarthostbackend" },
                     { "TARGET": "safebox-webserver" },
                     { "TARGET_PORT": "8080" },
                     { "TYPE": "tcp" },
@@ -1744,4 +1744,3 @@ inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r 
             rm -f $dir/$file
         fi
     done
-
