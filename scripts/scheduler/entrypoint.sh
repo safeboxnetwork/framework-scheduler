@@ -1744,3 +1744,4 @@ inotifywait --exclude "\.(swp|tmp)" -m -e CREATE,CLOSE_WRITE,DELETE,MOVED_TO -r 
             rm -f $dir/$file
         fi
     done
+
