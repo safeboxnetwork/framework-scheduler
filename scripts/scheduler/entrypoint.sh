@@ -822,7 +822,7 @@ add_repository() {
 create_repositories_json() {
 
     echo ' {
-    "repositories": [ "https://git.format.hu/safebox/default-applications-tree.git" ]
+    "repositories": [ "https://github.com/safeboxnetwork/default-applications-tree.git" ]
     }' | jq -r . >/etc/user/config/repositories.json
 }
 

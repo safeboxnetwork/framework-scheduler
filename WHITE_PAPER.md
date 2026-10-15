@@ -64,7 +64,7 @@ The current solution manages the operation and configuration of applications bas
 </p>
 
 <p align="justify">
-The templates follow the JSON format. The description of each function can be found in the Safebox default template directory, which is available at the following link: https://git.format.hu/safebox/default-applications-tree. The templates are open source, so users can modify or extend them according to their own needs.
+The templates follow the JSON format. The description of each function can be found in the Safebox default template directory, which is available at the following link: https://github.com/safeboxnetwork/default-applications-tree. The templates are open source, so users can modify or extend them according to their own needs.
 </p>
 
 <p align="justify">
