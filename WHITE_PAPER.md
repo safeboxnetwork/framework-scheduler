@@ -333,4 +333,28 @@ You can read more about the detailed template management capabilities of the Saf
 
 # Future Work
 
+## Distributed backups
+
+<p align="justify">
+In addition to the currently not available local and geographically separated backup options, one of the most important planned directions is the implementation of a fully distributed, multiple backup and recovery solution. The essence of this concept is that users will be able to store several backup copies of their data on the disks of other Safebox users, relying on the community instead of a single central storage location. This means that the user’s data will not be tied to one single machine or provider; instead, the backup archives will be spread across multiple, independently operated Safebox devices, which further increases data availability and protection against loss, since even the simultaneous failure or unavailability of several participating machines will not jeopardize the recoverability of the data.
+</p>
+
+<p align="justify">
+From the user’s perspective, the service will appear as a single, unified backup and recovery surface: they will be able to select multiple backup endpoints — including other Safebox users’ machines as well as their own devices — and their safebox platforms will automatically distribute and schedule the backup jobs among them. The already existing plan of the local and remote backup and restore capabilities will naturally remain available and will be fully integrated into this distributed model, so the user can freely combine local, remote and community‑based endpoints within a single backup strategy. Recovery will work in the same way: after selecting the desired restore point, the platform will locate the corresponding archives — regardless of which participant’s disk they are stored on — and restore the data with the same single‑click experience.
+</p>
+
+<p align="justify">
+Naturally, storing data on other users’ machines raises serious security considerations. Accordingly, the solution will build on the already proven building blocks of the platform: data transfer will continue to rely on the SSH‑based protocol, and the actual backup and restore operations on the open‑source BorgBackup solution, whose built‑in encryption and compression mechanisms ensure that the participating users’ machines store only encrypted, compressed archives to which exclusively the data owner has access. The user retains full control at all times, including the ability to remotely delete their own backup archives from any participating machine, just as it is already possible in the case of the existing cross‑provider backup endpoints. Participation in the distributed backup community will always be voluntary and based on interpersonal relationships, so it remains entirely up to the users to decide whom they trust with storing their encrypted backup data.
+</p>
+
+## Private peer‑to‑peer operation mode
+
+<p align="justify">
+Another planned direction is to give users the option to operate their Safebox platform exclusively within a private peer‑to‑peer network built only from their own devices, completely excluding any other party — including third‑party services and even the provider — from accessing it. In this mode, the user’s own Safebox devices communicate with each other directly through secure, encrypted channels, and no traffic or data leaves this closed network. This provides the highest possible level of independence and privacy, since the entire data and service management infrastructure remains under the exclusive control of the user, without any external involvement.
+</p>
+
+<p align="justify">
+The only exception to this strict exclusion is the process of certificate renewal: the daily letsencrypt‑based certificate renewal procedure, which ensures that the certificates used for secure communication remain continuously valid, will continue to operate as the single, narrowly defined point of contact with the outside world. Apart from this renewal process — which is unavoidable for maintaining secure, publicly trusted certificates — no other process, service or party will be granted any access to the peer‑to‑peer network. In practice, users will be able to switch to this mode at any time, similarly to how they can already change to a fully private operating mode independent of any provider, and all core features of the platform, including local, remote and distributed backups, will remain fully functional within the closed peer‑to‑peer network.
+</p>
+
 # Conclusion

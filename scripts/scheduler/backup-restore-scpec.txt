@@ -1,0 +1,21 @@
+I try to figure out the backup/restore solution. My idea is to keep it very sophisticated which means user can manage it very detailed.
+
+Backups means a job which invoked by the cron process.
+The cron stores all the jobs running times.
+The backup jobs would be stored as a specific service json content.
+
+The backup has two parts:
+
+1. local backup to dedicated docker volume
+2. remote backup using ssh conmnection accessing it. The remote would be two types of creating, one is local network without wireguard vpn and remote backup based on wireguard client.
+
+All the backup processes based on the safebox services. The service files placed in the USER_CONFIG docker volume and mounted in the /etc/user/config/services folder
+
+Backup:
+At first it is needed to turn on.
+A second: user can make decisions any time:
+- enable or disable
+- delete all or partially
+- create local storage backup and/or local network and/or remote
+
+Restore
