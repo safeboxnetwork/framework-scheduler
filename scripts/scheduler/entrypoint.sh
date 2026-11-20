@@ -3,34 +3,67 @@
 cd /scripts
 DEBUG_MODE=${DEBUG_MODE:-false}
 
+GLOBAL_ENV='[]'
+GLOBAL_ENV_ARGS=""
+
+add_env() {
+    key="$1"
+    value="$2"
+
+    export "$key=$value"
+
+    GLOBAL_ENV=$(printf '%s' "$GLOBAL_ENV" | jq -c \
+        --arg k "$key" \
+        --arg v "$value" \
+        '. += [{($k): $v}]')
+    GLOBAL_ENV_ARGS="${GLOBAL_ENV_ARGS}--env ${key}='${value}' \
+"
+}
+
 VERSION="1.2.1"
+add_env VERSION "$VERSION"
 DOCKER_REGISTRY_URL=${DOCKER_REGISTRY_URL:-safebox}
+add_env DOCKER_REGISTRY_URL "$DOCKER_REGISTRY_URL"
+
 DOCKER_REGISTRY_USERNAME=$DOCKER_REGISTRY_USERNAME
+add_env DOCKER_REGISTRY_USERNAME "$DOCKER_REGISTRY_USERNAME"
 DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD
+add_env DOCKER_REGISTRY_PASSWORD "$DOCKER_REGISTRY_PASSWORD"
 
 if [ -n "$DOCKER_REGISTRY_USERNAME" ] && [ -n "$DOCKER_REGISTRY_PASSWORD" ]; then
     echo "Logging in to Docker registry $DOCKER_REGISTRY_URL"
     echo "$DOCKER_REGISTRY_PASSWORD" | docker login $DOCKER_REGISTRY_URL --username $DOCKER_REGISTRY_USERNAME --password-stdin
     DOCKER_REGISTRY_ENVS="--env DOCKER_REGISTRY_USERNAME=$DOCKER_REGISTRY_USERNAME --env DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD"
+    add_env DOCKER_REGISTRY_ENVS "$DOCKER_REGISTRY_ENVS"
 
 else
     echo "No Docker registry credentials provided, skipping login."
 fi
 
-
 USER_INIT_PATH=$USER_INIT_PATH
+add_env USER_INIT_PATH "$USER_INIT_PATH"
 GLOBAL_VERSION=${GLOBAL_VERSION:-latest}
+add_env GLOBAL_VERSION "$GLOBAL_VERSION"
 SERVICE_DIR=${SERVICE_DIR:-/etc/user/config/services}
+add_env SERVICE_DIR "$SERVICE_DIR"
 SECRET_DIR=${SECRET_DIR:-/etc/user/secret}
+add_env SECRET_DIR "$SECRET_DIR"
 
 SHARED=${SHARED:-/var/tmp/shared}
+add_env SHARED "$SHARED"
 
 FRAMEWORK_SCHEDULER_IMAGE=${FRAMEWORK_SCHEDULER_IMAGE:-framework-scheduler}
+add_env FRAMEWORK_SCHEDULER_IMAGE "$FRAMEWORK_SCHEDULER_IMAGE"
 FRAMEWORK_SCHEDULER_NAME=${FRAMEWORK_SCHEDULER_NAME:-framework-scheduler}
+add_env FRAMEWORK_SCHEDULER_NAME "$FRAMEWORK_SCHEDULER_NAME"
 FRAMEWORK_SCHEDULER_NETWORK=${FRAMEWORK_SCHEDULER_NETWORK:-framework-network}
+add_env FRAMEWORK_SCHEDULER_NETWORK "$FRAMEWORK_SCHEDULER_NETWORK"
 FRAMEWORK_SCHEDULER_NETWORK_SUBNET=${FRAMEWORK_SCHEDULER_NETWORK_SUBNET:-"172.19.255.0/24"}
+add_env FRAMEWORK_SCHEDULER_NETWORK_SUBNET "$FRAMEWORK_SCHEDULER_NETWORK_SUBNET"
 FRAMEWORK_SCHEDULER_VERSION=${FRAMEWORK_SCHEDULER_VERSION:-latest}
+add_env FRAMEWORK_SCHEDULER_VERSION "$FRAMEWORK_SCHEDULER_VERSION"
 RUN_FORCE=${RUN_FORCE:-false}
+add_env RUN_FORCE "$RUN_FORCE"
 
 if [ "$DEBUG_MODE" == "true" ]; then
     DOCKER_START="--entrypoint=sh $DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION -c 'sleep 86400'"
@@ -41,26 +74,42 @@ else
 fi
 
 WEB_SERVER=${WEB_SERVER:-webserver}
+add_env WEB_SERVER "$WEB_SERVER"
 WEB_IMAGE=${WEB_IMAGE:-web-installer}
+add_env WEB_IMAGE "$WEB_IMAGE"
 WEBSERVER_PORT=${WEBSERVER_PORT:-8080}
+add_env WEBSERVER_PORT "$WEBSERVER_PORT"
 WEBSERVER_VERSION=${WEBSERVER_VERSION:-latest}
+add_env WEBSERVER_VERSION "$WEBSERVER_VERSION"
 REDIS_SERVER=${REDIS_SERVER:-redis-server}
+add_env REDIS_SERVER "$REDIS_SERVER"
 REDIS_PORT=${REDIS_PORT:-6379}
+add_env REDIS_PORT "$REDIS_PORT"
 REDIS_IMAGE=${REDIS_IMAGE:-redis}
+add_env REDIS_IMAGE "$REDIS_IMAGE"
 REDIS_VERSION=${REDIS_VERSION:-latest}
+add_env REDIS_VERSION "$REDIS_VERSION"
 
 SOURCE=${SOURCE:-user-config}
+add_env SOURCE "$SOURCE"
 SMARTHOST_PROXY_PATH=$SMARTHOST_PROXY_PATH
+add_env SMARTHOST_PROXY_PATH "$SMARTHOST_PROXY_PATH"
 HTPASSWD_FILE=${HTPASSWD_FILE:-/etc/system/config/smarthost-proxy/nginx/.htpasswd}
+add_env HTPASSWD_FILE "$HTPASSWD_FILE"
 
 GIT_URL=${GIT_URL:-git.format.hu}
+add_env GIT_URL "$GIT_URL"
 REPO=$REPO
+add_env REPO "$REPO"
 
 # scheduler settings
 CURL_SLEEP_SHORT=${CURL_SLEEP_SHORT:-5}
+add_env CURL_SLEEP_SHORT "$CURL_SLEEP_SHORT"
 CURL_RETRIES=${CURL_RETRIES:-360}
+add_env CURL_RETRIES "$CURL_RETRIES"
 
 SCHEDULER_SERVICEFILE_GENERATE_TEST=${SCHEDULER_SERVICEFILE_GENERATE_TEST:-false}
+add_env SCHEDULER_SERVICEFILE_GENERATE_TEST "$SCHEDULER_SERVICEFILE_GENERATE_TEST"
 
 if [[ -n "$DOCKER_REGISTRY_URL" && "$DOCKER_REGISTRY_URL" != "null" ]]; then
     SETUP="/setup"
@@ -852,7 +901,7 @@ create_framework_json() {
 
     ADDITIONAL=""
     ADDITIONAL='"EXTRA": "--label logging=promtail_user --label logging_jobname=containers --restart=always", "PRE_START": [], "DEPEND": [], "CMD": ""'
-    ENVS='"ENVS": [{"RUN_FORCE": "'$RUN_FORCE'"}, {"DOCKER_REGISTRY_URL": "'$DOCKER_REGISTRY_URL'"}, {"WEBSERVER_PORT": "'$WEBSERVER_PORT'"}],'
+
     echo '{
   "main": {
     "SERVICE_NAME": "framework"
@@ -865,7 +914,7 @@ create_framework_json() {
       "MEMORY": "256M",
       "NETWORK": "'$FRAMEWORK_SCHEDULER_NETWORK'",
       '$ADDITIONAL',
-      '$ENVS'
+      "ENVS": '$GLOBAL_ENV',
       '$ENTRYPOINT'
       "VOLUMES":[
         { "SOURCE": "SHARED",
@@ -1019,34 +1068,39 @@ check_update() {
 
 upgrade_scheduler() {
 
-    # Upgrading framework scheduler
-    debug "Upgrading framework scheduler..."
-    docker pull "$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION"
+    if [ -f $SERVICE_DIR/service-framework.json ]; then
+        $service_exec service-framework.containers.$FRAMEWORK_SCHEDULER_NAME start
+    else
+        # # Upgrading framework scheduler
+        debug "Upgrading framework scheduler..."
+        docker pull "$DOCKER_REGISTRY_URL/$FRAMEWORK_SCHEDULER_IMAGE:$FRAMEWORK_SCHEDULER_VERSION" 2>/dev/null
 
-    FRAMEWORK_SCHEDULER_NAME="$FRAMEWORK_SCHEDULER_NAME-$(head /dev/urandom | tr -dc '0-9' | head -c 6)"
+        FRAMEWORK_SCHEDULER_NAME="$FRAMEWORK_SCHEDULER_NAME-$(head /dev/urandom | tr -dc '0-9' | head -c 6)"
 
-    DOCKER_RUN="docker run -d \
-        -w /etc/user/config/services/ \
-        -v SHARED:/var/tmp/shared \
-	  	-v /var/run/docker.sock:/var/run/docker.sock \
-		-v SYSTEM_DATA:/etc/system/data \
-		-v SYSTEM_CONFIG:/etc/system/config \
-		-v SYSTEM_LOG:/etc/system/log \
-		-v USER_DATA:/etc/user/data \
-		-v USER_CONFIG:/etc/user/config \
-		-v USER_SECRET:/etc/user/secret \
-		--restart=always \
-        --name $FRAMEWORK_SCHEDULER_NAME \
-        $DOCKER_REGISTRY_ENVS \
-        $SET_DEBUG_MODE \
-	  	--env WEBSERVER_PORT=$WEBSERVER_PORT \
-	  	--network $FRAMEWORK_SCHEDULER_NETWORK \
-		--env RUN_FORCE=$RUN_FORCE \
-        --env UPGRADE=true \
-		--env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
-	  $DOCKER_START"
-    echo "DOCKER RUN: $DOCKER_RUN"
-    eval "$DOCKER_RUN"
+        DOCKER_RUN="docker run -d \
+            -w /etc/user/config/services/ \
+            -v SHARED:/var/tmp/shared \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v SYSTEM_DATA:/etc/system/data \
+            -v SYSTEM_CONFIG:/etc/system/config \
+            -v SYSTEM_LOG:/etc/system/log \
+            -v USER_DATA:/etc/user/data \
+            -v USER_CONFIG:/etc/user/config \
+            -v USER_SECRET:/etc/user/secret \
+            --restart=always \
+            --name $FRAMEWORK_SCHEDULER_NAME \
+            $GLOBAL_ENV_ARGS \
+            $DOCKER_REGISTRY_ENVS \
+            $SET_DEBUG_MODE \
+            --env WEBSERVER_PORT=$WEBSERVER_PORT \
+            --network $FRAMEWORK_SCHEDULER_NETWORK \
+            --env RUN_FORCE=$RUN_FORCE \
+            --env UPGRADE=true \
+            --env DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL \
+        $DOCKER_START"
+        echo "DOCKER RUN: $DOCKER_RUN"
+        eval "$DOCKER_RUN"
+    fi
 }
 
 upgrade() {
