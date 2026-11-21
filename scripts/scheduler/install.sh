@@ -215,7 +215,7 @@ deploy_core() {
     #PROXY_TYPE="${PROXY_TYPE:-smarthost-proxy}"
     PROXY_TYPE=""
 
-    GIT_REPO=${GIT_REPO:-git.format.hu}
+    GIT_URL=${GIT_URL:-git.format.hu}
     ORGANIZATION=${ORGANIZATION:-safebox}
     USER_CONFIG_PATH=${USER_CONFIG_PATH:-/etc/user/config/user.json}
     CORE_DNS=${CORE_DNS:-core-dns}
@@ -233,23 +233,23 @@ deploy_core() {
 	 	echo "No proxy type deployment defined."
 	fi
 
-    git clone https://$GIT_REPO/$ORGANIZATION/$CORE_DNS.git /tmp/$CORE_DNS
+    git clone https://$GIT_URL/$ORGANIZATION/$CORE_DNS.git /tmp/$CORE_DNS
 
     if [ "$LOCAL_PROXY" == "YES" ] || [ "$LOCAL_PROXY" == "TRUE" ]; then
-        git clone https://$GIT_REPO/$ORGANIZATION/$LOCAL_PROXY_REPO.git /tmp/$LOCAL_PROXY_REPO
-        git clone https://$GIT_REPO/$ORGANIZATION/$LOCAL_BACKEND_REPO.git /tmp/$LOCAL_BACKEND_REPO
+        git clone https://$GIT_URL/$ORGANIZATION/$LOCAL_PROXY_REPO.git /tmp/$LOCAL_PROXY_REPO
+        git clone https://$GIT_URL/$ORGANIZATION/$LOCAL_BACKEND_REPO.git /tmp/$LOCAL_BACKEND_REPO
     fi
 
     if [ "$VPN_PROXY" == "YES" ] || [ "$VPN_PROXY" == "TRUE" ]; then
-        git clone https://$GIT_REPO/$ORGANIZATION/$VPN_PROXY_REPO.git /tmp/$VPN_PROXY_REPO
+        git clone https://$GIT_URL/$ORGANIZATION/$VPN_PROXY_REPO.git /tmp/$VPN_PROXY_REPO
     fi
 
     if [ "$CRON" == "YES" ] || [ "$CRON" == "TRUE" ]; then
-        git clone https://$GIT_REPO/$ORGANIZATION/$CRON_REPO.git /tmp/$CRON_REPO
+        git clone https://$GIT_URL/$ORGANIZATION/$CRON_REPO.git /tmp/$CRON_REPO
     fi
 
     for i in $PROXY_TYPE; do
-        git clone https://$GIT_REPO/$ORGANIZATION/$i.git /tmp/$i
+        git clone https://$GIT_URL/$ORGANIZATION/$i.git /tmp/$i
 
         if [ "$i" == "public-proxy" ]; then
             PROXY_SCHEDULER_FILE=proxy-scheduler.json
