@@ -1199,7 +1199,7 @@ execute_task() {
         JSON_TARGET=$B64_JSON
 
     elif [ "$TASK_NAME" == "system" ]; then
-        SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-loadbalancer.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
+        SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
         INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json)
         SERVICES=""
         for SERVICE in $(echo $INSTALLED_SERVICES); do
@@ -1243,7 +1243,7 @@ execute_task() {
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'", "INSTALLED_SERVICES": {'$SERVICES'},"HTPASSWD":"'$HTPASSWD_CONTENT'"}' | jq -r . | base64 -w0)
 
     elif [ "$TASK_NAME" == "services" ]; then
-        SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-loadbalancer.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
+        SYSTEM_LIST="core-dns.json cron.json letsencrypt.json local-proxy.json service-framework.json smarthost-proxy-scheduler.json smarthost-proxy.json"
         INSTALLED_SERVICES=$(ls /etc/user/config/services/*.json)
         SERVICES=""
         for SERVICE in $(echo $INSTALLED_SERVICES); do
