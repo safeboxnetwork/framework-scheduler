@@ -97,9 +97,9 @@ add_env SMARTHOST_PROXY_PATH "$SMARTHOST_PROXY_PATH"
 HTPASSWD_FILE=${HTPASSWD_FILE:-/etc/system/config/smarthost-proxy/nginx/.htpasswd}
 add_env HTPASSWD_FILE "$HTPASSWD_FILE"
 
-GIT_URL=${GIT_URL:-git.format.hu}
+GIT_URL=${GIT_URL:-github.com}
 add_env GIT_URL "$GIT_URL"
-ORGANIZATION=${ORGANIZATION:-format}
+ORGANIZATION=${ORGANIZATION:-safeboxnetwork}
 add_env ORGANIZATION "$ORGANIZATION"
 REPO=$REPO
 add_env REPO "$REPO"

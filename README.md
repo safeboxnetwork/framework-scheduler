@@ -56,14 +56,51 @@ To build the Framework Scheduler image from the source code, follow these steps:
      > **Note:** Replace `<your-docker-registry>` with your actual Docker registry URL. Otherwise, the image will use the default Docker registry URL, 'safebox'.
 
 ### Environment Variables
-The following environment variables can be set to configure the Framework Scheduler:
 
-| Environment Variable | Description |
-|--------------------------|-------------|
-| `DOCKER_REGISTRY_URL` | Docker registry URL for image operations. Required for pushing to a private registry. |
-| `DOCKER_REGISTRY_USERNAME` | Username for Docker registry authentication. |
-| `DOCKER_REGISTRY_PASSWORD` | Password for Docker registry authentication. |
-| `WEBSERVER_PORT` | Port number for the web interface. Default: `8080`. |
+The following environment variables can be set to configure the Framework Scheduler. These are defined as usable global environments at the beginning of `scripts/scheduler/entrypoint.sh` and are exported to all child containers and services:
+
+#### Core Configuration
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `DEBUG_MODE` | `false` | Enables debug mode when set to `true`. |
+| `VERSION` | `1.2.1` | The Framework Scheduler version. |
+| `DOCKER_REGISTRY_URL` | `safebox` | Docker registry URL for image operations. Required for pushing to a private registry. |
+| `DOCKER_REGISTRY_USERNAME` | (none) | Username for Docker registry authentication. |
+| `DOCKER_REGISTRY_PASSWORD` | (none) | Password for Docker registry authentication. |
+| `GLOBAL_VERSION` | `latest` | Global version tag used for service images. |
+| `GIT_URL` | `github.com` | Git server URL used for cloning service repositories. |
+| `ORGANIZATION` | `safeboxnetwork` | Organization name on the Git server used for repository paths. |
+
+#### Directory Paths
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `SERVICE_DIR` | `/etc/user/config/services` | Directory containing service configuration JSON files. |
+| `SECRET_DIR` | `/etc/user/secret` | Directory for storing secrets. |
+| `SHARED` | `/var/tmp/shared` | Shared directory for inter-container data exchange. |
+
+#### Framework Scheduler Settings
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `FRAMEWORK_SCHEDULER_IMAGE` | `framework-scheduler` | Image name for the Framework Scheduler container. |
+| `FRAMEWORK_SCHEDULER_NAME` | `framework-scheduler` | Container name for the Framework Scheduler. |
+| `FRAMEWORK_SCHEDULER_NETWORK` | `framework-network` | Docker network name used by Safebox services. |
+| `FRAMEWORK_SCHEDULER_NETWORK_SUBNET` | `172.19.255.0/24` | Subnet CIDR for the Safebox Docker network. |
+| `FRAMEWORK_SCHEDULER_VERSION` | `latest` | Version tag for the Framework Scheduler image. |
+| `RUN_FORCE` | `false` | Forces creation of the Docker network even if the desired subnet is unavailable. |
+
+#### Web Interface & Redis
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `WEB_SERVER` | `webserver` | Service name for the web server container. |
+| `WEB_IMAGE` | `web-installer` | Image name for the web installer service. |
+| `WEBSERVER_PORT` | `8080` | Port number for the web interface. |
+| `WEBSERVER_VERSION` | `latest` | Version tag for the web installer image. |
+
+> **Note:** Variables without a default value are passed through from the container environment if set; otherwise they remain empty.
 
 ## TODO
 The Framework Scheduler is under active development. Future plans include:
