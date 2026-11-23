@@ -1160,6 +1160,8 @@ execute_task() {
         AUTH_PASSWORD=$(echo $B64_JSON | base64 -d | jq -r .AUTH_PASSWORD)
         ENABLE_GUARD=$(echo $B64_JSON | base64 -d | jq -r .ENABLE_GUARD)
         REMOTE_ACCESS=$(echo $B64_JSON | base64 -d | jq -r .REMOTE_ACCESS)
+        REMOTE_ACCESS_DOMAIN=$(echo $B64_JSON | base64 -d | jq -r .REMOTE_ACCESS_DOMAIN)
+
 
         if [ $(echo $B64_JSON | base64 -d | jq -r .USER_AUTH) == "yes" ]; then 
 
@@ -1167,14 +1169,18 @@ execute_task() {
                 create_htpasswd_file "$AUTH_USERNAME" "$AUTH_PASSWORD"
             fi
         fi
-        if [ "$REMOTE_ACCESS" != "null" ]; then
-            if [ "$REMOTE_ACCESS" != "" ]; then
+        if [ "$REMOTE_ACCESS" == "yes" ]; then
+            if [ "$REMOTE_ACCESS_DOMAIN" != "" ]; then
 
                 create_framework_dns_records
-                create_remote_access_json "$REMOTE_ACCESS"
+                create_remote_access_json "$REMOTE_ACCESS_DOMAIN"
                 
                 $service_exec firewall-safebox start info &
                 $service_exec domain-safebox start info &
+            fi
+        else
+            if [ "$REMOTE_ACCESS" == "no" ]; then
+                create_remote_access_json "" DELETE
             fi
         fi
         #fi;
