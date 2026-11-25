@@ -215,8 +215,8 @@ deploy_core() {
     #PROXY_TYPE="${PROXY_TYPE:-smarthost-proxy}"
     PROXY_TYPE=""
 
-    GIT_URL=${GIT_URL:-git.format.hu}
-    ORGANIZATION=${ORGANIZATION:-safebox}
+    GIT_URL=${GIT_URL:-github.com}
+    ORGANIZATION=${ORGANIZATION:-safeboxnetwork}
     USER_CONFIG_PATH=${USER_CONFIG_PATH:-/etc/user/config/user.json}
     CORE_DNS=${CORE_DNS:-core-dns}
     LOCAL_PROXY_REPO=${LOCAL_PROXY_REPO:-local-proxy}

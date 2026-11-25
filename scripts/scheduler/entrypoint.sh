@@ -1170,10 +1170,11 @@ execute_task() {
             fi
         fi
         if [ "$REMOTE_ACCESS" == "yes" ]; then
-            if [ "$REMOTE_ACCESS_DOMAIN" != "" ]; then
+            if [[ "$REMOTE_ACCESS_DOMAIN" != "" && "$AUTH_USERNAME" != "null" &&  ! -z "$AUTH_USERNAME" ]] && [[ "$AUTH_PASSWORD" != "null" && ! -z "$AUTH_PASSWORD" ]]; then
 
                 create_framework_dns_records
                 create_remote_access_json "$REMOTE_ACCESS_DOMAIN"
+                create_htpasswd_file "$AUTH_USERNAME" "$AUTH_PASSWORD"
                 
                 $service_exec firewall-safebox start info &
                 $service_exec domain-safebox start info &
@@ -1183,7 +1184,7 @@ execute_task() {
                 create_remote_access_json "" DELETE
             fi
         fi
-        #fi;
+        
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "INSTALL_STATUS": "'$INSTALL_STATUS'" }' | jq -r . | base64 -w0)
 
     elif [ "$TASK_NAME" == "request_letsencrypt" ]; then
