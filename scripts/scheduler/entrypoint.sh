@@ -90,6 +90,9 @@ add_env REDIS_IMAGE "$REDIS_IMAGE"
 REDIS_VERSION=${REDIS_VERSION:-latest}
 add_env REDIS_VERSION "$REDIS_VERSION"
 
+VPN_PROXY_REPO==${VPN_PROXY_REPO:-wireguard-proxy}
+add_env VPN_PROXY_REPO "$VPN_PROXY_REPO"
+
 SOURCE=${SOURCE:-user-config}
 add_env SOURCE "$SOURCE"
 SMARTHOST_PROXY_PATH=$SMARTHOST_PROXY_PATH
@@ -1505,7 +1508,6 @@ execute_task() {
         JSON_TARGET=$(echo '{ "DATE": "'$DATE'", "STATUS": "0", "RESULT": "" }' | jq -r . | base64 -w0)
         add_json_target
 
-        VPN_PROXY_REPO="wireguard-proxy-client"
         if [ ! -d "/tmp/$VPN_PROXY_REPO" ]; then
             git clone https://git.format.hu/safebox/$VPN_PROXY_REPO.git /tmp/$VPN_PROXY_REPO >/dev/null
         else
